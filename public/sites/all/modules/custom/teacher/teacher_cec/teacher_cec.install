@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function teacher_cec_schema() {
+
+  $schema['teacher_cec'] = array(
+    'description' => t('Teacher CEC Tracking'),
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('User ID'),
+      ),
+      'activity' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+      ),
+      'date' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+      ),
+      'num_cec' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+      ),
+      'hours' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+  );
+  
+  return $schema;
+}

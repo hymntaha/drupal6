@@ -1,0 +1,61 @@
+<html>
+    <head>
+	<title>Nemo Test Site</title>
+    </head>
+    <body>
+	<h1>Nemo Test Site</h1>
+	<div style="margin-top: 30px;" align="center">
+	    <form method="post" action="nemo.php" />
+		<fieldset>
+		    <input type="hidden" name="strPostOrigin" value="nemoTest">
+		    <table>
+			<tr>
+			   <td width="150px">
+				Nemo Auth Key
+			   </td>
+			   <td>
+				<input type="text" name="strAuthKey" />
+			   </td>
+			</tr>
+			<tr>
+			    <td>
+				Output Type:
+			    </td>
+			    <td>
+				<select name="strOutputType">
+				    <option value="XML">XML</option>
+				    <option value="CSV">CSV</option>
+				</select>
+			    </td>
+			</tr>
+			<tr>
+			    <td>
+				Compression
+			    </td>
+			    <td>
+				<input type="checkbox" name="boolCompress" />
+			    </td>
+			</tr>
+			<tr>
+			    <td colspan="2">
+				SQL Query
+			    </td>
+			</tr>
+			<tr>
+			    <td colspan="2">
+				<textarea name="strQuery" cols="100" rows="30">
+				    
+				</textarea>
+			    </td>
+			</tr>
+			<tr>
+			    <td colspan="2">
+				<input type="submit" value="Submit" />
+			    </td>
+			</tr>
+		    </table>
+		</fieldset>
+	    </form>
+	</div>
+    </body>
+</html>

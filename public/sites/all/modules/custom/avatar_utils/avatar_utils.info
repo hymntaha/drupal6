@@ -1,0 +1,5 @@
+name = Avatar Utilities
+description = Generic helper functions for module development
+core = 7.x
+package = "Avatar New York"
+version = 7.x-1.0

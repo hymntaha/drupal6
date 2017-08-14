@@ -1,0 +1,5 @@
+name = Data Export
+description = A module to export CSV data
+package = Avatar New York
+core = 7.x
+version = 7.x-1.0

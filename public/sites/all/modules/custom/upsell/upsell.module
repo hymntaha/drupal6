@@ -1,0 +1,375 @@
+<?php
+
+define('MAX_DISPLAY_UPSELLS',3);
+define('UPSELL_DISCOUNT',.10);
+
+require_once('upsell.block.inc');
+
+/**
+ * Implements hook_init().
+ */
+function upsell_init()
+{
+    if(request_path() != 'cart'){
+        upsell_clear_saw_modal_cookie();
+    }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function upsell_menu() {
+  $items['admin/ytu-settings/upsell-settings'] = array(
+    'title' => 'Upsell Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('upsell_admin_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'upsell.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function upsell_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['upsell'] = array(
+    'label' => t('Upsell'),
+    'custom settings' => TRUE,
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function upsell_theme($existing, $type, $theme, $path) {
+  return array(
+    'upsell_cart_pane' => array(
+      'template' => 'upsell-cart-pane',
+      'variables' => array('products' => array(),'callout' => '', 'cart_has_upsell' => false),
+    ),
+    'upsell_price' => array(
+      'variables' => array('price_modify' => array()),
+    )
+  );
+}
+
+/**
+ * Implements hook_uc_cart_pane().
+ */
+function upsell_uc_cart_pane($items) {
+	$upsells = array();
+	$products = array();
+
+	if(!is_null($items)){
+
+		//Build list of upsells
+		foreach($items as $item){
+			if(isset($item->field_product_upsells[LANGUAGE_NONE])){
+				foreach($item->field_product_upsells[LANGUAGE_NONE] as $upsell){
+					$upsells[$upsell['target_id']]['node'] = node_load($upsell['target_id']);
+
+					if(isset($upsells[$upsell['target_id']]['weight'])){
+						$upsells[$upsell['target_id']]['weight'] *= 100;
+					}
+					else{
+						$upsells[$upsell['target_id']]['weight'] = (int) $upsells[$upsell['target_id']]['node']->price * -1;
+					}
+				}
+			}
+		}
+
+		//Loop through cart again to check and remove any upsells that are already in the cart
+		foreach($items as $item){
+			if(isset($upsells[$item->nid])){
+				unset($upsells[$item->nid]);
+			}
+		}
+
+		$delta = 0;
+		foreach($upsells as $nid => $upsell){
+			//Stop once we hit the max number of upsells we want to display
+			if($delta >= MAX_DISPLAY_UPSELLS){
+				break;
+			}
+			$products[$nid] = node_view($upsell['node'],'upsell');
+			$products[$nid]['#weight'] = $upsell['weight'];
+			$products[$nid]['#prefix'] = '<div class="upsell-product">';
+			$products[$nid]['#suffix'] = '</div>';
+			$delta++;
+		}
+	}
+
+	$callout = '';
+	if(upsell_is_enabled() && !upsell_cart_has_upsell()){
+		$callout = _mm('upsell_cart_callout','',TRUE);
+	}
+
+	$panes['upsell'] = array(
+		'title' => t('Product Upsells'),
+		'enabled' => TRUE,
+		'weight' => 0,
+		'body' => array(
+			'#theme' => 'upsell_cart_pane',
+			'#products' => $products,
+			'#callout' => $callout,
+            '#cart_has_upsell' => upsell_cart_has_upsell(),
+		),
+	);
+
+	return $panes;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function upsell_form_alter(&$form, &$form_state, $form_id){
+	if($form_id == 'uc_cart_view_form'){
+		foreach($form['items'] as $delta => $item){
+			if(isset($item['data']['#value'])){
+				$data = unserialize($item['data']['#value']);
+				if(isset($data['upsell']) && $data['upsell']){
+					$form['items'][$delta]['qty']['#type'] = 'hidden';
+					$form['items'][$delta]['qty']['#value'] = '1';
+				}
+			}
+		}
+	}
+}
+
+/**
+* Implements hook_uc_add_to_cart_data().
+*/
+function upsell_uc_add_to_cart_data($form_values) {
+  $is_upsell = false;
+
+  if(upsell_is_enabled() && !upsell_cart_has_upsell()){
+    if(request_path() == 'cart'){
+       $is_upsell = true;
+    }
+    else if($node = menu_get_object()){
+      if(uc_product_is_product($node)){
+        if($form_values['nid'] != $node->nid){
+          $is_upsell = true;
+        }
+      }
+    }
+  }
+
+  if($is_upsell){
+    return array('upsell' => true);
+  }
+}
+
+/**
+ * Implements hook_uc_cart_alter().
+ */
+function upsell_uc_cart_alter(&$items){
+	foreach($items as $item){
+		if(!upsell_is_enabled()){
+			unset($item->data['upsell']);
+		}
+		if(isset($item->data['upsell']) && $item->data['upsell']){
+			$item->price -= $item->price * UPSELL_DISCOUNT;
+			$item->description = (UPSELL_DISCOUNT*100).'% Off';
+		}
+	}
+}
+/**
+ * Implements hook_uc_order_product_alter().
+ */
+function upsell_uc_order_product_alter(&$product, $order) {
+	if(isset($product->data['upsell']) && $product->data['upsell']){
+		$product->description = (UPSELL_DISCOUNT*100).'% Off';
+	}
+}
+
+/**
+ * Implements hook_uc_product_description_alter().
+ */
+function upsell_uc_product_description_alter(&$description, &$product){
+	if(isset($product->data['upsell']) && $product->data['upsell']){
+		if(isset($product->description)){
+			$description['#markup'] = '<span class="small">'.$product->description.'</span>';
+		}
+	}
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function upsell_node_view($node, $view_mode, $langcode) {
+  if($view_mode == 'upsell'){
+    $price_modify = array(
+      'original_price' => $node->price,
+      'price' => $node->price - ($node->price * UPSELL_DISCOUNT),
+    );
+    $node->content['upsell_price']['#markup'] = theme('upsell_price',array('price_modify' => $price_modify));
+  }
+}
+
+function upsell_messages_info(){
+	return array(
+    'upsell_cart_callout'=>array(
+      'title'=>"Upsell Callout on Cart page",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"cart",
+      'fieldset'=>'upsell',
+      ),
+  );
+}
+
+/**
+ * Implements hook_coupon_item_can_use_coupon().
+ */
+function upsell_coupon_item_can_use_coupon($item, $coupon, $order){
+	return !upsell_cart_item_is_upsell($item);
+}
+
+function upsell_cart_item_is_upsell($item){
+	return (isset($item->data['upsell']) && $item->data['upsell']);
+}
+
+function upsell_cart_has_upsell(){
+	$cart = uc_cart_get_contents();
+	foreach($cart as $item){
+		if(upsell_cart_item_is_upsell($item)){
+			return true;
+		}
+	}
+	return false;
+}
+
+function upsell_is_enabled(){
+	return variable_get('upsell_discount_enabled',0) && !account_is_teacher() && !wholesale_cart_has_wholesale();
+}
+
+function upsell_get_account_upsells($uid){
+	$upsells = array();
+	$products = array();
+
+	if(upsell_is_enabled() && !upsell_cart_has_upsell()){
+
+	  /* TODO - REWRITE USING NEW VIDEO CODE
+		$items = array_merge(video_user_get_videos($uid),video_user_get_playlists($uid));
+		$items = node_load_multiple($items);
+	  */
+	  $items = array();
+
+		if(!empty($items)){
+			//Build list of upsells
+			foreach($items as $item){
+				if(isset($item->field_product_upsells[LANGUAGE_NONE])){
+					foreach($item->field_product_upsells[LANGUAGE_NONE] as $upsell){
+						$upsells[$upsell['target_id']]['node'] = node_load($upsell['target_id']);
+
+						if(isset($upsells[$upsell['target_id']]['weight'])){
+							$upsells[$upsell['target_id']]['weight'] *= 100;
+						}
+						else{
+							$upsells[$upsell['target_id']]['weight'] = (int) $upsells[$upsell['target_id']]['node']->price * -1;
+						}
+					}
+				}
+			}
+
+			foreach($items as $item){
+				if(isset($upsells[$item->nid])){
+					unset($upsells[$item->nid]);
+				}
+			}
+
+			$delta = 0;
+			foreach($upsells as $nid => $upsell){
+				//Stop once we hit the max number of upsells we want to display
+				if($delta >= MAX_DISPLAY_UPSELLS){
+					break;
+				}
+				$products[$nid] = node_view($upsell['node'],'upsell');
+				$products[$nid]['#weight'] = $upsell['weight'];
+				$products[$nid]['#prefix'] = '<div class="upsell-product">';
+				$products[$nid]['#suffix'] = '</div>';
+				$delta++;
+			}
+		}
+	}
+	return $products;
+}
+
+function upsell_get_upsells_by_cart(){
+  $upsells = array();
+  $products = array();
+
+  if(upsell_is_enabled() && !upsell_cart_has_upsell()){
+    $items = uc_cart_get_contents();
+
+    foreach($items as $item){
+      if(isset($item->field_product_upsells[LANGUAGE_NONE])){
+        foreach($item->field_product_upsells[LANGUAGE_NONE] as $upsell){
+          $upsells[$upsell['target_id']]['node'] = node_load($upsell['target_id']);
+
+          if(isset($upsells[$upsell['target_id']]['weight'])){
+            $upsells[$upsell['target_id']]['weight'] *= 100;
+          }
+          else{
+            $upsells[$upsell['target_id']]['weight'] = (int) $upsells[$upsell['target_id']]['node']->price * -1;
+          }
+        }
+      }
+    }
+
+    foreach($items as $item){
+      if(isset($upsells[$item->nid])){
+        unset($upsells[$item->nid]);
+      }
+    }
+
+    $delta = 0;
+    foreach($upsells as $nid => $upsell){
+      //Stop once we hit the max number of upsells we want to display
+      if($delta >= MAX_DISPLAY_UPSELLS){
+        break;
+      }
+      $products[$nid] = node_view($upsell['node'],'upsell');
+      $products[$nid]['#weight'] = $upsell['weight'];
+      $products[$nid]['#prefix'] = '<div class="upsell-product">';
+      $products[$nid]['#suffix'] = '</div>';
+      $delta++;
+    }
+  }
+
+  return $products;
+}
+
+function upsell_get_price_modify($item){
+  $price_modify = array();
+
+  if(isset($item->nid)){
+    $product = node_load($item->nid);
+    $price_modify['original_price'] = $product->price;
+    $price_modify['price'] = $item->price;
+  }
+
+  return $price_modify;
+}
+
+function upsell_clear_saw_modal_cookie(){
+    if(isset($_COOKIE['sawUpsellModal'])){
+        setcookie("sawUpsellModal", "/", time()-3600);
+    }
+}
+
+function theme_upsell_price($variables){
+  $output = '';
+
+  $output .= '<div class="upsell-price">';
+  if(!upsell_cart_has_upsell()){
+    $output .= '<span class="strikethrough">'.theme('uc_price',array('price' => $variables['price_modify']['original_price'])).'</span><br />';
+  }
+  $output .= theme('uc_price',array('price' => $variables['price_modify']['price']));
+  $output .= '</div>';
+
+  return $output;
+}

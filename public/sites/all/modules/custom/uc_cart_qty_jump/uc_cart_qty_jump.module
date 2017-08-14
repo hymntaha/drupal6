@@ -1,0 +1,145 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function uc_cart_qty_jump_menu() {
+  $items['node/%node/edit/cart-jump-qty'] = array(
+    'title' => 'Cart Quantity Jump',
+    'description' => 'Edit product quantity jump amount',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_cart_qty_jump_product_form',1),
+    'access callback' => 'uc_cart_qty_jump_product_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'uc_cart_qty_jump.admin.inc',
+    'weight' => 2,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function uc_cart_qty_jump_permission() {
+  return array(
+    'administer cart qty jump' => array(
+      'title' => t('Administer Cart Quantity Jump'),
+      'description' => t('Allow products to have a quantity jump'),
+    ),
+  );
+}
+
+/**
+ * Access callback for editing a product's attributes.
+ */
+function uc_cart_qty_jump_product_access($node) {
+  return uc_product_is_product($node) && node_access('update', $node) && user_access('administer cart qty jump');
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function uc_cart_qty_jump_admin_paths() {
+  return array(
+    'node/*/edit/cart-jump-qty' => TRUE,
+  );
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function uc_cart_qty_jump_node_load($nodes) {
+  $result = db_query('SELECT * FROM uc_cart_qty_jump WHERE nid IN (:nids)', array(':nids' => array_keys($nodes)));
+  foreach ($result as $row) {
+    $nodes[$row->nid]->uc_cart_qty_jump = new UcCartQtyJump($row->id, $row->nid, $row->qty_jump, $row->qty_jump_start);
+  }
+}
+
+function uc_cart_qty_jump_quantity_check($product, $qty) {
+  $result = array();
+
+  if (isset($product->uc_cart_qty_jump)) {
+
+    /** @var UcCartQtyJump $qty_jump */
+    $qty_jump = $product->uc_cart_qty_jump;
+    if ($qty > $qty_jump->getQtyJumpStart() && $qty % $qty_jump->getQtyJump() != 0) {
+      $message = variable_get('uc_cart_qty_jump_message','Pricing quantities for this product start at :qty_jump_start and come in increments of :qty_jump, please use a quantity that is a multiple of :qty_jump.');
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t($message,
+          array(
+            ':qty_jump'     => $qty_jump->getQtyJump(),
+            ':qty_jump_start' => $qty_jump->getQtyJumpStart(),
+            ':product_name' => $product->title,
+          )),
+      );
+    }
+  }
+
+  return array(
+    'result' => $result,
+  );
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function uc_cart_qty_jump_uc_add_to_cart($nid, $qty, $data) {
+  $node = node_load($nid);
+
+  if (isset($node->uc_cart_qty_jump)) {
+    $cart_items = uc_cart_get_contents();
+    foreach ($cart_items as $item) {
+      if ($item->nid == $node->nid) {
+        $qty += $item->qty;
+      }
+    }
+
+    $quantity_jump_check = uc_cart_qty_jump_quantity_check($node, $qty);
+
+    return $quantity_jump_check['result'];
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function uc_cart_qty_jump_form_uc_cart_view_form_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'uc_cart_qty_jump_form_uc_cart_view_form_validate';
+}
+
+function uc_cart_qty_jump_form_uc_cart_view_form_validate($form, &$form_state){
+  foreach (element_children($form['items']) as $key) {
+    $item = $form['items'][$key];
+    if (isset($item['qty']['#default_value']) && isset($form_state['values']['items'][$key]['qty']) && $item['qty']['#default_value'] != $form_state['values']['items'][$key]['qty']) {
+      $result = uc_cart_qty_jump_quantity_check($item['#entity'],$form_state['values']['items'][$key]['qty']);
+
+      if(!empty($result['result'])){
+        $result = $result['result'][0];
+        if(!$result['success']){
+          form_set_error('items]['.$key,t($result['message']));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function uc_cart_qty_jump_form_uc_product_settings_form_alter(&$form, &$form_state) {
+  $form['uc_cart_qty_jump'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('@feature settings', array('@feature' => 'Cart quantity jump')),
+    '#group' => 'product-settings',
+  );
+
+  $form['uc_cart_qty_jump']['uc_cart_qty_jump_message'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Cart Quantity Jump Error Message',
+    '#description' => 'Replacements - :qty_jump_start => Quantity Jump Start Amount, :qty_jump => Quantity Jump Amount',
+    '#default_value' => variable_get('uc_cart_qty_jump_message','Pricing quantities for this product start at :qty_jump_start and come in increments of :qty_jump, please use a quantity that is a multiple of :qty_jump.'),
+  );
+}

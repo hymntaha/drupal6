@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * Implements hook_checkout_order_tracking_pixel().
+ */
+function google_checkout_order_tracking_pixel($order) {
+  return theme('google_conversion', array('order_total' => $order->order_total));
+}
+
+/**
+ * Implements hook_theme().
+ */
+function google_theme($existing, $type, $theme, $path) {
+  return array(
+    'google_conversion' => array(
+      'template' => 'google-conversion',
+      'variables' => array(
+        'order_total' => 0,
+      ),
+    ),
+  );
+}

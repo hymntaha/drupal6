@@ -1,0 +1,776 @@
+<?php
+
+define('INFUSIONSOFT_ACCOUNT_MODE',variable_get('infusionsoft_account_mode', 'sandbox'));
+define('INFUSIONSOFT_CONNECTION_NAME',variable_get('infusionsoft_connection_name', 'Infusionsoft Drupal Module'));
+define('INFUSIONSOFT_APPLICATION_NAME',variable_get(INFUSIONSOFT_ACCOUNT_MODE.'_application_name', ''));
+define('INFUSIONSOFT_API_KEY',variable_get(INFUSIONSOFT_ACCOUNT_MODE.'_api_key', ''));
+
+define('INFUSIONSOFT_INVOICE_TYPE_SHIPPING',1);
+define('INFUSIONSOFT_INVOICE_TYPE_TAX',2);
+define('INFUSIONSOFT_INVOICE_TYPE_PRODUCT',4);
+define('INFUSIONSOFT_INVOICE_TYPE_DISCOUNT',7);
+
+define('INFUSIONSOFT_FORM_FILTER','FORM:');
+
+require_once('src/isdk.php');
+
+/**
+ * Implements hook_menu().
+ */
+function infusionsoft_menu() {
+
+  $items['admin/ytu-settings/infusionsoft'] = array(
+  	'title' => 'Infusionsoft Settings',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('infusionsoft_admin_settings_form'),
+  	'access arguments' => array('access ytu settings'),
+  	'file' => 'infusionsoft.admin.inc',
+  );
+
+  $items['infusionform/%'] = array(
+    'title' => 'Infusionsoft Form',
+    'page callback' => 'infusionsoft_get_form_page',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+function infusionsoft_user_insert(&$edit, $account, $category) {
+  infusionsoft_create_contact($account);
+  if(infusionsoft_user_get_infusionsoft_id($account)){
+    $item = field_get_items('user',$account,'field_which_best_describes_you');
+    if(isset($item[0]['value'])){
+      infusionsoft_contact_apply_tag($account,$item[0]['value']);
+    }
+  }
+}
+
+/**
+ * Implements hook_user_update().
+ */
+function infusionsoft_user_update(&$edit, $account, $category) {
+  if(infusionsoft_user_get_infusionsoft_id($account)){
+    infusionsoft_update_contact($account);
+  }
+  else{
+    infusionsoft_create_contact($account);
+  }
+}
+
+/**
+ * Implements hook_uc_checkout_complete().
+ */
+function infusionsoft_uc_checkout_complete($order, $account){
+
+  if(wholesale_cart_has_wholesale()){
+    $tag_id = _mm('order_wholesale_infusionsoft_tag_id','',TRUE);
+    if($tag_id){
+      infusionsoft_contact_apply_tag($account,$tag_id);
+    }
+  }
+
+  $tag_id = '';
+  if(checkout_order_is_domestic($order)){
+    $tag_id = _mm('order_domestic_infusionsoft_tag_id','',TRUE);
+  }
+  else{
+    $tag_id = _mm('order_non_domestic_infusionsoft_tag_id','',TRUE);
+  }
+
+  if($tag_id){
+    infusionsoft_contact_apply_tag($account,$tag_id);
+  }
+
+  //Remove Cart Abandon tag if they have it
+  $tag_id = _mm('cart_abandon_infusionsoft_tag_id','',TRUE);
+  if($tag_id){
+    infusionsoft_contact_remove_tag($account,$tag_id);
+  }
+
+  if(isset($order->data['coupons'])){
+    foreach($order->data['coupons'] as $code => $coupon){
+      $coupon = uc_coupon_find($code);
+      $tag_id = field_get_items('uc_coupon',$coupon,'field_infusionsoft_tag_id');
+      if(isset($tag_id[0]['value'])){
+        infusionsoft_contact_apply_tag($account,$tag_id[0]['value']);
+      }
+    }
+  }
+
+  infusionsoft_create_order($order,$account);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function infusionsoft_theme($existing, $type, $theme, $path) {
+  return array(
+    'infusion_form' => array(
+      'template' => 'infusion-form',
+      'variables' => array('url' => ''),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function infusionsoft_form_alter(&$form, &$form_state, $form_id) {
+  if($form_id == 'page_node_form' && isset($form['field_infusionsoft_form_id'])){
+    $form['field_infusionsoft_form_id'][LANGUAGE_NONE][0]['value']['#type'] = 'select';
+    $form['field_infusionsoft_form_id'][LANGUAGE_NONE][0]['value']['#size'] = '';
+    $form['field_infusionsoft_form_id'][LANGUAGE_NONE][0]['value']['#options'] = array('' => 'No Infusionform') + infusionsoft_get_form_options();
+  }
+  else if($form_id == 'uc_cart_checkout_settings_form'){
+    $form['pane_customer']['infusionsoft_uc_cart_hear_about'] = array(
+      '#type' => 'textarea',
+      '#title' => 'Infusionsoft - How did you hear about us?',
+      '#default_value' => variable_get('infusionsoft_uc_cart_hear_about',''),
+    );
+  }
+}
+
+/**
+ * Implements hook_uc_checkout_pane().
+ */
+function infusionsoft_uc_checkout_pane() {
+  $panes['infusionsoft_info'] = array(
+    'callback' => 'infusionsoft_checkout_pane_infusionsoft_info',
+    'title' => t('Additional Information'),
+    'desc' => '',
+    'weight' =>0,
+  );
+
+  return $panes;
+}
+
+function infusionsoft_checkout_pane_infusionsoft_info($op, &$order, $form = NULL, &$form_state = NULL){
+  $contents = array();
+  global $user;
+
+  switch($op){
+    case 'view':
+
+      if($user->uid == 0){
+        $how_did_you_hear = variable_get('infusionsoft_uc_cart_hear_about','');
+        $how_did_you_hear = explode("\n",$how_did_you_hear);
+
+        $options = array();
+        foreach($how_did_you_hear as $how){
+          $how = explode('|',$how);
+          if(isset($how[1])){
+            $options[$how[0]] = $how[1];
+          }
+        }
+
+        if(!empty($options)){
+          $options = array('' => ' - Select -') + $options;
+          $contents['how_did_you_hear_about_us'] = array(
+            '#type' => 'select',
+            '#title' => 'How did you hear about us?',
+            '#options' => $options,
+          );
+        }
+      }
+      break;
+    case 'process':
+      if(!empty($form_state['values']['panes']['infusionsoft_info']['how_did_you_hear_about_us'])){
+
+        if($user->uid){
+          $account = user_load($user->uid);
+          $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+        }
+        else{
+          $params     = array(
+            'Email'     => $form_state['values']['panes']['customer']['primary_email'],
+            'FirstName' => $form_state['values']['panes']['delivery']['address']['delivery_first_name'],
+            'LastName'  => $form_state['values']['panes']['delivery']['address']['delivery_last_name'],
+          );
+          $contact_id = infusionsoft_create_anon_contact($params,0);
+        }
+
+        if(!empty($contact_id)){
+          infusionsoft_anon_contact_apply_tag($contact_id,$form_state['values']['panes']['infusionsoft_info']['how_did_you_hear_about_us']);
+        }
+      }
+      break;
+  }
+
+  return array('contents' => $contents);
+}
+
+function infusionsoft_create_contact($account){
+  $app = infusionsoft_create_connection();
+
+  $contact_info = infusionsoft_map_user_to_contact($account);
+  $contact_id = $app->addWithDupCheck($contact_info,'Email');
+  $app->optIn($contact_info['Email'],'OptIn');
+
+  if($contact_id && $account->uid && !infusionsoft_user_get_infusionsoft_id($account)){
+    db_insert('users_infusionsoft')
+      ->fields(array(
+        'uid' => $account->uid,
+        'cid' => $contact_id,
+      ))
+      ->execute();
+  }
+}
+
+function infusionsoft_create_anon_contact($params, $uid){
+  $app = infusionsoft_create_connection();
+
+  $contact_id = $app->addWithDupCheck($params,'Email');
+  $app->optIn($params['Email'],'OptIn');
+
+  $account = user_load($uid);
+
+  if($contact_id && $account->uid && !infusionsoft_user_get_infusionsoft_id($account)){
+    db_insert('users_infusionsoft')
+      ->fields(array(
+        'uid' => $account->uid,
+        'cid' => $contact_id,
+      ))
+      ->execute();
+  } 
+
+  return $contact_id;
+}
+
+function infusionsoft_update_contact_params($account, $params){
+  $app = infusionsoft_create_connection();
+  $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+
+  $contact_id = $app->updateCon($contact_id, $params);
+}
+
+function infusionsoft_update_contact($account){
+  $app = infusionsoft_create_connection();
+
+  $contact_info = infusionsoft_map_user_to_contact($account);
+  $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+
+  $contact_id = $app->updateCon($contact_id, $contact_info);
+  $app->optIn($contact_info['Email'],'OptIn');
+
+  if($contact_id){
+
+    $tag_id = _mm('interests_infusionsoft_tag_id','',TRUE);
+    if($tag_id && field_get_items('user',$account,'field_educational_programs')){
+      infusionsoft_contact_apply_tag($account,$tag_id);
+    }
+
+    $all_fields = field_info_fields();
+
+    $fields = array(
+      'field_pain_ailment',
+      'field_fitness_goal',
+      'field_educational_programs',
+      'field_fitness_enthusiast',
+      'field_fitness_professional',
+      'field_notification_emails',
+      'field_which_best_describes_you',
+    );
+
+    //First clear out selections
+    foreach($fields as $field){
+      if(isset($all_fields[$field])){
+        $values = list_allowed_values($all_fields[$field]);
+        foreach($values as $tag_id => $value){
+          if($tag_id){
+            infusionsoft_contact_remove_tag($account,$tag_id);
+          }
+        }
+      }
+    }
+
+    //Next apply tags for selected
+    foreach($fields as $field){
+      $items = field_get_items('user',$account,$field);
+      if($items){
+        foreach($items as $item){
+          infusionsoft_contact_apply_tag($account,$item['value']);
+        }
+      }
+    }
+
+    if(isset($account->roles[TEACHER_RID])){
+      $tag_id = _mm('teacher_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_apply_tag($account,$tag_id);
+      }
+
+      //Remove Non-Renewal Tag if they have the teacher role
+      $tag_id = _mm('non_renewal_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      }
+    }
+    else{
+      //If teacher role was removed give them non-renewal tag
+      if(isset($account->original->roles[TEACHER_RID])){
+        $tag_id = _mm('non_renewal_infusionsoft_tag_id','',TRUE);
+        if($tag_id){
+          infusionsoft_contact_apply_tag($account,$tag_id);
+        }
+      }
+
+      //Remove teacher tag if they aren't a teacher
+      $tag_id = _mm('teacher_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      }
+    }
+
+    if(isset($account->roles[TRAINER_RID])){
+      $tag_id = _mm('trainer_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_apply_tag($account,$tag_id);
+      }
+    }
+    else{
+      $tag_id = _mm('trainer_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      } 
+    }
+
+    if(isset($account->roles[INTEGRATED_TEACHER_RID])){
+      $tag_id = _mm('integrated_teacher_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_apply_tag($account,$tag_id);
+      }
+      $tag_id = _mm('integrated_teacher_removed_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      }
+    }
+    else{
+      $tag_id = _mm('integrated_teacher_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      }
+      // If the user had Integrated Teacher unflagged add this tag
+      if(isset($account->original->roles[INTEGRATED_TEACHER_RID])){
+        $tag_id = _mm('integrated_teacher_removed_infusionsoft_tag_id','',TRUE);
+        if($tag_id){
+          infusionsoft_contact_apply_tag($account,$tag_id);
+        }
+      }
+    }
+
+    if(isset($account->roles[AUTHENTICATED_WHOLESALE_RID])){
+      $tag_id = _mm('authenticated_wholesale_infusionsoft_tag_id', '', TRUE);
+      if($tag_id){
+        infusionsoft_contact_apply_tag($account, $tag_id);
+      }
+    }
+
+    if(isset($account->roles[ROLE_MODEL_RID])){
+      $tag_id = _mm('role_model_practitioner_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_apply_tag($account,$tag_id);
+      }
+
+      $tag_id = _mm('role_model_practitioner_removed_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      }
+    }
+    else{
+      if(isset($account->original->roles[ROLE_MODEL_RID])){
+        $tag_id = _mm('role_model_practitioner_removed_infusionsoft_tag_id','',TRUE);
+        if($tag_id){
+          infusionsoft_contact_apply_tag($account,$tag_id);
+        }
+      }
+
+      $tag_id = _mm('role_model_practitioner_infusionsoft_tag_id','',TRUE);
+      if($tag_id){
+        infusionsoft_contact_remove_tag($account,$tag_id);
+      }
+    }
+        
+  }
+  else{
+    watchdog('infusionsoft', 'Unable to update contact for user %uid: %data',array('%uid' => $account->uid, '%data' => print_r($contact_info,TRUE)),WATCHDOG_WARNING);
+  }
+}
+
+function infusionsoft_load_contact($account,$params){
+  $app = infusionsoft_create_connection();
+  $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+
+  if($contact_id){
+    return $app->loadCon($contact_id,$params);
+  }
+  else{
+    return array();
+  }
+}
+
+function infusionsoft_get_user_groups($account){
+  $params = array('Groups');
+  $contact = infusionsoft_load_contact($account,$params);
+
+  if($contact){
+    $groups = explode(',',$contact['Groups']);
+    return $groups;
+  }
+  else{
+    return array();
+  }
+}
+
+function infusionsoft_contact_apply_tag($account,$tag_id){
+  $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+  if($contact_id){
+    $app = infusionsoft_create_connection();
+    $app->grpAssign($contact_id,$tag_id);
+  }
+}
+
+function infusionsoft_anon_contact_apply_tag($contact_id,$tag_id){
+  if($contact_id){
+    $app = infusionsoft_create_connection();
+    $app->grpAssign($contact_id,$tag_id);
+  }
+}
+
+function infusionsoft_contact_remove_tag($account,$tag_id){
+  $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+  if($contact_id){
+    $app = infusionsoft_create_connection();
+    $app->grpRemove($contact_id,$tag_id);
+  }
+}
+
+function infusionsoft_create_order($order,$account){
+  $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+  if($contact_id){
+    $app = infusionsoft_create_connection();
+
+    $contact_info = infusionsoft_map_user_to_contact($account, $order);
+    $result = $app->updateCon($contact_id, $contact_info);
+
+    $oDate = $app->infuDate(date('Y-m-d h:i:s',$order->created));
+
+    $affiliate_id = 0;
+    if(isset($_SESSION['infusionsoft_affiliate_id']) && !empty($_SESSION['infusionsoft_affiliate_id'])){
+      $affiliate_id = $_SESSION['infusionsoft_affiliate_id'];
+    }
+
+    $invoice_id = $app->blankOrder($contact_id,'Order# '.$order->order_id, $oDate, $affiliate_id, $affiliate_id);
+
+    if($invoice_id){
+
+      //Products
+      foreach($order->products as $product){
+        $product_id = infusionsoft_product_get_infusionsoft_product_id($product->nid);
+
+        /* 
+          Modify price to pass discounted price as per Robert
+          https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/167#history-3835683
+        */
+        $price = $product->price;
+        $description = '';
+        if(isset($order->data['coupons'])){
+          foreach($order->data['coupons'] as $code => $coupon){
+            foreach($coupon as $item_nid => $coupon_item){
+              if($item_nid == $product->nid){
+                $price -= $coupon_item->discount / $product->qty;
+                $description .= 'Original Price: $'.round($product->price,2).', Special Applied.';
+              }
+            }
+          }
+        }
+
+        $result = $app->addOrderItem(
+          (int) $invoice_id,
+          (int) $product_id,
+          (int) INFUSIONSOFT_INVOICE_TYPE_PRODUCT,
+          (double) round($price,2),
+          (int) $product->qty,
+          $product->title,
+          $description
+        );
+      }
+
+      //Discounts, Shipping, and Tax
+      foreach($order->line_items as $line_item){
+        $type = '';
+        $amount = $line_item['amount'];
+        switch ($line_item['type']){
+            case 'coupon':
+              $type = INFUSIONSOFT_INVOICE_TYPE_DISCOUNT;
+              $amount = 0;
+              break;
+            case 'shipping':
+              $type = INFUSIONSOFT_INVOICE_TYPE_SHIPPING;
+              break;
+            case 'tax':
+              $type = INFUSIONSOFT_INVOICE_TYPE_TAX;
+              break;
+        }
+        if(!empty($type)){
+          $result = $app->addOrderItem(
+            (int) $invoice_id,
+            (int) 0,
+            (int) $type,
+            (double) $amount,
+            (int) 1,
+            $line_item['title'],
+            ''
+          );
+        }
+      }
+
+      $result = $app->manualPmt(
+        (int) $invoice_id,
+        (double) $order->order_total,
+        $oDate,
+        'Credit Card',
+        '$'.number_format($order->order_total,2).' paid by Credit Card',
+        false
+      );
+    }
+  }
+}
+
+function infusionsoft_get_form_options($filter = INFUSIONSOFT_FORM_FILTER){
+  $app = infusionsoft_create_connection();
+  $map = $app->getWebFormMap();
+  
+  if($filter){
+    $results = array();
+    foreach($map as $id => $name){
+      //Check for filter at the start of the name
+      if(strpos($name, $filter) === 0){
+        $name = str_replace($filter,'',$name);
+        $results[$id] = trim($name);
+      }
+    }
+    return $results;
+  }
+  else{
+    return $map;
+  }
+}
+
+function infusionsoft_get_form($form_id){
+  $app = infusionsoft_create_connection();
+  $content = $app->getWebFormHtml($form_id);
+  if($content){
+    return $content;
+  }
+  else{
+    return '';
+  }
+}
+
+function infusionsoft_get_form_page($form_id){
+  $content = infusionsoft_get_form($form_id);
+  print $content;
+  drupal_exit();
+}
+
+function infusionsoft_get_form_iframe($form_id){
+  return array('#theme' => 'infusion_form','#url' => url('infusionform/'.$form_id,array('absolute' => true)));
+}
+
+function infusionsoft_email_blast($email_info){
+  watchdog('infusionsoft', 'Email Blast: !info', array('!info' => print_r($email_info,TRUE)));
+  
+  $app = infusionsoft_create_connection();
+  return $app->sendEmail(
+    $email_info['contact_list'],
+    $email_info['from'],
+    '~Contact.Email~',
+    '',
+    '',
+    'HTML',
+    $email_info['subject'],
+    $email_info['body'],
+    ''
+  );
+}
+
+function infusionsoft_map_user_to_contact($account, $order = null){
+  $contact_info = array();
+
+  foreach($account as $field_name => $field){
+    switch ($field_name) {
+      case 'mail':
+        $contact_info['Email'] = $field;
+        break;
+      case 'field_first_name':
+        if(isset($field[LANGUAGE_NONE][0]['value'])){
+          $contact_info['FirstName'] = $field[LANGUAGE_NONE][0]['value'];
+        }
+        else{
+          $contact_info['FirstName'] = $account->name;
+        }
+        break;
+      case 'field_last_name':
+        if(isset($field[LANGUAGE_NONE][0]['value'])){
+          $contact_info['LastName'] = $field[LANGUAGE_NONE][0]['value'];
+        }
+        break;
+    }
+  }
+
+  $address = field_get_items('user',$account,'field_location');
+  if($address){
+    $address = $address[0];
+    if(!empty($address['thoroughfare'])){
+      $contact_info['Address3Street1'] = $address['thoroughfare'];
+    }
+    if(!empty($address['premise'])){
+      $contact_info['Address3Street2'] = $address['premise'];
+    }
+    if(!empty($address['locality'])){
+      $contact_info['City3'] = $address['locality'];
+    }
+    if(!empty($address['country'])){
+      $country = db_select('uc_countries')
+                  ->fields('uc_countries')
+                  ->condition('country_iso_code_2',$address['country'])
+                  ->execute()->fetchAssoc();
+      $contact_info['Country3'] = $country['country_name'];
+
+      $contact_info['State3'] = '';
+      if(!empty($address['administrative_area'])){
+        $state = db_select('uc_zones')
+                  ->fields('uc_zones',array('zone_name'))
+                  ->condition('zone_country_id',$country['country_id'])
+                  ->condition('zone_code',$address['administrative_area'])
+                  ->execute()->fetchField();
+        $contact_info['State3'] = $state;
+      }
+    }
+
+    $contact_info['PostalCode3'] = '';
+    if(!empty($address['postal_code'])){
+      $contact_info['PostalCode3'] = $address['postal_code'];
+    }
+  }
+
+  if($order){
+
+    $billing_country = db_select('uc_countries')
+      ->condition('country_id', $order->billing_country)
+      ->fields('uc_countries',array('country_name'))
+      ->orderBy('country_name')
+      ->execute()->fetchField();
+
+    $shipping_country = db_select('uc_countries')
+      ->condition('country_id', $order->delivery_country)
+      ->fields('uc_countries',array('country_name'))
+      ->orderBy('country_name')
+      ->execute()->fetchField();
+
+    $billing_state = db_select('uc_zones')
+      ->condition('zone_country_id', $order->billing_country)
+      ->condition('zone_id', $order->billing_zone)
+      ->fields('uc_zones',array('zone_name'))
+      ->orderBy('zone_name')
+      ->execute()->fetchField();
+
+    $shipping_state = db_select('uc_zones')
+      ->condition('zone_country_id', $order->delivery_country)
+      ->condition('zone_id', $order->delivery_zone)
+      ->fields('uc_zones',array('zone_name'))
+      ->orderBy('zone_name')
+      ->execute()->fetchField();
+
+    $contact_info['StreetAddress1'] = $order->billing_street1;
+    $contact_info['StreetAddress2'] = $order->billing_street2;
+    $contact_info['City'] = $order->billing_city;
+    $contact_info['State'] = $billing_state;
+    $contact_info['PostalCode'] = $order->billing_postal_code;
+    $contact_info['Country'] = $billing_country;
+    $contact_info['Phone1'] = $order->billing_phone;
+
+    $contact_info['Company'] = $order->delivery_company;
+    $contact_info['Address2Street1'] = $order->delivery_street1;
+    $contact_info['Address2Street2'] = $order->delivery_street2;
+    $contact_info['City2'] = $order->delivery_city;
+    $contact_info['State2'] = $shipping_state;
+    $contact_info['PostalCode2'] = $order->delivery_postal_code;
+    $contact_info['Country2'] = $shipping_country;
+    $contact_info['Phone2'] = $order->delivery_phone;
+  }
+
+  return $contact_info;
+}
+
+function infusionsoft_create_connection(){
+  $app = new iSDK();
+  $app->cfgCon(INFUSIONSOFT_CONNECTION_NAME);
+  return $app;
+}
+
+function infusionsoft_user_get_infusionsoft_id($account){
+  return db_select('users_infusionsoft','ui')->fields('ui',array('cid'))->condition('uid',$account->uid)->execute()->fetchField();
+}
+
+function infusionsoft_product_get_infusionsoft_product_id($nid){
+  $node = node_load($nid);
+  if(isset($node->field_infusionsoft_product_id[LANGUAGE_NONE][0]['value'])){
+    return $node->field_infusionsoft_product_id[LANGUAGE_NONE][0]['value'];
+  }
+  else{
+    return false;
+  }
+}
+
+function infusionsoft_node_get_infusionsoft_tag_id($nid){
+  $node = node_load($nid);
+  if(isset($node->field_infusionsoft_tag_id[LANGUAGE_NONE][0]['value'])){
+    return $node->field_infusionsoft_tag_id[LANGUAGE_NONE][0]['value'];
+  }
+  else{
+    return false;
+  }
+}
+
+function infusionsoft_query($table,$fields,$query){
+  $app = infusionsoft_create_connection();
+
+  $merged_results = array();
+  $page = 0;
+  do{
+    $results = $app->dsQuery($table, 1000, $page, $query, $fields);
+    $merged_results = array_merge($merged_results,$results);
+    $page++;
+  } while(count($results) == 1000);
+
+  return $merged_results;
+}
+
+function infusionsoft_get_contacts_by_tag_id($tag_id){
+  $contacts = infusionsoft_query('ContactGroupAssign',array('ContactId'),array('GroupId' => $tag_id));
+  
+  $results = array();
+  foreach($contacts as $contact){
+    $results[] = $contact['ContactId'];
+  }
+
+  return $results;
+}
+
+function infusionsoft_get_affiliate_id_by_code($affiliate_code){
+  if(!empty($affiliate_code) && $affiliate_code != 'null'){
+    $affiliate_ids = infusionsoft_query('Affiliate',array('Id'),array('AffCode' => $affiliate_code));
+    foreach($affiliate_ids as $affiliate_id){
+      return $affiliate_id['Id'];
+    }
+  }
+
+  return false;
+}

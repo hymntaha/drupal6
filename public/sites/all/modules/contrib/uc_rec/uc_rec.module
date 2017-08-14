@@ -1,0 +1,27 @@
+<?php
+/**
+ * @see http://drupal.org/project/uc_rec
+ */
+
+/**
+ * Implements of hook_help().
+ */
+function uc_rec_help($path, $args) {
+  $output = '';
+  switch ($path) {
+    case "admin/help#uc_rec":
+      $output = '<p>'.  t("This module generates Ubercart products recommendations based on order history") .'</p>';
+      break;
+  }
+  return $output;
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function uc_rec_views_api() {
+  return array(
+    'api' => 3,
+  );
+}

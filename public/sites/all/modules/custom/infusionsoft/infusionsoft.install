@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function infusionsoft_schema() {
+
+  $schema['users_infusionsoft'] = array(
+    'description' => t('User Infusionsoft ID Mapping'),
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('User ID'),
+      ),
+      'cid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('Infusionsoft Contact ID'),
+      ),
+    ),
+    'primary key' => array('uid'),
+    'indexes' => array(
+      'cid' => array('cid'),
+    ),
+  );
+  
+  return $schema;
+}

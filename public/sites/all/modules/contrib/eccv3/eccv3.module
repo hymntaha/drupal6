@@ -1,0 +1,85 @@
+<?php
+// $Id$
+/**
+* @file
+* A eCC webgility module.
+*/
+
+/*******************************************************************************
+* Hook Functions (Drupal)
+******************************************************************************/
+
+/**
+* Display help and module information
+* @param path which path of the site we're displaying help
+* @param arg array that holds the current path as would be returned from arg() function
+* @return help text for the path
+*/
+function eccv3_help($path, $arg) {
+    //$output = '<p>'.  t("eCC webgility module is a simple module to synchronize data with uber cart and eCC.");
+    //    The line above outputs in ALL admin/module pages
+    switch ($path) {
+        case "admin/help/test_module":
+       // $output = '<p>'.  t("eCC webgility module is a simple module to synchronize data with uber cart and eCC.") .'</p>';
+          //  break;
+		  return t("eCC webgility module is a simple module to synchronize data with uber cart and eCC.");
+    }
+ 
+} // function test_module_help
+
+/*
+ * Implement hook_permission().
+ */
+function eccv3_permission() {
+  return array(
+    'administer ecc' => array(
+      'title' => t('Administer ecc'),
+      'description' => t('Access the ecc administration pages.'),
+    ),
+    'access all ecc' => array(
+      'title' => t('Bypass ecc access control'),
+      'description' => t('Bypass access control when accessing ecc.'),
+    ),
+  );
+}
+
+/**
+* Menu for this module
+* @return array An array with this module's settings.
+*/
+function eccv3_menu() {
+    $items = array();
+   
+    //Link to the test_module admin page:
+    $items['admin/ecc'] = array(
+        'title' => 'eCC webgility (v3.0)',
+        'description' => 'Administer eCC Messages',
+        'page callback' => 'eccv3_service_file_link_admin',
+        'access arguments' => array('administer ecc'),
+        'type' => MENU_NORMAL_ITEM,
+    );
+    
+    $items['eccv3/ubercart'] = array(
+      'title' => 'eCCv3',
+      'page callback' => 'eccv3_service_file_link',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+  return $items;
+}
+
+function eccv3_service_file_link() {
+	$page_content = require_once('ubercart.php');
+	return $page_content;
+	
+}
+
+function eccv3_service_file_link_admin() {
+	$page_content = '';   
+   
+ 	$url = "http://".$_SERVER['SERVER_NAME'].$_SERVER['PHP_SELF']; 
+	$final_url=substr($url,0,-9)."eccv3/ubercart";
+   $page_content .= "<br><strong>Use following link to configure the eCC1.</strong>";    
+   $page_content .= "<br><a href=\"".$final_url."\" target=\"_blank\" id='s' value='$final_url'>".$final_url."</a>  ";
+   return $page_content;   
+}

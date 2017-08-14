@@ -1,0 +1,82 @@
+<?php
+
+define('SHOP_YOGA_TUNE_UP_PAGE', 30);
+
+/**
+ * Implements hook_node_view().
+ */
+function product_landing_node_view($node, $view_mode, $langcode)
+{
+    if ($node->type == 'product_landing') {
+        if ($view_mode == 'full') {
+            if (isset($node->content['field_feature_image'][0])) {
+                if (isset($node->content['field_feature_image_video'])) {
+                    $node->content['field_feature_image'][0]['#path'] = array(
+                        'path' => url('https://www.youtube.com/embed/' . $node->content['field_feature_image_video'][0]['#markup']),
+                        'options' => array('attributes' => array('class' => array('youtube-colorbox'))),
+                    );
+                } else if (isset($node->content['field_feature_image_link']['#items'][0]['url'])) {
+                    $node->content['field_feature_image'][0]['#path'] = array('path' => $node->content['field_feature_image_link']['#items'][0]['url']);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function product_landing_block_info()
+{
+    $blocks['product_landing_right'] = array(
+        'info' => t('Product Landing Right'),
+        'cache' => DRUPAL_NO_CACHE
+    );
+
+    $blocks['product_landing_sidebar'] = array(
+        'info' => t('Product Landing Sidebar Listing'),
+        'cache' => DRUPAL_NO_CACHE
+    );
+
+    return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function product_landing_block_view($delta = '')
+{
+    $block = array();
+    if ($delta == 'product_landing_right') {
+        if ($node = menu_get_object()) {
+            $node = node_view($node, 'right_block');
+            if ($node['#bundle'] = 'product_landing') {
+                $node_view = $node;
+                if (isset($node_view['field_right_block_title'][0]['#markup']) && isset($node_view['field_right_block_content'][0]['#markup'])) {
+                    $block['subject'] = t($node_view['field_right_block_title'][0]['#markup']);
+                    $block['content'] = $node_view['field_right_block_content'];
+                }
+            }
+        }
+    } else if ($delta == 'product_landing_sidebar') {
+        $block['subject'] = t('Products of Yoga Tune Up®');
+        $block['content'] = avatar_get_menu_children(SHOP_YOGA_TUNE_UP_PAGE, 'main-menu', 'sidebar', array('product_landing'));
+    }
+    return $block;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function product_landing_entity_info_alter(&$entity_info)
+{
+    $entity_info['node']['view modes']['sidebar'] = array(
+        'label' => t('Sidebar'),
+        'custom settings' => TRUE,
+    );
+
+    $entity_info['node']['view modes']['right_block'] = array(
+        'label' => t('Right Block'),
+        'custom settings' => TRUE,
+    );
+}

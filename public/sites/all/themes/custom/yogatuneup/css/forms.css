@@ -1,0 +1,1649 @@
+/**
+ * @file
+ * Form Styling
+ */
+div.modal-forms-modal-content .modal-content {
+  overflow: hidden;
+}
+div.modal-forms-modal-content .messages {
+  position: static;
+  font-size: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.form-item {
+  /* Wrapper for a form element (or group of form elements) and its label */
+  margin: 1.5em 0;
+}
+.form-item input.error,
+.form-item textarea.error,
+.form-item select.error {
+  /* Highlight the form elements that caused a form submission error */
+  border: 1px solid #c00;
+}
+.form-item label {
+  /* The label for a form element */
+  display: block;
+  font-weight: bold;
+}
+.form-item.webform-container-inline label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  margin-right: 0;
+}
+.form-item label.option {
+  /* The label for a radio button or checkbox */
+  display: inline;
+  font-weight: normal;
+}
+.form-item label > p {
+  display: inline;
+}
+.form-item .form-required {
+  /* The part of the label that indicates a required field */
+  color: #c00;
+}
+.form-item .description {
+  /* The descriptive help text (separate from the label) */
+  font-size: 0.85em;
+}
+.form-checkboxes .form-item, .form-radios .form-item {
+  /* Pack groups of checkboxes and radio buttons closer together */
+  margin: 0;
+  /* Drupal core uses "0.4em 0" */
+}
+
+.form-submit {
+  /* The submit button */
+  display: block;
+}
+
+.container-inline div,
+.container-inline label {
+  /* Inline labels and form divs */
+  display: inline;
+}
+
+.tips {
+  /* Tips for Drupal's input formats */
+}
+
+a.button {
+  /* Buttons used by contrib modules like Media */
+  -moz-appearance: button;
+  -webkit-appearance: button;
+}
+
+/*
+ * Password confirmation
+ */
+.password-parent,
+.confirm-parent {
+  margin: 0;
+}
+
+/*
+ * Search (search-block-form.tpl.php)
+ */
+#block-search-form {
+  /* Wrapper for the search form */
+}
+
+/*
+ * Drupal's default login form block
+ */
+#user-login-form {
+  text-align: left;
+  /* LTR */
+  /*
+   * OpenID
+   *
+   * The default styling for the OpenID login link seems to assume Garland's
+   * styling of list items.
+   */
+}
+#user-login-form ul {
+  /* OpenID creates a new ul above the login form's links. */
+  margin-bottom: 0;
+  /* Position OpenID's ul next to the rest of the links. */
+}
+html.js #user-login-form li.openid-link,
+#user-login-form li.openid-link {
+  /* The "Log in using OpenID" link. */
+  margin-top: 1.5em;
+  margin-left: -20px;
+  /* LTR */
+  /* Un-do some of the padding on the ul list. */
+}
+#user-login-form li.user-link {
+  /* The "Cancel OpenID login" link. */
+  margin-top: 1.5em;
+}
+
+form[id^="user-login"] {
+  width: 252px;
+  font-size: 11px;
+}
+form[id^="user-login"] ul {
+  margin: 1.5em 0;
+}
+form[id^="user-login"] .form-item {
+  color: #666;
+  margin: 2px;
+}
+form[id^="user-login"] .form-item label {
+  width: 80px;
+  text-align: right;
+  padding-right: 4px;
+  font-weight: bold;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+form[id^="user-login"] .form-item .form-text {
+  font-family: 'Trebuchet MS', Verdana, Arial;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  padding: 2px;
+  background: #eee;
+  border: 1px solid #fff;
+  width: 153px;
+  font-size: 14px;
+}
+form[id^="user-login"] .form-actions {
+  margin-left: 86px;
+}
+form[id^="user-login"] .form-actions .form-submit {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  margin: 4px 0 0 4px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+}
+form[id^="user-login"] .form-actions input[value="Log in"] {
+  background-image: url("../images/send.png");
+  width: 50px;
+  height: 24px;
+}
+form[id^="user-login"] .form-actions input[value="Cancel"] {
+  background-image: url("../images/cancel.png");
+  width: 65px;
+  height: 24px;
+}
+form[id^="user-login"] .forgot-password {
+  margin-left: 90px;
+}
+form[id^="user-login"] .fb-signin {
+  margin-top: 31px;
+  border-top: 3px solid #ebecf0;
+  position: relative;
+  text-align: center;
+}
+form[id^="user-login"] .fb-signin h2 {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  padding: 0 10px;
+  margin-left: -38px;
+  background: white;
+}
+form[id^="user-login"] .fb-signin img {
+  margin: 30px auto 0;
+}
+
+#user-pass {
+  font-size: 11px;
+}
+#user-pass .form-item {
+  padding-top: 8px;
+  padding-bottom: 5px;
+  margin-bottom: 0;
+}
+#user-pass .form-item label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  margin-right: 8px;
+  text-align: right;
+  width: 200px;
+}
+#user-pass .form-item .form-text {
+  width: 287px;
+  font-size: 14px;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+#user-pass #recaptcha_area {
+  margin-left: 207px;
+}
+#user-pass .form-actions {
+  padding: 5px 0;
+  margin: 0;
+}
+#user-pass .form-actions #edit-submit {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background-image: url("../images/submit-button.gif");
+  background-repeat: no-repeat;
+  width: 62px;
+  height: 21px;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  margin-left: 211px;
+}
+
+#user-register-form .field-name-field-last-name {
+  display: none;
+}
+#user-register-form .form-item {
+  padding-top: 8px;
+  padding-bottom: 5px;
+  margin: 0;
+  font-size: 11px;
+}
+#user-register-form .form-item > label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  margin-right: 8px;
+  text-align: right;
+  width: 200px;
+}
+#user-register-form .form-item > .form-text {
+  width: 287px;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+#user-register-form .form-item > .description {
+  margin-left: 211px;
+}
+#user-register-form .form-item.form-type-checkbox {
+  padding-left: 211px;
+}
+#user-register-form .form-item.form-type-checkbox label {
+  width: auto;
+}
+#user-register-form .form-item.form-type-checkbox label p {
+  display: inline;
+}
+#user-register-form .form-item.form-type-password-confirm .form-type-password label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  margin-right: 8px;
+  text-align: right;
+  width: 200px;
+}
+#user-register-form .form-item.form-type-password-confirm .form-text {
+  width: auto;
+}
+#user-register-form .form-item.form-type-password-confirm .form-item,
+#user-register-form .form-item.form-type-password-confirm div.password-strength,
+#user-register-form .form-item.form-type-password-confirm div.password-confirm {
+  margin: 0;
+}
+#user-register-form .form-item.form-type-password-confirm .form-item-pass-pass1,
+#user-register-form .form-item.form-type-password-confirm .form-item-pass-pass2 {
+  width: 585px;
+}
+#user-register-form .form-item.form-type-password-confirm .password-suggestions {
+  display: none !important;
+}
+#user-register-form .form-actions {
+  padding: 5px 0;
+  margin: 0;
+}
+#user-register-form .form-actions #edit-submit {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background-image: url("../images/submit-button.gif");
+  background-repeat: no-repeat;
+  width: 62px;
+  height: 21px;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  margin-left: 211px;
+}
+
+.captcha {
+  margin-left: 211px;
+}
+
+#teacher-search-form {
+  font-size: 11px;
+}
+#teacher-search-form .form-type-select {
+  margin: 0;
+  margin-bottom: 10px;
+}
+#teacher-search-form .form-type-select #edit-teacher {
+  width: 100%;
+}
+#teacher-search-form .form-submit,
+#teacher-search-form .meet-all-teachers {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  height: 21px;
+}
+.lt-ie8 #teacher-search-form .form-submit, .lt-ie8
+#teacher-search-form .meet-all-teachers {
+  display: block;
+  float: left;
+}
+#teacher-search-form .form-submit {
+  width: 91px;
+  background-image: url("../images/search-button.gif");
+  margin-right: 3px;
+  display: none;
+}
+#teacher-search-form .meet-all-teachers {
+  width: 119px;
+  background-image: url("../images/meet-all-teachers.gif");
+}
+
+#teacher-search-zip-radius-form {
+  font-size: 11px;
+  margin-top: 10px;
+  border-top: 1px solid #E8E8E8;
+  padding-top: 10px;
+}
+#teacher-search-zip-radius-form .form-item {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  margin-bottom: 10px;
+}
+#teacher-search-zip-radius-form .form-item.form-item-zip-code {
+  margin-right: 10px;
+}
+#teacher-search-zip-radius-form .form-item.form-item-country {
+  width: 100%;
+}
+#teacher-search-zip-radius-form .form-item.form-item-country select {
+  width: 100%;
+}
+#teacher-search-zip-radius-form .form-submit {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  height: 21px;
+  width: 91px;
+  background-image: url("../images/search-button.gif");
+}
+.lt-ie8 #teacher-search-zip-radius-form .form-submit {
+  display: block;
+  float: left;
+}
+
+.sep {
+  border-top: 1px solid #E8E8E8;
+  text-align: center;
+}
+.sep span {
+  display: block;
+  margin: -8px auto 0 auto;
+  background-color: #FFF;
+  width: 40px;
+}
+
+#workshop-ajax-wrapper form,
+#class-ajax-wrapper form {
+  margin-left: 137px;
+}
+#workshop-ajax-wrapper form .form-item,
+#class-ajax-wrapper form .form-item {
+  margin: 5px 8px 5px 0;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+#workshop-ajax-wrapper form .form-item label,
+#class-ajax-wrapper form .form-item label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  width: 60px;
+}
+#workshop-ajax-wrapper form .form-item label[for^="edit-zip"], #workshop-ajax-wrapper form .form-item label[for^="edit-radius"],
+#class-ajax-wrapper form .form-item label[for^="edit-zip"],
+#class-ajax-wrapper form .form-item label[for^="edit-radius"] {
+  display: block;
+  width: auto;
+}
+#workshop-ajax-wrapper form .form-item select,
+#class-ajax-wrapper form .form-item select {
+  width: 155px;
+}
+#workshop-ajax-wrapper form .submit-wrapper,
+#class-ajax-wrapper form .submit-wrapper {
+  margin-top: 8px;
+}
+#workshop-ajax-wrapper form .submit-wrapper .form-submit,
+#class-ajax-wrapper form .submit-wrapper .form-submit {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  height: 18px;
+  width: 103px;
+  background-image: url("../images/find-workshops-retreats.gif");
+  margin-right: 10px;
+}
+.lt-ie8 #workshop-ajax-wrapper form .submit-wrapper .form-submit, .lt-ie8
+#class-ajax-wrapper form .submit-wrapper .form-submit {
+  display: block;
+  float: left;
+}
+#workshop-ajax-wrapper form .submit-wrapper .find-all,
+#class-ajax-wrapper form .submit-wrapper .find-all {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  height: 18px;
+  width: 103px;
+  background-image: url("../images/find-all.gif");
+}
+.lt-ie8 #workshop-ajax-wrapper form .submit-wrapper .find-all, .lt-ie8
+#class-ajax-wrapper form .submit-wrapper .find-all {
+  display: block;
+  float: left;
+}
+#workshop-ajax-wrapper form .sep,
+#class-ajax-wrapper form .sep {
+  margin-top: 15px;
+}
+
+form[id^="webform-client-form-12"] .webform-component-checkboxes label {
+  vertical-align: top;
+}
+form[id^="webform-client-form-12"] .webform-component-checkboxes label[for="edit-submitted-send-me-monthly-newsletters"] {
+  visibility: hidden;
+}
+form[id^="webform-client-form-12"] .webform-component-checkboxes .form-checkboxes {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+}
+form[id^="webform-client-form-12"] .webform-component-checkboxes .form-checkboxes > .form-item {
+  display: block;
+  margin: 5px 0 !important;
+}
+form[id^="webform-client-form-12"] .webform-component-checkboxes .form-checkboxes > .form-item label {
+  font-size: 1.2em;
+}
+form[id^="webform-client-form-12"] .street-block,
+form[id^="webform-client-form-12"] .form-item-submitted-address-postal-code {
+  display: none;
+}
+
+#webform-client-form-11 label,
+form[id^="webform-client-form-12"] label,
+#webform-client-form-65 label {
+  width: 200px;
+  text-align: right;
+  padding-right: 5px;
+  vertical-align: middle;
+  font-size: 11px;
+}
+.block-webform #webform-client-form-11 label, .block-webform
+form[id^="webform-client-form-12"] label, .block-webform
+#webform-client-form-65 label {
+  width: 88px;
+  text-align: left;
+}
+.page-cart-checkout-complete .block-webform #webform-client-form-11 label, .page-cart-checkout-complete .block-webform
+form[id^="webform-client-form-12"] label, .page-cart-checkout-complete .block-webform
+#webform-client-form-65 label {
+  width: 200px;
+  text-align: right;
+}
+#webform-client-form-11 div[id^="addressfield-wrapper"] .addressfield-container-inline > div.form-item,
+form[id^="webform-client-form-12"] div[id^="addressfield-wrapper"] .addressfield-container-inline > div.form-item,
+#webform-client-form-65 div[id^="addressfield-wrapper"] .addressfield-container-inline > div.form-item {
+  float: none;
+  margin: 1.5em 0;
+}
+#webform-client-form-11 div[id^="addressfield-wrapper"] .form-item label,
+form[id^="webform-client-form-12"] div[id^="addressfield-wrapper"] .form-item label,
+#webform-client-form-65 div[id^="addressfield-wrapper"] .form-item label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+.block-webform #webform-client-form-11 .form-item, .block-webform
+form[id^="webform-client-form-12"] .form-item, .block-webform
+#webform-client-form-65 .form-item {
+  margin: 5px 0;
+}
+.page-cart-checkout-complete .block-webform #webform-client-form-11 .form-item, .page-cart-checkout-complete .block-webform
+form[id^="webform-client-form-12"] .form-item, .page-cart-checkout-complete .block-webform
+#webform-client-form-65 .form-item {
+  margin: 1.5em 0;
+}
+#webform-client-form-11 .form-text,
+form[id^="webform-client-form-12"] .form-text,
+#webform-client-form-65 .form-text {
+  width: 280px;
+}
+.block-webform #webform-client-form-11 .form-text, .block-webform
+form[id^="webform-client-form-12"] .form-text, .block-webform
+#webform-client-form-65 .form-text {
+  width: 126px;
+}
+.page-cart-checkout-complete .block-webform #webform-client-form-11 .form-text, .page-cart-checkout-complete .block-webform
+form[id^="webform-client-form-12"] .form-text, .page-cart-checkout-complete .block-webform
+#webform-client-form-65 .form-text {
+  width: 280px;
+}
+#webform-client-form-11 .webform-component-textarea .form-textarea-wrapper,
+form[id^="webform-client-form-12"] .webform-component-textarea .form-textarea-wrapper,
+#webform-client-form-65 .webform-component-textarea .form-textarea-wrapper {
+  width: 280px;
+}
+#webform-client-form-11 .webform-component-textarea .form-textarea-wrapper,
+#webform-client-form-11 .webform-component-textarea label,
+form[id^="webform-client-form-12"] .webform-component-textarea .form-textarea-wrapper,
+form[id^="webform-client-form-12"] .webform-component-textarea label,
+#webform-client-form-65 .webform-component-textarea .form-textarea-wrapper,
+#webform-client-form-65 .webform-component-textarea label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+#webform-client-form-11 .captcha .form-item label,
+form[id^="webform-client-form-12"] .captcha .form-item label,
+#webform-client-form-65 .captcha .form-item label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+#webform-client-form-11 .captcha .form-text,
+form[id^="webform-client-form-12"] .captcha .form-text,
+#webform-client-form-65 .captcha .form-text {
+  width: auto;
+}
+#webform-client-form-11 .captcha img,
+form[id^="webform-client-form-12"] .captcha img,
+#webform-client-form-65 .captcha img {
+  margin-left: 205px;
+}
+.block-webform #webform-client-form-11 .captcha img, .block-webform
+form[id^="webform-client-form-12"] .captcha img, .block-webform
+#webform-client-form-65 .captcha img {
+  margin-left: 93px;
+  width: 132px;
+  height: 35px;
+}
+#webform-client-form-11 .form-submit,
+form[id^="webform-client-form-12"] .form-submit,
+#webform-client-form-65 .form-submit {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  background-image: url("../images/submit-button.gif");
+  width: 62px;
+  height: 21px;
+  margin-left: 205px;
+}
+.lt-ie8 #webform-client-form-11 .form-submit, .lt-ie8
+form[id^="webform-client-form-12"] .form-submit, .lt-ie8
+#webform-client-form-65 .form-submit {
+  display: block;
+  float: left;
+}
+.block-webform #webform-client-form-11 .form-submit, .block-webform
+form[id^="webform-client-form-12"] .form-submit, .block-webform
+#webform-client-form-65 .form-submit {
+  margin-left: 0;
+}
+.page-cart-checkout-complete .block-webform #webform-client-form-11 .form-submit, .page-cart-checkout-complete .block-webform
+form[id^="webform-client-form-12"] .form-submit, .page-cart-checkout-complete .block-webform
+#webform-client-form-65 .form-submit {
+  margin-left: 205px;
+}
+
+#webform-client-form-65 .street-block,
+#webform-client-form-65 .form-item-submitted-address-postal-code {
+  display: none;
+}
+
+.training-search-form-wrapper fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.training-search-form-wrapper .form-item {
+  margin: 0;
+  margin-bottom: 15px;
+}
+.training-search-form-wrapper .form-item select {
+  width: 100%;
+}
+.training-search-form-wrapper .form-submit,
+.training-search-form-wrapper .search-all-trainings {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  height: 21px;
+  margin-right: 10px;
+}
+.lt-ie8 .training-search-form-wrapper .form-submit, .lt-ie8
+.training-search-form-wrapper .search-all-trainings {
+  display: block;
+  float: left;
+}
+.training-search-form-wrapper .form-item-state,
+.training-search-form-wrapper .form-item-city {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+.training-search-form-wrapper .form-item-state select,
+.training-search-form-wrapper .form-item-city select {
+  width: auto;
+}
+.training-search-form-wrapper .form-item-state {
+  margin-right: 20px;
+}
+.training-search-form-wrapper .form-submit {
+  background-image: url("../images/submit-button.gif");
+  width: 62px;
+}
+.training-search-form-wrapper .search-all-trainings {
+  background-image: url("../images/all-trainings.gif");
+  width: 131px;
+}
+
+#video-get-free-video-form {
+  text-align: center;
+}
+#video-get-free-video-form .form-submit {
+  margin: 20px auto 0 auto;
+}
+#video-get-free-video-form .form-actions a {
+  line-height: 24px;
+  margin: 0 10px;
+}
+
+#group-coaching-call-archives-form #edit-archives {
+  width: 300px;
+}
+#group-coaching-call-archives-form #edit-submit {
+  display: none;
+}
+
+#webform-client-form-54 {
+  margin: 0 auto;
+  border: 2px solid #eee;
+  padding: 10px 40px;
+  font-size: 14px;
+}
+#webform-client-form-54 .red-label {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #993300;
+  font-weight: normal;
+}
+#webform-client-form-54 .form-item {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+#webform-client-form-54 > div > .webform-component, #webform-client-form-54 > div > .webform-component-fieldset {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E8E8E8;
+  margin-bottom: 10px;
+}
+#webform-client-form-54 > div > .webform-component > label, #webform-client-form-54 > div > .webform-component-fieldset > label {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #993300;
+  font-weight: normal;
+}
+#webform-client-form-54 fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+#webform-client-form-54 fieldset .fieldset-wrapper label {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #993300;
+  font-weight: normal;
+}
+#webform-client-form-54 .form-type-checkbox input {
+  margin: 5px 1px;
+}
+#webform-client-form-54 .form-type-radio {
+  margin-bottom: 10px;
+}
+#webform-client-form-54 .form-type-radio label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  max-width: 282px;
+}
+#webform-client-form-54 .form-type-radio input {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+}
+#webform-client-form-54 .form-type-radio strong {
+  display: block;
+}
+#webform-client-form-54 .webform-grid .form-type-radio {
+  margin: 3px 0;
+}
+#webform-client-form-54 .webform-grid th {
+  font-size: 14px;
+}
+#webform-client-form-54 .webform-grid tr.odd {
+  background-color: transparent;
+}
+#webform-client-form-54 .webform-grid td {
+  padding: 5px 0;
+}
+#webform-client-form-54 > div > .webform-component-textfield, #webform-client-form-54 > div > .webform-component-email {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  width: 180px;
+}
+#webform-client-form-54 > div > .webform-component-textfield label, #webform-client-form-54 > div > .webform-component-email label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 5px;
+}
+#webform-client-form-54 > div > .webform-component-textfield input, #webform-client-form-54 > div > .webform-component-email input {
+  font-size: 11px;
+  border: 1px solid #CCCFD3;
+  padding-left: 5px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  background-image: url("../images/input-bg.gif");
+  background-position: left top;
+  background-repeat: repeat-x;
+  width: 180px;
+}
+#webform-client-form-54 > div > .webform-component-textfield input.error, #webform-client-form-54 > div > .webform-component-email input.error {
+  border: 1px solid #c00;
+}
+#webform-client-form-54 > div .webform-component-textfield {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  margin-right: 50px;
+  margin-bottom: 10px;
+}
+#webform-client-form-54 > div .webform-component-email {
+  width: 100%;
+  margin-right: 0;
+}
+#webform-client-form-54 #webform-component-gender,
+#webform-client-form-54 #webform-component-are-you-pregnant,
+#webform-client-form-54 #webform-component-check-with-doctor-confirm,
+#webform-client-form-54 #webform-component-age,
+#webform-client-form-54 #webform-component-height,
+#webform-client-form-54 #webform-component-weight {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+#webform-client-form-54 #webform-component-gender > label,
+#webform-client-form-54 #webform-component-are-you-pregnant > label,
+#webform-client-form-54 #webform-component-check-with-doctor-confirm > label,
+#webform-client-form-54 #webform-component-age > label,
+#webform-client-form-54 #webform-component-height > label,
+#webform-client-form-54 #webform-component-weight > label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
+}
+#webform-client-form-54 #webform-component-gender,
+#webform-client-form-54 #webform-component-are-you-pregnant,
+#webform-client-form-54 #webform-component-check-with-doctor-confirm,
+#webform-client-form-54 #webform-component-age,
+#webform-client-form-54 #webform-component-height,
+#webform-client-form-54 #webform-component-weight {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  width: 169px;
+  margin-bottom: 10px;
+}
+#webform-client-form-54 #webform-component-check-with-doctor-confirm {
+  font-size: 11px;
+}
+#webform-client-form-54 #webform-component-check-with-doctor-confirm input {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  margin: 0 1px;
+}
+#webform-client-form-54 #webform-component-check-with-doctor-confirm label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  width: 120px;
+}
+#webform-client-form-54 .last-page {
+  border-top: 1px solid #E8E8E8;
+  padding-top: 10px;
+}
+#webform-client-form-54 #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-2 tr {
+  border-left: 1px solid #ccc;
+}
+#webform-client-form-54 #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-2 thead tr {
+  border-left: 0;
+}
+#webform-client-form-54 #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-1,
+#webform-client-form-54 .form-checkboxes {
+  padding-left: 20px;
+}
+#webform-client-form-54 #edit-previous {
+  float: left;
+}
+#webform-client-form-54 .next {
+  float: right;
+}
+#webform-client-form-54 .next span {
+  display: block;
+  float: left;
+  background-image: url("../images/arrows-green-25.png");
+  background-position: center right;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+  font-size: 16px;
+  line-height: 45px;
+  margin-right: 10px;
+}
+#webform-client-form-54 .next #edit-next,
+#webform-client-form-54 .next #edit-submit {
+  float: left;
+  margin-top: 8px;
+}
+#webform-client-form-54 #edit-previous {
+  float: left;
+  margin-top: 8px;
+}
+#webform-client-form-54 #webform-component-do-you-have-any-physical-ailments-or-pains .webform-component-webform_grid {
+  float: left;
+}
+#webform-client-form-54 #webform-component-do-you-have-any-physical-ailments-or-pains .webform-component-webform_grid .grid-row-checkbox {
+  float: left;
+  margin-right: 5px;
+}
+#webform-client-form-54 #webform-component-do-you-have-any-physical-ailments-or-pains #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-2 .webform-grid-question {
+  display: none;
+}
+
+form[id^="uc-cart-view-form"] table {
+  width: 100%;
+}
+form[id^="uc-cart-view-form"] table thead {
+  background-color: #FDFAE8;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 26px;
+}
+form[id^="uc-cart-view-form"] table thead tr th {
+  padding: 3px 5px;
+}
+form[id^="uc-cart-view-form"] table tbody tr.odd, form[id^="uc-cart-view-form"] table tbody tr.even {
+  background-color: transparent;
+}
+form[id^="uc-cart-view-form"] table tbody tr td {
+  vertical-align: middle;
+  padding: 3px 5px;
+  text-align: left;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.remove {
+  padding-left: 23px;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.remove input {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  font-size: 11px;
+  line-height: 16px;
+  background-color: transparent;
+  color: #3776C0;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.price {
+  text-align: right;
+  color: #FF7E00;
+  font-size: 15px;
+  font-weight: bold;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.desc > a {
+  margin-right: 20px;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.subtotal, form[id^="uc-cart-view-form"] table tbody tr td.coupon {
+  background-color: #FDFAE8;
+  line-height: 26px;
+  text-align: right;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.subtotal #subtotal-title,
+form[id^="uc-cart-view-form"] table tbody tr td.subtotal #coupon-title, form[id^="uc-cart-view-form"] table tbody tr td.coupon #subtotal-title,
+form[id^="uc-cart-view-form"] table tbody tr td.coupon #coupon-title {
+  margin-right: 5px;
+  font-weight: bold;
+}
+form[id^="uc-cart-view-form"] table tbody tr td.subtotal .uc-price, form[id^="uc-cart-view-form"] table tbody tr td.coupon .uc-price {
+  color: #FF7E00;
+  font-size: 15px;
+  font-weight: bold;
+}
+form[id^="uc-cart-view-form"] .cart-top {
+  text-align: left;
+  padding: 8px 0;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+form[id^="uc-cart-view-form"] .cart-top a {
+  float: left;
+}
+form[id^="uc-cart-view-form"] .cart-top a.continue-shopping {
+  display: block;
+  background-image: url("../images/continue-shopping.gif");
+  background-repeat: no-repeat;
+  padding-left: 19px;
+  font-size: 11px;
+  line-height: 16px;
+}
+form[id^="uc-cart-view-form"] .cart-top .form-submit {
+  float: left;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background-repeat: no-repeat;
+  padding-left: 19px;
+  font-size: 11px;
+  line-height: 16px;
+  background-color: transparent;
+  text-decoration: underline;
+  color: #3776C0;
+  border-right: 1px solid #e7a757;
+  padding-right: 6px;
+  margin-right: 6px;
+}
+form[id^="uc-cart-view-form"] .cart-top .form-submit[name="update-cart"] {
+  background-image: url("../images/update-cart.gif");
+}
+form[id^="uc-cart-view-form"] .cart-top #edit-empty, form[id^="uc-cart-view-form"] .cart-top #edit-empty--2 {
+  background-image: url("../images/empty-cart.gif");
+  padding-left: 24px;
+}
+form[id^="uc-cart-view-form"] .form-actions {
+  display: inline-block;
+  width: 100%;
+  padding-top: 10px;
+}
+form[id^="uc-cart-view-form"] .form-actions input[type="submit"] {
+  background: #7CC106;
+  margin: 0;
+  padding: 10px 25px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: normal;
+  border: 1px solid #7cc106;
+  color: white;
+  float: right;
+  font-size: 18px;
+}
+
+#uc-cart-pane-quotes #quote {
+  padding: 10px;
+}
+#uc-cart-pane-quotes #quote ul {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+#uc-cart-pane-quotes #quote ul li {
+  list-style-type: none;
+  list-style-image: none;
+}
+#uc-cart-pane-quotes #quote ul li {
+  margin: 10px 0;
+}
+
+#uc-cart-empty-confirm .form-submit {
+  display: inline;
+  margin-right: 10px;
+}
+
+.uc-cart-checkout-form fieldset.form-wrapper {
+  border: 0;
+}
+.uc-cart-checkout-form fieldset.form-wrapper legend {
+  display: none;
+}
+.uc-cart-checkout-form tbody {
+  border-top: 0;
+}
+.uc-cart-checkout-form #cart-pane .cart-review thead {
+  background-color: #EBF4FC;
+  line-height: 23px;
+  border-top: 1px solid #E8E8E8;
+  border-bottom: 1px solid #E8E8E8;
+}
+.uc-cart-checkout-form #cart-pane .cart-review thead th {
+  color: #3776C0;
+  padding: 0 5px;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr {
+  line-height: 30px;
+  background-color: #fff;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr.subtotal {
+  background-color: #EBF4FC;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr.coupon {
+  background-color: #FDFAE8;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td {
+  padding: 0 5px;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td.coupon {
+  text-align: right;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td.coupon .coupon-title {
+  font-weight: bold;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td.subtotal #subtotal-title,
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td.subtotal .coupon-title, .uc-cart-checkout-form #cart-pane .cart-review tbody tr td.coupon #subtotal-title,
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td.coupon .coupon-title {
+  font-size: 14px;
+  margin-right: 10px;
+  color: #3776C0;
+}
+.uc-cart-checkout-form #cart-pane .cart-review tbody tr td.subtotal .uc-price, .uc-cart-checkout-form #cart-pane .cart-review tbody tr td.coupon .uc-price {
+  color: #FF7E00;
+  font-size: 15px;
+  font-weight: bold;
+}
+.uc-cart-checkout-form #coupon-pane,
+.uc-cart-checkout-form #customer-pane {
+  display: block;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #E8E8E8;
+  margin-bottom: 20px;
+}
+.uc-cart-checkout-form #coupon-pane input[type="text"] {
+  margin-bottom: 10px;
+}
+.uc-cart-checkout-form #delivery-pane,
+.uc-cart-checkout-form #billing-pane {
+  vertical-align: top;
+}
+.uc-cart-checkout-form #delivery-pane .field-wrapper,
+.uc-cart-checkout-form #billing-pane .field-wrapper {
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 10px;
+}
+.uc-cart-checkout-form #delivery-pane select,
+.uc-cart-checkout-form #billing-pane select {
+  width: 199px;
+  height: 19px;
+}
+.uc-cart-checkout-form #delivery-pane label.field-label,
+.uc-cart-checkout-form #billing-pane label.field-label {
+  float: left;
+  width: 31%;
+  margin-right: 20px;
+}
+.uc-cart-checkout-form #delivery-pane .form-type-uc-addresses-address-select,
+.uc-cart-checkout-form #billing-pane .form-type-uc-addresses-address-select {
+  overflow: hidden;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E8E8E8;
+  margin-bottom: 10px;
+}
+.uc-cart-checkout-form #delivery-pane .form-type-uc-addresses-address-select label,
+.uc-cart-checkout-form #billing-pane .form-type-uc-addresses-address-select label {
+  float: left;
+  margin-right: 4px;
+  margin-left: 19px;
+}
+.uc-cart-checkout-form #delivery-pane .form-item-panes-billing-copy-address,
+.uc-cart-checkout-form #billing-pane .form-item-panes-billing-copy-address {
+  margin-bottom: 10px;
+}
+.uc-cart-checkout-form #quotes-pane {
+  padding-top: 20px;
+  border-top: 1px solid #E8E8E8;
+  margin-top: 20px;
+  clear: both;
+}
+.uc-cart-checkout-form #quotes-pane .progress {
+  margin-top: 10px;
+  margin-left: -1px;
+}
+.uc-cart-checkout-form #quotes-pane #quote {
+  border: 0;
+}
+.uc-cart-checkout-form #quotes-pane .form-item {
+  margin: 10px 0;
+}
+.uc-cart-checkout-form #quotes-pane .form-item label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: middle;
+}
+.uc-cart-checkout-form #quotes-pane .form-item label img {
+  display: block;
+}
+.uc-cart-checkout-form #payment-pane {
+  padding-top: 20px;
+  border-top: 1px solid #E8E8E8;
+}
+.uc-cart-checkout-form #payment-pane .form-item-panes-payment-payment-method {
+  margin: 10px 0;
+}
+.uc-cart-checkout-form #payment-pane .update-credit-card {
+  margin-top: 5px;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+.uc-cart-checkout-form #payment-pane #payment-details {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.uc-cart-checkout-form #payment-pane #payment-details.payment-details-credit input, .uc-cart-checkout-form #payment-pane #payment-details.payment-details-credit select {
+  float: none;
+}
+.uc-cart-checkout-form #payment-pane #payment-details .form-item-panes-payment-details-cc-cvv input {
+  float: left;
+}
+.uc-cart-checkout-form #payment-pane #payment-details .form-item-panes-payment-details-cc-save {
+  display: none;
+}
+.uc-cart-checkout-form #uc_user_credit-pane {
+  padding-top: 20px;
+  border-top: 1px solid #E8E8E8;
+}
+.uc-cart-checkout-form #order_summary-pane div[id^="edit-panes-order-summary-coupons"] {
+  display: none;
+}
+.uc-cart-checkout-form #order_summary-pane table {
+  border: 1px solid #E8E8E8;
+  border-bottom: 0;
+  width: 100%;
+}
+.uc-cart-checkout-form #order_summary-pane tr {
+  line-height: 30px;
+  background-color: #EBF4FC;
+  border: 1px solid #E8E8E8;
+}
+.uc-cart-checkout-form #order_summary-pane tr .title {
+  font-size: 14px;
+  margin-right: 10px;
+  color: #3776C0;
+  font-weight: bold;
+}
+.uc-cart-checkout-form #order_summary-pane tr .title .order-summary-remove {
+  font-size: 12px;
+  margin: 0 20px;
+  background: none !important;
+  border: medium none;
+  border-radius: 0;
+  color: #3776c0 !important;
+  font-size: 14px;
+  font-weight: normal;
+  text-decoration: underline;
+}
+.uc-cart-checkout-form #order_summary-pane tr .title .ajax-progress {
+  display: none;
+  vertical-align: text-top;
+}
+.uc-cart-checkout-form #order_summary-pane tr.line-item-total .uc-price {
+  color: #FF7E00;
+  font-size: 15px;
+  font-weight: bold;
+}
+.uc-cart-checkout-form #order_summary-pane td {
+  padding: 0 5px;
+}
+.uc-cart-checkout-form #subscription_confirm-pane .form-item-panes-subscription-confirm-sub-confirm {
+  float: right;
+}
+.uc-cart-checkout-form #subscription_confirm-pane .form-item-panes-subscription-confirm-sub-confirm input[type="checkbox"] {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  margin-right: 5px;
+}
+.uc-cart-checkout-form #subscription_confirm-pane .form-item-panes-subscription-confirm-sub-confirm label {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  width: 240px;
+}
+.uc-cart-checkout-form .form-actions {
+  padding: 0 10px;
+}
+.uc-cart-checkout-form .form-actions .form-submit {
+  display: inline;
+}
+.uc-cart-checkout-form .form-actions #edit-cancel {
+  float: left;
+  background: none !important;
+  border: medium none;
+  border-radius: 0;
+  color: #3776c0 !important;
+  float: left;
+  font-size: 14px;
+  font-weight: normal;
+  text-decoration: underline;
+}
+
+.order-review-table {
+  font-size: 1.2em;
+  width: 100%;
+  margin-top: 20px;
+}
+.order-review-table .data-col {
+  padding: 0 10px;
+}
+.order-review-table td {
+  padding-left: 10px;
+}
+.order-review-table .cart-review {
+  width: 100%;
+}
+.order-review-table .cart-review thead {
+  background-color: #EBF4FC;
+  line-height: 23px;
+  border-top: 1px solid #E8E8E8;
+  border-bottom: 1px solid #E8E8E8;
+}
+.order-review-table .cart-review thead th {
+  color: #3776C0;
+  padding: 0 5px;
+}
+.order-review-table .cart-review tbody tr {
+  line-height: 30px;
+  background-color: #fff;
+}
+.order-review-table .cart-review tbody tr.subtotal {
+  background-color: #EBF4FC;
+}
+.order-review-table .cart-review tbody tr.coupon {
+  background-color: #FDFAE8;
+}
+.order-review-table .cart-review tbody tr td {
+  padding: 0 5px;
+}
+.order-review-table .cart-review tbody tr td .uc-price {
+  color: #FF7E00;
+  font-size: 15px;
+  font-weight: bold;
+}
+.order-review-table .cart-review tbody tr td.coupon {
+  text-align: right;
+}
+.order-review-table .cart-review tbody tr td.coupon .coupon-title {
+  font-weight: bold;
+}
+.order-review-table .cart-review tbody tr td.subtotal #subtotal-title,
+.order-review-table .cart-review tbody tr td.subtotal .coupon-title, .order-review-table .cart-review tbody tr td.coupon #subtotal-title,
+.order-review-table .cart-review tbody tr td.coupon .coupon-title {
+  font-size: 14px;
+  margin-right: 10px;
+  color: #3776C0;
+}
+.order-review-table .pane-title-row {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+  background-color: #FDFAE8;
+  line-height: 36px;
+  text-align: left;
+  padding-left: 20px;
+}
+.order-review-table .title-col {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.order-review-table .review-button-row td {
+  padding-bottom: 1em;
+}
+.order-review-table .review-button-row #edit-back {
+  float: left;
+}
+.order-review-table .review-button-row .form-submit {
+  display: inline;
+  margin: 0 10px;
+}
+
+#authnet-user-payment-profiles-list-form .authnet-add-payment-profile {
+  margin-bottom: 10px;
+  display: block;
+}
+#authnet-user-payment-profiles-list-form table {
+  border: 1px solid #E8E8E8;
+  border-bottom: 0;
+  width: 100%;
+}
+#authnet-user-payment-profiles-list-form tr {
+  line-height: 30px;
+  background-color: #EBF4FC;
+  border: 1px solid #E8E8E8;
+}
+#authnet-user-payment-profiles-list-form tr .title {
+  font-size: 14px;
+  margin-right: 10px;
+  color: #3776C0;
+  font-weight: bold;
+}
+#authnet-user-payment-profiles-list-form tr.line-item-total .uc-price {
+  color: #FF7E00;
+  font-size: 15px;
+  font-weight: bold;
+}
+#authnet-user-payment-profiles-list-form td, #authnet-user-payment-profiles-list-form th {
+  padding: 0 5px;
+}
+#authnet-user-payment-profiles-list-form tbody tr {
+  background-color: transparent;
+}
+#authnet-user-payment-profiles-list-form #edit-submit {
+  margin-top: 10px;
+}
+
+#pose-email-form {
+  float: right;
+  margin-top: -7px;
+  margin-right: 10px;
+  padding: 5px;
+  border: 2px solid #EBECF0;
+}
+#pose-email-form .form-item-pose-email,
+#pose-email-form #edit-submit {
+  display: inline;
+}
+#pose-email-form .form-item-pose-email {
+  margin-right: 10px;
+}
+#pose-email-form .form-item-pose-email label.option {
+  color: #3776C0;
+  font-weight: bold;
+}
+
+#at-home-subscription-shipping-options-form .form-item {
+  line-height: 23px;
+  margin: 0;
+}
+#at-home-subscription-shipping-options-form .form-item-hold-options {
+  float: right;
+  margin-top: -34px;
+  margin-right: 50px;
+}
+#at-home-subscription-shipping-options-form label[for="edit-shipping-options"] {
+  font-size: 14px;
+  margin-bottom: 11px;
+}
+#at-home-subscription-shipping-options-form #edit-shipping-options {
+  margin-bottom: 12px;
+}
+#at-home-subscription-shipping-options-form .shipping-options-description {
+  font-size: 12px;
+  line-height: 23px;
+  font-weight: normal;
+  margin-bottom: 10px;
+}
+
+#at-home-subscription-queue-form .form-actions {
+  margin: 0;
+  margin-top: 11px;
+  margin-bottom: 11px;
+}
+#at-home-subscription-queue-form .form-actions input[type="submit"] {
+  display: inline;
+  margin: 0 10px;
+}
+#at-home-subscription-queue-form .form-actions input[type="submit"]:first-child {
+  margin-left: 0;
+}
+#at-home-subscription-queue-form .level {
+  width: 185px;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  margin-right: 24px;
+}
+#at-home-subscription-queue-form .level h3 {
+  border-bottom: 1px solid #ebecf0;
+}
+#at-home-subscription-queue-form fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+#at-home-subscription-queue-form .form-type-checkbox {
+  padding-right: 10px;
+  border-bottom: 1px solid #ebecf0;
+  line-height: 35px;
+  margin: 0;
+}
+#at-home-subscription-queue-form .form-type-checkbox label span.title.skipped {
+  color: #999;
+}
+#at-home-subscription-queue-form .form-type-checkbox label span.status {
+  float: right;
+}
+#at-home-subscription-queue-form .form-type-checkbox label span.status.shipping-next {
+  color: #ff7c13;
+  font-style: italic;
+}
+#at-home-subscription-queue-form .form-type-checkbox.form-disabled label {
+  color: #999;
+}
+
+#uc-addresses-get-address-form .form-submit {
+  margin-top: 10px;
+  margin-right: 20px;
+  display: inline;
+}
+
+#authnet-user-payment-profile-form .form-item label {
+  float: left;
+  width: 120px;
+}
+#authnet-user-payment-profile-form .form-submit {
+  margin-top: 10px;
+}
+
+#at-home-subscription-cancel-form .form-submit {
+  display: inline;
+  margin-right: 10px;
+}
+
+#user-profile-form #edit-overlay-control {
+  display: none;
+}
+#user-profile-form .account-column {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  width: 30%;
+}
+#user-profile-form .field-name-field-location fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+#user-profile-form .field-name-field-location fieldset legend {
+  display: none;
+}
+#user-profile-form .field-name-field-location fieldset .form-item {
+  margin: 0;
+  margin-right: 1em;
+  margin-bottom: 1.5em;
+  float: none;
+}
+#user-profile-form .field-name-field-location fieldset .street-block {
+  display: none;
+}
+
+#teacher-cec-tracking-form table th {
+  text-transform: uppercase;
+}
+#teacher-cec-tracking-form table td {
+  padding: 2px;
+  border: 1px solid #ccc;
+}
+#teacher-cec-tracking-form input[type="text"] {
+  width: 100%;
+  padding: 0;
+  border: 0;
+}
+#teacher-cec-tracking-form input[type="submit"] {
+  margin: 0 auto;
+}
+#teacher-cec-tracking-form .item-list .pager {
+  margin-top: 1em;
+}
+#teacher-cec-tracking-form .cec-remove {
+  color: red;
+  font-weight: bold;
+  text-decoration: none;
+  vertical-align: middle;
+  display: block;
+  padding: 2px;
+}
+
+#cart-custom-text {
+  margin-bottom: 20px;
+}
+
+/*
+ * Drupal admin tables
+ *
+ * We overrode these styles in normalize.css, but restore them for the admin
+ * section of the site.
+ */
+form th {
+  text-align: left;
+  /* LTR */
+  padding-right: 1em;
+  /* LTR */
+  border-bottom: 3px solid #ccc;
+}
+form tbody {
+  border-top: 1px solid #ccc;
+}
+form tr.even {
+  background-color: #fff;
+}
+form table .item-list ul {
+  margin: 0;
+}
+
+.lt-ie8 tr.even th,
+.lt-ie8 tr.even td,
+.lt-ie8 tr.odd th,
+.lt-ie8 tr.odd td {
+  border-bottom: 1px solid #ccc;
+  /* IE doesn't display borders on table rows */
+}
+
+/*
+ * Drupal core wrongly puts this in system.menus.css. Since we override that, add it back.
+ */
+td.menu-disabled {
+  background: #ccc;
+}

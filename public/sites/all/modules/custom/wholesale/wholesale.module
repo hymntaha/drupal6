@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * Implements hook_coupon_item_can_use_coupon().
+ *
+ * If a non-wholesale code is applied to an order, check if any wholesale codes where already
+ * applied to the item. If the item already has already been discounted by a wholesale code,
+ * then do not allow any other discounts to be applied to it.
+ */
+function wholesale_coupon_item_can_use_coupon($item, $coupon, $order){
+	if(!wholesale_coupon_is_wholesale($coupon->code)){
+		if(isset($order->data['coupons'])){
+			foreach($order->data['coupons'] as $code => $items){
+				if(wholesale_coupon_is_wholesale($code)){
+					foreach($items as $item_id => $order_item){
+						if($item_id == $item->nid){
+							return false;
+						}
+					}
+				}
+			}
+		}
+	}
+	return true;
+}
+
+function wholesale_coupon_is_wholesale($coupon_code){
+	if(substr($coupon_code,0,3) == 'WHL'){
+		return true;
+	}
+	return false;
+}
+
+function wholesale_cart_has_wholesale(){
+	$cart = uc_cart_get_contents();
+	foreach($cart as $item){
+      if(isset($item->data['uc_coupon'])){
+        foreach($item->data['uc_coupon'] as $code => $price_override){
+          if(wholesale_coupon_is_wholesale($code)){
+            return true;
+          }
+        }
+      }
+	}
+	return false;
+}
+
+function wholesale_order_has_wholesale($order){
+	module_load_include('inc', 'uc_coupon', 'uc_coupon.rules');
+	return uc_coupon_condition_order_has_coupon($order, array('WHL*'));
+}
+
+/**
+ * Implements hook_messages_info().
+ */
+function wholesale_messages_info() {
+  return array(
+    'authenticated_wholesale_infusionsoft_tag_id'=>array(
+      'title'=>"Infusionsoft Tag ID for Authenticated Wholesale",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"wholesale",
+      'fieldset'=>"infusionsoft",
+    ),
+  );
+}

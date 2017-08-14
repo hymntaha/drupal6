@@ -1,0 +1,126 @@
+.inline-block {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+}
+
+.v-top {
+  vertical-align: top;
+}
+
+.blue-title {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.red-title {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #993300;
+}
+
+.grey-content-block {
+  background-color: #F7F7F9;
+  padding: 10px;
+  border: 1px solid #EBECF0;
+  position: relative;
+  font-weight: normal;
+  font-size: 11px;
+  line-height: 14px;
+}
+.grey-content-block ul {
+  background-color: #F7F7F9;
+  padding-left: 15px;
+  margin: 0px;
+  font-weight: normal;
+}
+.grey-content-block ul li {
+  background-color: #F7F7F9;
+  padding-bottom: 4px;
+  margin: 0px;
+  font-weight: normal;
+  list-style-image: url("../images/circle.gif");
+}
+
+.small {
+  font-size: 11px;
+}
+
+.large {
+  font-size: 16px;
+}
+
+.subtitle {
+  margin-top: -10px;
+}
+
+.red-button {
+  color: #fff !important;
+  text-decoration: none;
+  cursor: pointer;
+  border-color: #c0332f;
+  padding: 3px 5px;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 3px;
+  border: 2px solid #c0332f;
+  white-space: nowrap;
+  background: url("../images/shade-trans.png") no-repeat -10px -5px #c0332f;
+}
+.red-button:hover {
+  background-color: #ff4c45;
+  border-color: #ff4c45;
+}
+
+.green-button {
+  color: #fff !important;
+  text-decoration: none;
+  cursor: pointer;
+  border-color: #c0332f;
+  padding: 3px 5px;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 3px;
+  border: 2px solid #c0332f;
+  white-space: nowrap;
+  background: url("../images/shade-trans.png") no-repeat -10px -5px #84a649;
+  border-color: #84a649;
+}
+.green-button:hover {
+  background-color: #ABf75F;
+  border-color: #ABf75F;
+}
+
+.blue-button {
+  color: #fff !important;
+  text-decoration: none;
+  cursor: pointer;
+  border-color: #c0332f;
+  padding: 3px 5px;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 3px;
+  border: 2px solid #c0332f;
+  white-space: nowrap;
+  background: url("../images/shade-trans.png") no-repeat -10px -5px #62b2ef;
+  border-color: #62b2ef;
+}
+.blue-button:hover {
+  background-color: #62b2ef;
+  border-color: #62b2ef;
+  text-decoration: none;
+}
+
+.border-image {
+  border: 3px solid #EBECF0;
+}
+
+.list-no-margin {
+  margin: 0;
+}

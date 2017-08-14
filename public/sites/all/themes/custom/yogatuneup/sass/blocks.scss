@@ -1,0 +1,239 @@
+/**
+ * @file
+ * Block Styling
+ */
+
+@import "base";
+
+.region-sidebar-second{
+  .block{
+    margin-left:3px;
+    width:243px;
+    border:9px solid #ebecf0 !important;
+    @include border-radius(10px);
+    padding:10px 15px;
+    margin-bottom:10px;
+    
+    .block-title{
+      @include blue-title;
+    }
+  }
+}
+
+#content{
+  .block-title{
+    @include blue-title;
+  }
+}
+
+#block-product-landing-product-landing-right{
+  @include spacing-reset;
+  position:relative;
+  padding-top:53px;
+  width:320px;
+  border:0 !important;
+  margin-left:-15px;
+  margin-bottom:10px;
+
+  .block-title{
+    background-image:url('../images/yt_rtcol_content_top.png');
+    background-repeat:no-repeat;
+    width:320px;
+    height:53px;
+    line-height:38px;
+    color:#000;
+    text-align:center;
+    position:absolute;
+    top:0;
+    margin:0;
+
+    .lt-ie8 &{
+      top:17px;
+      left:0;
+    }
+  }
+
+  .field-name-field-right-block-content{
+    border:6px solid #c5de9d !important;
+    border-top:0 !important;
+    width:291px - 12px - 40px;
+    padding:20px;
+    margin-left: 19px;
+    margin-top: -17px;
+  }
+}
+
+#block-account-account-links{
+  position:absolute;
+  top:-17px;
+  right:8px;
+
+  .account-links{
+    font-size:12px;
+  }
+
+  a{
+    font-size:12px;
+    color:#b70f0f;
+    font-weight:bold;
+    text-decoration:none;
+    @include inline-block;
+    margin:0 3px;
+  }
+}
+
+#block-account-dashboard-links,
+#block-teacher-teacher-dashboard-links{
+  ul{
+    @include list-reset;
+
+    li{
+      border-bottom:1px solid #E8E8E8;
+
+      a{
+        line-height:28px;
+        text-decoration:none;
+
+        &.active,
+        &:hover{
+          color:#003d6d;
+        }
+      }
+    }
+  }
+}
+
+.region-bottom{
+  text-align:center;
+  div{
+    color:#333;
+  }
+  .block{
+    @include inline-block;
+    vertical-align:top;
+    text-align:left;
+    a{
+      text-decoration:none;
+      &:hover{
+        text-decoration:underline;
+      }
+    }
+  }
+}
+
+//Footer Copy
+#block-block-1{
+  margin-right:25px;
+
+  h3{
+    line-height:21px;
+    margin-bottom:11px;
+    color:#333;
+  }
+
+  p{
+    font-size:11px;
+    padding:0;
+
+    a{
+      color:#333;
+    }
+  }
+}
+
+//Footer Social Links
+#block-block-2{
+  margin-left:69px;
+  a{
+    margin-right:2px;
+  }
+}
+
+//Copyright
+#block-block-3{
+  display:block;
+  text-align:center;
+  padding-top:12px;
+  p{
+    font-size:11px;
+    padding:0;
+  }
+}
+
+#block-testimonial-testimonials{
+  .testimonial-text-wrapper{
+    width:169px;
+  }  
+}
+
+#block-testimonial-testimonials-content{
+  margin-top:20px;
+  .testimonial-text-wrapper{
+    width:80%;
+  }
+}
+
+.dashboard-links{
+  a{
+    @include user-dashboard-icon;
+    &.user-edit{
+      background-image:url('../images/ico-user.png');
+    }
+    &.user-orders{
+      background-image:url('../images/ico-user-orders.png');
+    }
+    &.user-address-book{
+      background-image:url('../images/ico-user-address-book.png');
+    }
+    &.user-billing-info{
+      background-image:url('../images/ico-user-billing-info.gif');
+    }
+    &.teacher-profile{
+      background-image:url('../images/ico-teacher-profile.png');
+    }
+    &.teacher-add-class{
+      background-image:url('../images/ico-teacher-add-class.png');
+    }
+    &.teacher-my-classes{
+      background-image:url('../images/ico-my-trainings.gif');
+    }
+    &.teacher-manage-pages{
+      background-image:url('../images/ico-teacher-manage-pages.png');
+    }
+    &.program-manager{
+      background-image:url('../images/ico-program-manager.png');
+    }
+    &.student-group{
+      background-image:url('../images/ico-my-groups.png');
+    }
+    &.teacher-cec{
+      background-image:url('../images/ico-teacher-cec.gif');
+    }
+  }
+}
+
+.page-cart-checkout-complete #block-webform-client-block-12{
+  margin-top:20px;
+  border-top: 1px solid #B6B6B8;
+  padding-top: 25px;
+}
+
+body.not-logged-in{
+  #block-uc-ajax-cart-delta-0{
+    right: 114px;
+  }
+}
+
+#block-uc-ajax-cart-delta-0{
+  position: absolute;
+  top: -17px;
+  right: 252px;
+  #ajaxCartUpdate a {
+    color: #b70f0f;
+    display: inline-block;
+    font-size: 12px;
+    font-weight: bold;
+    margin: 0 3px;
+    text-decoration: none;
+  }
+}

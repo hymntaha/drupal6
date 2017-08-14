@@ -1,0 +1,1727 @@
+<?php
+
+/**
+ * Implements hook_menu_alter().
+ */
+function checkout_menu_alter(&$items) {
+  if (isset($items['cart/checkout/complete'])) {
+    $items['cart/checkout/complete']['page callback'] = 'checkout_checkout_complete';
+    unset($items['cart/checkout/complete']['file']);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function checkout_theme($existing, $type, $theme, $path) {
+  return array(
+    'checkout_uc_payment_totals_review' => array(
+      'variables' => array('order' => NULL),
+    ),
+    'checkout_order_summary_suffix'     => array(
+      'template'  => 'checkout-order-summary-suffix',
+      'variables' => array(),
+    ),
+    'uba_tracking_pixel' => array(
+      'template' => 'uba-tracking-pixel',
+      'variables' => array(),
+    ),
+  );
+}
+
+/**
+ * Implements hook_uc_cart_checkout_start().
+ */
+function checkout_uc_cart_checkout_start($order) {
+  if (wholesale_order_has_wholesale($order)) {
+    if (!account_is_authenticated_wholesale() && !account_is_pending_wholesale() && !account_is_denied_wholesale() && !isset($_SESSION['wholesale_application_submitted'])) {
+      drupal_goto('wholesale-application');
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function checkout_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'uc_cart_checkout_form') {
+    global $user;
+
+    $form['#attached']['js'][] = drupal_get_path('module', 'checkout').'/checkout.js';
+
+    if (isset($form['panes']['cart'])) {
+      $form['panes']['cart']['#description'] = _mm('cart_text');
+    }
+
+    if (isset($form['panes']['delivery'])) {
+      $form['panes']['delivery']['#description']                     = _mm('shipping_text');
+      $form['panes']['delivery']['#attributes']['class'][]           = 'shipping';
+    }
+
+    if (isset($form['panes']['billing'])) {
+      $form['panes']['billing']['#description']                     = _mm('billing_text');
+      $form['panes']['billing']['#attributes']['class'][]           = 'billing';
+    }
+
+    if (isset($form['panes']['quotes'])) {
+      $form['panes']['quotes']['#description']           = checkout_get_shipping_quote_text($form_state['build_info']['args'][0]);
+      $form['panes']['quotes']['#attributes']['class'][] = 'quotes';
+    }
+
+    if (isset($form['panes']['newsletter'])) {
+      $form['panes']['newsletter']['#attributes']['class'][] = 'newsletter';
+    }
+
+    if (isset($form['panes']['payment'])) {
+      $form['panes']['payment']['#description']           = _mm('payment_text');
+      $form['panes']['payment']['#attributes']['class'][] = 'payment';
+    }
+
+    if (isset($form['panes']['uc_user_credit'])) {
+      $form['panes']['uc_user_credit']['#description'] = '<h2 class="blue-title">Store Credit</h2>';
+    }
+
+    $form['actions']['cancel']['#attributes']   = array('class' => array('blue-button'));
+    $form['actions']['continue_shopping']       = array('#markup' => '<a class="continue-shopping" href="/">Continue Shopping</a>');
+    $form['actions']['continue']['#attributes'] = array(
+      'class' => array(
+        'custom-green-button',
+        'large'
+      )
+    );
+
+    if ($user->uid == 0 && isset($form['panes']['customer'])) {
+      $form['panes']['customer']['primary_email']['#prefix']         = '<div class="account-wrapper"><div class="account-email">';
+      $form['panes']['customer']['primary_email_confirm']['#suffix'] = '</div>';
+
+      if (module_exists('elements')) {
+        $form['panes']['customer']['primary_email']['#type']         = 'emailfield';
+        $form['panes']['customer']['primary_email_confirm']['#type'] = 'emailfield';
+      }
+
+      $form['panes']['customer']['password'] = array(
+        '#type'   => 'password_confirm',
+        '#prefix' => '<div class="account-pass">',
+        '#suffix' => '</div></div>',
+      );
+
+      $form['#submit'][] = 'checkout_uc_cart_checkout_submit';
+    }
+
+    $form['panes']['coupon']['code']['#title']         = 'Coupon/Gift Code';
+    $form['panes']['coupon']['code']['#description']   = '';
+    $form['panes']['coupon']['apply']['#attributes']   = array('class' => array('blue-button'));
+    $form['panes']['coupon']['#attributes']['class'][] = 'coupon';
+
+    if (!isset($_COOKIE['uc_coupon_visible'])) {
+      $form['panes']['coupon']['#attributes']['class'][] = 'hidden';
+    }
+
+    $form['panes']['quotes']['#title']                               = 'Shipping Options';
+    $form['panes']['quotes']['quote_button']['#attributes']          = array('class' => array('blue-button'));
+    $form['panes']['quotes']['quote_button']['#attributes']['style'] = 'display:none;';
+
+
+    $payment_visible_state = array(
+      'visible' => array(
+        ':input[name="panes[payment][details][cc_select]"]' => array('value' => 'new'),
+      ),
+    );
+
+    if(isset($form['panes']['payment']['details']['cc_policy']) && isset($form['panes']['payment']['details']['cc_select']['#options'])){
+      $form['panes']['payment']['details']['cc_policy']['#weight'] = '-2';
+
+      $form['panes']['payment']['details']['cc_select']['#type'] = 'select';
+      $form['panes']['payment']['details']['cc_select']['#weight'] = '-1';
+      $form['panes']['payment']['details']['cc_select']['#options'] = array_map('strip_tags', $form['panes']['payment']['details']['cc_select']['#options']);
+
+      $suffix = '';
+
+      foreach($form['panes']['payment']['details']['cc_select']['#options'] as $pid => $option){
+        if($pid > 0){
+          if($payment_profile_id = authnet_cim_entity_payment_profile_id_load($pid)){
+            $payment_profile = authnet_cim_entity_payment_profile_load($payment_profile_id);
+            $suffix .= '<div data-pid="'.$pid.'" data-expired="'.(int) account_payment_profile_is_expired($payment_profile).'" style="display:none"></div>';
+
+            if(account_payment_profile_is_expired($payment_profile)){
+              drupal_set_message(format_string('Your card '.str_replace(' (default)','',$option).' is expired. !link',array(
+                '!link' => l('Click here to update this card.','user/'.$user->uid.'/billing/'.$form['panes']['payment']['details']['cc_select']['#default_value'].'/edit',
+                  array(
+                    'query' => array(
+                      'destination' => 'cart/checkout'
+                    ),
+                  )
+                ),
+              )),'error');
+            }
+          }
+        }
+      }
+
+      if($payment_profile_id = authnet_cim_entity_payment_profile_id_load($form['panes']['payment']['details']['cc_select']['#default_value'])){
+
+        $suffix .=
+          '<div class="col-xs-12 col-md-6">'.
+          l('<span id="card-expired-message" style="display:none;">This card is expired. </span>Click here to update this card.','user/'.$user->uid.'/billing/'.$form['panes']['payment']['details']['cc_select']['#default_value'].'/edit', array(
+            'query' => array(
+              'destination' => 'cart'
+            ),
+            'attributes' => array(
+              'id' => 'cc-update-link',
+              'data-uid' => $user->uid,
+              'style' => 'display:none;',
+              'class' => array('alert'),
+            ),
+            'html' => TRUE,
+          )).
+          '</div>';
+
+        $form['panes']['payment']['details']['cc_select']['#suffix'] = $suffix;
+      }
+
+      $form['panes']['payment']['details']['cc_number']['#states']    = $payment_visible_state;
+      $form['panes']['payment']['details']['cc_exp_month']['#states'] = $payment_visible_state;
+
+      $form['panes']['payment']['details']['cc_exp_month']['#title'] = 'Expiration Date Month';
+      $form['panes']['payment']['details']['cc_exp_year']['#title']  = 'Expiration Date Year';
+
+      $form['panes']['payment']['details']['cc_exp_year']['#states'] = $payment_visible_state;
+      $form['panes']['payment']['details']['cc_cvv']['#states']      = $payment_visible_state;
+      $form['panes']['payment']['details']['cc_save']['#states']     = $payment_visible_state;
+
+      $form['panes']['payment']['details']['cc_save']['#default_value'] = 0;
+    }
+
+    $form['panes']['po_num']['#attributes']['class'][] = 'po_num';
+
+    if ($user->uid == 0) {
+      $form['panes']['customer']['#description'] = '';
+    }
+
+    $form['#validate'][] = 'checkout_uc_cart_checkout_validate';
+  }
+
+  if ($form_id == 'uc_cart_checkout_review_form') {
+    $form['actions']['back']['#attributes']   = array('class' => array('blue-button'));
+    $form['actions']['submit']['#attributes'] = array(
+      'class' => array(
+        'custom-green-button',
+        'large'
+      )
+    );
+  }
+
+  if ($form_id == 'uc_cart_checkout_settings_form') {
+    $form['completion_messages']['uc_msg_net30'] = array(
+      '#type'          => 'textarea',
+      '#title'         => t('NET30 Users'),
+      '#description'   => t('Message displayed upon checkout for a user who used NET30 payment type.'),
+      '#default_value' => variable_get('uc_msg_net30', ''),
+      '#rows'          => 3,
+    );
+
+    $form['completion_messages']['token_tree']['#weight'] = 100;
+  }
+
+  if ($form_id == 'uc_quote_admin_settings') {
+    $form['checkout_holiday_settings'] = array(
+      '#type'  => 'fieldset',
+      '#title' => 'Holiday Settings',
+    );
+
+    $form['checkout_holiday_settings']['checkout_holiday_shipping_enabled'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => 'Enable holiday shipping business rules?',
+      '#default_value' => variable_get('checkout_holiday_shipping_enabled', FALSE),
+    );
+
+    $form['checkout_holiday_settings']['checkout_holiday_int_50_99'] = array(
+      '#type'          => 'textfield',
+      '#title'         => 'International Order Subtotal $75 - $99 percent off',
+      '#default_value' => variable_get('checkout_holiday_int_50_99', FALSE),
+      '#description'   => 'Enter a number without the % sign',
+    );
+
+    $form['checkout_holiday_settings']['checkout_holiday_int_100_plus'] = array(
+      '#type'          => 'textfield',
+      '#title'         => 'International Order Subtotal $100+ percent off',
+      '#default_value' => variable_get('checkout_holiday_int_100_plus', FALSE),
+      '#description'   => 'Enter a number without the % sign',
+    );
+
+    $form['#validate'][] = 'checkout_uc_quote_admin_settings_validate';
+    $form['#submit'][]   = 'checkout_uc_quote_admin_settings_submit';
+  }
+
+  if ($form_id == 'webform_client_form_12' && arg(0) == 'cart' && arg(1) == 'checkout' && arg(2) == 'complete') {
+    $form['#action'] = url('node/12');
+  }
+}
+
+function checkout_checkout_pane_shipping($op, $order, $form = NULL, &$form_state = NULL) {
+
+  $description = t('Enter your delivery address and information here.');
+  $copy        = t('My delivery information is the same as my billing information.');
+
+  $address_form = uc_addresses_checkout_pane_address('shipping', $op, $order, $form, $form_state, $description, $copy);
+
+  if (!user_is_logged_in() && isset($address_form['contents'])) // Create account field
+  {
+    $address_form['contents']['create_form'] = array(
+      '#type'  => 'checkbox',
+      '#title' => t('Create an account to track your order')
+    );
+  }
+
+  return $address_form;
+}
+
+/**
+ * Gets the user's email address for login.
+ */
+function checkout_checkout_pane_customer($op, $order, $form = NULL, &$form_state = NULL) {
+  if (isset($form_state['automatic_order_info']['uid'])) {
+    $user = user_load($form_state['automatic_order_info']['uid']);
+  }
+  else {
+    global $user;
+  }
+
+  $pane = uc_checkout_pane_customer($op, $order, $form, $form_state);
+
+  switch ($op) {
+    case 'view':
+
+      if($user->uid === 0){
+        $email = $form_state['storage']['order']->primary_email;
+
+        $confirm_email = $pane['contents']['primary_email_confirm'];
+        $primary_email = $pane['contents']['primary_email'];
+
+        unset($pane['contents']['primary_email']);
+        unset($pane['contents']['primary_email_confirm']);
+
+        $pane['contents']['first_name'] = array(
+          '#type'      => 'textfield',
+          '#title'     => t('First Name'),
+          '#maxlength' => 32,
+          '#size'      => 32,
+        );
+        $pane['contents']['last_name']  = array(
+          '#type'      => 'textfield',
+          '#title'     => t('Last Name'),
+          '#maxlength' => 32,
+          '#size'      => 32,
+        );
+        $pane['contents']['email_text'] = array(
+          '#markup'     => '<div>' . t('<b>' . (!user_is_logged_in() ? 'Entered ' : '') . 'E-mail address:</b><span class="email-address-editable">@email</span> <a href="!url">(edit)</a>', array(
+              '@email' => $email,
+              '!url'   => (user_is_logged_in() ? url('user/' . $user->uid . '/edit', array('query' => drupal_get_destination())) : '#')
+            )) . '</div>
+      <div><p>Add a password to your account so you can manage your purchases online.</p></div>
+      
+      ',
+          '#attributes' => array('class' => array('email-text')),
+        );
+        $pane['contents']['which_best_describes_you'] = array(
+          '#type' => 'select',
+          '#title' => 'Which best describes you?',
+          '#options' => array(
+            '' => '- Select one -',
+            2548 => 'Studio/Facility Owner',
+            2550 => 'General Product User',
+            2552 => 'Physical Therapist (PT)',
+            2554 => 'Chiropractor (DC)',
+            2556 => 'Medical Doctor (MD)',
+            2558 => 'Massage Therapist',
+            2562 => 'CF Coach/Personal Trainer',
+            2564 => 'Yoga/Pilates/Group X Instructor',
+            2566 => 'Sports Professional',
+            2568 => 'Other',
+          ),
+          '#weight' => 1,
+        );
+
+        $pane['contents']['primary_email']         = $primary_email;
+        $pane['contents']['primary_email_confirm'] = $confirm_email;
+      }
+
+      return $pane;
+      break;
+    case 'process':
+      if(!empty($form_state['values']['panes']['customer']['which_best_describes_you'])){
+
+        if($user->uid){
+          $account = user_load($user->uid);
+          $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+        }
+        else{
+          $params     = array(
+            'Email'     => $form_state['values']['panes']['customer']['primary_email'],
+            'FirstName' => $form_state['values']['panes']['delivery']['address']['delivery_first_name'],
+            'LastName'  => $form_state['values']['panes']['delivery']['address']['delivery_last_name'],
+          );
+          $contact_id = infusionsoft_create_anon_contact($params,0);
+        }
+
+        if(!empty($contact_id)){
+          infusionsoft_anon_contact_apply_tag($contact_id,$form_state['values']['panes']['customer']['which_best_describes_you']);
+        }
+      }
+      break;
+  }
+}
+
+
+function checkout_uc_quote_admin_settings_validate($form, &$form_state) {
+  if (!empty($form_state['values']['checkout_holiday_int_50_99']) && !is_numeric($form_state['values']['checkout_holiday_int_50_99'])) {
+    form_set_error('checkout_holiday_int_50_99', 'Please enter a valid number');
+  }
+  if (!empty($form_state['values']['checkout_holiday_int_100_plus']) && !is_numeric($form_state['values']['checkout_holiday_int_100_plus'])) {
+    form_set_error('checkout_holiday_int_100_plus', 'Please enter a valid number');
+  }
+}
+
+function checkout_uc_quote_admin_settings_submit($form, &$form_state) {
+  variable_set('checkout_holiday_shipping_enabled', $form_state['values']['checkout_holiday_shipping_enabled']);
+  variable_set('checkout_holiday_int_50_99', $form_state['values']['checkout_holiday_int_50_99']);
+  variable_set('checkout_holiday_int_100_plus', $form_state['values']['checkout_holiday_int_100_plus']);
+}
+
+function checkout_uc_cart_checkout_validate($form, &$form_state) {
+  $account = user_load($form_state['storage']['order']->uid);
+  if (in_array('pre-authenticated user', $account->roles)) {
+    form_set_error('', 'To complete this order, you will need to validate your account. Please click the link below to have the validation email resent.<br />' . l(t('Re-send validation e-mail.'), 'toboggan/revalidate/' . $account->uid, array('attributes' => array('target' => '_blank'))));
+  }
+}
+
+function checkout_uc_cart_checkout_submit($form, &$form_state) {
+  if (isset($form_state['values']['panes']['customer']['password']) && !empty($form_state['values']['panes']['customer']['password'])) {
+    $_SESSION['checkout_new_account_password'] = $form_state['values']['panes']['customer']['password'];
+  }
+}
+
+function checkout_get_shipping_quote_text($order) {
+  $domestic               = checkout_order_is_domestic($order);
+  $order_has_wholesale    = wholesale_order_has_wholesale($order);
+  $physical_product_total = checkout_order_get_physical_product_total($order);
+  $text                   = _mm('shipping_quote_text');
+
+  if (variable_get('checkout_holiday_shipping_enabled', FALSE) && !$order_has_wholesale) {
+    if ($physical_product_total >= 75 && $physical_product_total < 100) {
+      if ($domestic) {
+        $text .= '<br />' . _mm('holiday_shipping_domestic_50_99', '');
+      }
+      else {
+        $text .= '<br />' . _mm('holiday_shipping_int_50_99', '');
+      }
+    }
+    else if ($physical_product_total < 75) {
+      if ($domestic) {
+        $text .= '<br />' . _mm('holiday_shipping_domestic_less_50', '');
+      }
+      else {
+        $text .= '<br />' . _mm('holiday_shipping_int_less_50', '');
+      }
+    }
+  }
+
+  return $text;
+}
+
+/**
+ * Implements hook_uc_quote_assemble_quotes_alter().
+ */
+function checkout_uc_quote_assemble_quotes_alter(&$quote_data, &$order) {
+
+  $apo                       = checkout_order_is_apo($order);
+  $weight_oz                 = checkout_calculate_weight($order, 'oz');
+  $weight_lb                 = checkout_calculate_weight($order, 'lb');
+  $domestic                  = checkout_order_is_domestic($order);
+  $order_has_at_home_product = at_home_subscription_order_has_at_home_program_product($order);
+  $order_has_wholesale       = wholesale_order_has_wholesale($order);
+  $quotes_have_fedex         = !empty($quote_data['fedex']) || !empty($quote_data['fedex_ground']);
+  $physical_product_total    = checkout_order_get_physical_product_total($order);
+  $no_fedex_message          = 'FedEx is unable to recognize this address. Please check to confirm it is entered correctly. If this issues persists, please contact us at <a href="mailto:info@yogatuneup.com">info@yogatuneup.com</a> for further assistance.';
+  $displayed_no_fedex        = false;
+
+  /**
+   * Business Rule: Do not show FedEx for APO deliveries
+   * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/339#history-7986801
+   */
+  if ($apo) {
+    unset($quote_data['fedex']);
+    unset($quote_data['fedex_ground']);
+  }
+  else {
+
+    /**
+     * Business Rule: Do not show USPS options if the order is wholesale unless FedEx is down
+     */
+    if ($order_has_wholesale) {
+
+      unset($quote_data['usps']);
+      unset($quote_data['usps_intl']);
+
+      if (!$quotes_have_fedex) {
+        if (!$displayed_no_fedex) {
+          drupal_set_message($no_fedex_message, 'error', FALSE);
+          $displayed_no_fedex = true;
+        }
+
+        $quote_data['fedex'] = array('data' => array('error' => array(1 => $no_fedex_message)));
+      }
+    }
+
+    /**
+     * Business Rule: No FedEx Ground or Home Delivery for order weight 13oz or less domestic
+     */
+    if ($domestic && $weight_oz <= 13) {
+      unset($quote_data['fedex_ground']['FEDEX_GROUND']);
+      unset($quote_data['fedex_ground']['GROUND_HOME_DELIVERY']);
+    }
+
+    /**
+     * Business Rule: No USPS First Class for order weight > 13oz domestic
+     */
+    if ($domestic && $weight_oz > 13) {
+      unset($quote_data['usps']['zeroParcel']);
+    }
+
+    /**
+     * Business Rule: No USPS First Class International for order weight > 4lbs non-domestic
+     */
+    if (!$domestic && $weight_lb > 4) {
+      unset($quote_data['usps_intl'][15]);
+    }
+
+    /**
+     * Business Rule: Remove 1-Day, 2-Day and 3-Day from USPS option labels
+     * https://avatarnewyork.basecamphq.com/projects/11027319-yoga-tune-up/posts/82211100/comments
+     */
+    if (isset($quote_data['usps'])) {
+      foreach ($quote_data['usps'] as $delta => $quote) {
+        if (isset($quote_data['usps'][$delta]['option_label'])) {
+          $quote_data['usps'][$delta]['option_label'] = str_replace(array(
+            ' 1-Day',
+            ' 2-Day',
+            ' 3-Day'
+          ), '', $quote_data['usps'][$delta]['option_label']);
+        }
+      }
+    }
+    if (isset($quote_data['usps_intl'])) {
+      foreach ($quote_data['usps_intl'] as $delta => $quote) {
+        if (isset($quote_data['usps_intl'][$delta]['option_label'])) {
+          $quote_data['usps_intl'][$delta]['option_label'] = str_replace(array(
+            ' 1-Day',
+            ' 2-Day',
+            ' 3-Day'
+          ), '', $quote_data['usps_intl'][$delta]['option_label']);
+        }
+      }
+    }
+
+    /**
+     * Business Rule: If country is Australia only show USPS Priority Mail International for USPS if the order does not have an at home product
+     * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/288
+     */
+    if (isset($quote_data['usps_intl'])) {
+      if ($order->delivery_country == 36 && !$order_has_at_home_product) {
+        foreach ($quote_data['usps_intl'] as $delta => $quote) {
+          if ($delta != 2) {
+            unset($quote_data['usps_intl'][$delta]);
+          }
+        }
+      }
+    }
+
+    /**
+     * Business Rule: Do not show FedEx Smart Post if order is domestic and weight is <= 1
+     * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/339#history-7833637
+     */
+    if ($domestic && $weight_lb <= 1) {
+      unset($quote_data['fedex_ground']['SMART_POST']);
+    }
+
+    /**
+     * Business Rule: Do not show USPS Priority if order is domestic and weight is > 1
+     * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/339#history-7831415
+     */
+    if ($domestic && $weight_lb > 1) {
+      unset($quote_data['usps'][1]);
+    }
+
+    /**
+     * Business Rule: Do not show FedEx Smart Post if order is not domestic or has a wholesale discount
+     * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/339#history-7831415
+     */
+    if (!$domestic || $order_has_wholesale) {
+      unset($quote_data['fedex_ground']['SMART_POST']);
+    }
+  }
+
+  /**
+   * Holiday business rules
+   * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/268
+   */
+  if (variable_get('checkout_holiday_shipping_enabled', FALSE) && !$order_has_wholesale) {
+    if ($domestic) {
+      if (isset($quote_data['fedex_ground']['SMART_POST'])) {
+        if ($physical_product_total >= 75 && $physical_product_total < 100) {
+          $quote_data['fedex_ground']['SMART_POST']['rate']   = 5;
+          $quote_data['fedex_ground']['SMART_POST']['format'] = '$5.00';
+        }
+        else if ($physical_product_total >= 100) {
+          $quote_data['fedex_ground']['SMART_POST']['rate']   = 0;
+          $quote_data['fedex_ground']['SMART_POST']['format'] = 'FREE';
+        }
+      }
+    }
+    else {
+      $percent_discount = '';
+      if ($physical_product_total >= 75 && $physical_product_total < 100) {
+        $percent_discount = variable_get('checkout_holiday_int_50_99', '');
+      }
+      else if ($physical_product_total >= 100) {
+        $percent_discount = variable_get('checkout_holiday_int_100_plus', '');
+      }
+
+      if (!empty($percent_discount)) {
+
+        foreach ($quote_data as $carrier => $carrier_quotes) {
+          foreach ($carrier_quotes as $delta => $quote) {
+            $discount_rate                          = round($quote['rate'] - $quote['rate'] * ($percent_discount / 100), 2);
+            $quote_data[$carrier][$delta]['rate']   = $discount_rate;
+            $quote_data[$carrier][$delta]['format'] = theme('uc_price', array(
+              'price'    => $discount_rate,
+              'suffixes' => array(' <strong>(' . $percent_discount . '% off)</strong>')
+            ));
+          }
+        }
+
+      }
+    }
+  }
+
+  /**
+   * Business Rule: No USPS and add markup based on weight for Canadian orders
+   * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/606#history-9907598
+   */
+  if ($order->delivery_country == 124) {
+
+    unset($quote_data['usps']);
+    unset($quote_data['usps_intl']);
+
+    if (!$quotes_have_fedex && !$displayed_no_fedex) {
+      drupal_set_message($no_fedex_message, 'error', FALSE);
+      $displayed_no_fedex = true;
+    }
+
+
+    /**
+     * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/603#history-10283413
+     */
+    $markup = $weight_oz * .027;
+
+    foreach ($quote_data as $carrier => $carrier_quotes) {
+      foreach ($carrier_quotes as $delta => $quote) {
+        $quote_data[$carrier][$delta]['rate'] += $markup;
+        $quote_data[$carrier][$delta]['format'] = theme('uc_price', array('price' => $quote_data[$carrier][$delta]['rate']));
+      }
+    }
+    if (!$quotes_have_fedex) {
+      $quote_data['fedex'] = array('data' => array('error' => array(1 => $no_fedex_message)));
+    }
+  }
+
+}
+
+/**
+ * Implements hook_uc_line_item_data_alter().
+ */
+function checkout_uc_line_item_data_alter(&$items) {
+  if (isset($items['tax_subtotal'])) {
+    $items['tax_subtotal']['display_only'] = FALSE;
+  }
+}
+
+function checkout_uc_checkout_pane_alter(&$panes) {
+
+  $panes['customer']['title'] = t('Create Your Account');
+
+  $panes['customer']['callback'] = 'checkout_checkout_pane_customer';
+
+  $panes['delivery']['title'] = t('Shipping Information');
+
+  $panes['delivery']['callback'] = 'checkout_checkout_pane_shipping';
+
+}
+
+function checkout_module_implements_alter(&$implementations, $hook) {
+  if ($hook != 'uc_checkout_pane_alter') {
+    return;
+  }
+  $module = 'checkout';
+  $group  = array($module => $implementations[$module]);
+  unset($implementations[$module]);
+  $implementations = $implementations + $group;
+}
+
+/**
+ * Implements hook_uc_order_pane_line_items_alter().
+ */
+function checkout_uc_order_pane_line_items_alter(&$items) {
+  foreach ($items as $delta => $item) {
+    if (isset($item['type']) && $item['type'] == 'shipping') {
+      $items[$delta]['weight'] = 10;
+    }
+  }
+}
+
+/**
+ * Implements hook_uc_load_line_items_display_alter().
+ */
+function checkout_uc_load_line_items_display_alter(&$items) {
+  foreach ($items as $delta => $item) {
+    if (isset($item['type']) && $item['type'] == 'shipping') {
+      $items[$delta]['weight'] = 10;
+    }
+    if (isset($item['type']) && $item['type'] == 'coupon') {
+      $items[$delta]['weight'] = 14;
+    }
+  }
+}
+
+/**
+ * Implements hook_uc_checkout_pane().
+ */
+function checkout_uc_checkout_pane() {
+
+  $panes['quick_checkout'] = array(
+    'callback' => 'checkout_pane_quick_checkout',
+    'title'    => t('Quick Checkout'),
+    'desc'     => t('Quick Checkout'),
+    'weight'   => 0,
+  );
+
+  $panes['order_summary']        = array(
+    'callback' => 'checkout_pane_order_summary',
+    'title'    => t('Order summary'),
+    'desc'     => t('Order summary'),
+    'weight'   => 0,
+  );
+  $panes['subscription_confirm'] = array(
+    'callback' => 'checkout_pane_subscription_confirm',
+    'title'    => t('Subscription Confirmation'),
+    'desc'     => t('Subscription Confirmation'),
+    'weight'   => 10,
+  );
+  $panes['newsletter']           = array(
+    'callback' => 'checkout_pane_newsletter',
+    'title'    => t('Newsletter'),
+    'desc'     => t('Newsletter'),
+    'weight'   => 10,
+  );
+  $panes['po_num']               = array(
+    'callback' => 'checkout_po_number',
+    'title'    => t('Purchase Order'),
+    'desc'     => t('Purchase Order'),
+    'weight'   => 100,
+  );
+  $panes['backorder_confirm']    = array(
+    'callback' => 'checkout_backorder_confirm',
+    'title'    => t('Backorder Confirmation'),
+    'desc'     => t('Backorder Confirmation'),
+    'weight'   => 10,
+  );
+  $panes['quote_calc']           = array(
+    'title'    => t('Shipping quotes'),
+    'desc'     => t('Shipping quotes'),
+    'weight'   => 5,
+    'callback' => 'checkout_uc_cart_pane_quotes',
+  );
+
+  return $panes;
+}
+
+/**
+ * Cart pane callback.
+ *
+ * @see theme_uc_cart_pane_quotes()
+ * @ingroup forms
+ */
+function checkout_uc_cart_pane_quotes($op, &$order, $form = NULL, &$form_state = NULL) {
+  global $user;
+
+  $contents = array();
+
+  switch ($op) {
+    case 'view':
+      $dummy_order                       = new UcOrder($user->uid);
+      $dummy_order->delivery_country     = isset($form_state['input']['panes']['quote_calc']['cq_delivery_country']) ? $form_state['input']['panes']['quote_calc']['cq_delivery_country'] : uc_store_default_country();
+      $dummy_order->delivery_zone        = isset($form_state['input']['panes']['quote_calc']['cq_delivery_zone']) ? $form_state['input']['panes']['quote_calc']['cq_delivery_zone'] : '';
+      $dummy_order->delivery_postal_code = isset($form_state['input']['panes']['quote_calc']['cq_delivery_postal_code']) ? $form_state['input']['panes']['quote_calc']['cq_delivery_postal_code'] : '';
+      $dummy_order->products             = $order->products;
+
+      $dummy_order->delivery_first_name = 'CHECKOUT SHIPPING QUOTES';
+      $dummy_order->delivery_company    = isset($form_state['input']['panes']['quote_calc']['cq_delivery_residential']) ? $form_state['input']['panes']['quote_calc']['cq_delivery_residential'] : '';
+
+      $contents['#attached']['css'][] = drupal_get_path('module', 'uc_quote') . '/uc_quote.css';
+
+      $contents['cq_address'] = array(
+        '#type'          => 'uc_address',
+        '#default_value' => array(
+          'cq_delivery_country'     => $dummy_order->delivery_country,
+          'cq_delivery_zone'        => $dummy_order->delivery_zone,
+          'cq_delivery_postal_code' => $dummy_order->delivery_postal_code,
+        ),
+        '#required'      => FALSE,
+        '#key_prefix'    => 'cq_delivery',
+      );
+
+      $contents['cq_delivery_residential'] = array(
+        '#type'          => 'checkbox',
+        '#title'         => 'Residential?',
+        '#default_value' => isset($dummy_order->data['is_residential']) ? $dummy_order->data['is_residential'] : '',
+      );
+
+      $contents['cq_get_quote'] = array(
+        '#type'                    => 'button',
+        '#value'                   => t('Calculate'),
+        '#ajax'                    => array(
+          'callback' => 'checkout_uc_quote_cart_returned_rates',
+          'wrapper'  => 'quote-calc',
+        ),
+        '#limit_validation_errors' => array(),
+      );
+
+      module_load_include('inc', 'uc_quote', 'uc_quote.pages');
+      $quotes = uc_quote_assemble_quotes($dummy_order);
+
+      $quote_options = array();
+      if (!empty($quotes)) {
+        foreach ($quotes as $method => $data) {
+          foreach ($data as $accessorial => $quote) {
+            $key = $method . '---' . $accessorial;
+
+            if (isset($quote['rate'])) {
+              $quote_options[$key] = t('!label: !price', array(
+                '!label' => $quote['option_label'],
+                '!price' => $quote['format']
+              ));
+            }
+            if (isset($quote['error'])) {
+              $quote_options[$key] = t('!label: !price', array(
+                '!label' => 'Error',
+                '!price' => current($quote['error'])
+              ));
+              $class               = "quote-calc-error";
+            }
+          }
+        }
+      }
+
+      $contents['cq_quote'] = array(
+        '#theme'  => 'item_list',
+        '#items'  => $quote_options,
+        '#prefix' => '<div id="quote-calc" class="' . $class . '">',
+        '#suffix' => '</div>',
+      );
+      break;
+  }
+
+  return array('contents' => $contents);
+}
+
+/**
+ * Ajax callback: Shows estimated shipping quotes on the cart page.
+ */
+function checkout_uc_quote_cart_returned_rates($form, $form_state) {
+  $commands[] = ajax_command_replace('#quote-calc', trim(drupal_render($form['panes']['quote_calc']['cq_quote'])));
+  $commands[] = ajax_command_prepend('#quote-calc', trim(theme('status_messages')));
+
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+function checkout_po_number($op, &$order, $form = NULL, &$form_state = NULL) {
+  $contents = array();
+
+  switch ($op) {
+    case 'view':
+
+      $contents['field_po_num'] = array(
+        '#type'       => 'textfield',
+        '#title'      => t('PO Number (if applicable)'),
+        '#weight'     => 3,
+        '#attributes' => array('size' => 28,),
+        '#maxlength'  => 25,
+      );
+
+      break;
+    case 'process':
+
+      // Intercept PO Num field and save static input value
+      $form_state['storage']['order']->field_po_num = $form_state['values']['panes']['po_num']['field_po_num'];
+
+      $order->field_po_num = array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => $form_state['storage']['order']->field_po_num ?: $order->order_id,
+          )
+        )
+      );
+
+      uc_order_save($order);
+
+      break;
+
+    case 'review':
+    case 'customer':
+      $contents = array(
+        'title' => t('PO Number'),
+        'data'  => $order->field_po_num[LANGUAGE_NONE][0]['value'],
+      );
+      break;
+  }
+
+
+  return array('contents' => $contents);
+
+}
+
+function checkout_pane_quick_checkout($op, &$order, $form = NULL, &$form_state = NULL) {
+  global $user;
+  switch ($op) {
+    case 'view':
+      if (!user_is_logged_in()) {
+        return array();
+      }
+
+      $contents['#attached']['js'][] = drupal_get_path('module', 'checkout') . '/quick_checkout.js';
+
+      $authnet_cust_id = authnet_cim_entity_profile_id_load('user', $user->uid);
+      $payment_options = array('new' => 'Use a new card...') + authnet_ui_payment_profile_options($authnet_cust_id);
+
+      array_walk($payment_options, function (&$item) {
+        $item = strip_tags($item);
+      });
+
+      if(uc_order_is_shippable($order)){
+        $contents['saved_shipping_info']                = uc_addresses_select_addresses($user->uid, 'default', 'delivery');
+        $contents['saved_shipping_info']['#title']      = 'Saved Shipping Information';
+        $contents['saved_shipping_info']['#attributes'] = array('class' => array('form-control'));
+      }
+
+      $contents['saved_billing_info']['#prefix']     = '<div><p class="form-group-suffix form-group-suffix-red">Please select the credit card information that matches the billing information.</p></div>';
+      $contents['saved_billing_info']                = uc_addresses_select_addresses($user->uid, 'default', 'billing');
+      $contents['saved_billing_info']['#title']      = 'Saved Billing Information';
+      $contents['saved_billing_info']['#attributes'] = array('class' => array('form-control'));
+
+      $contents['saved_credit_card'] = array(
+        '#type'          => 'select',
+        '#title'         => t('Saved Credit Card'),
+        '#weight'        => 3,
+        '#options'       => $payment_options,
+        '#suffix'        => '<div><p class="form-group-suffix">Please choose a shipping method before finalizing your order.</p></div>',
+        '#default_value' => 'new',
+      );
+
+      foreach ($payment_options as $pid => $payment_option) {
+        if (strpos($payment_option, 'default') !== FALSE) {
+          $contents['saved_credit_card']['#default_value'] = $pid;
+        }
+      }
+
+      return array(
+        'description' => '',
+        'contents'    => $contents,
+      );
+
+
+      break;
+  }
+}
+
+function checkout_pane_order_summary($op, &$order, $form = NULL, &$form_state = NULL) {
+  switch ($op) {
+    case 'view':
+      $contents['#attached']['js'][] = drupal_get_path('module', 'checkout') . '/order_summary.js';
+
+      $clone = clone $order;
+
+      $subtotal_delta = 0;
+      foreach ($clone->line_items as $subtotal_delta => $line_item) {
+        if ($line_item['type'] == 'subtotal') {
+          $clone->line_items[$subtotal_delta]['weight'] = 0;
+          break;
+        }
+      }
+
+      $coupons = array();
+
+      foreach ($clone->line_items as $delta => $line_item) {
+        if ($line_item['type'] == 'coupon') {
+
+          $coupon = uc_coupon_find($line_item['data']['code']);
+
+          $weight = 1;
+          if (isset($coupon->data['line_items']['shipping'])) {
+            $weight = 5;
+          }
+          $clone->line_items[$delta]['weight'] = $weight;
+
+          if (isset($_SESSION['uc_coupons'][$line_item['data']['code']])) {
+            $clone->line_items[$delta]['title'] .= ' <button class="blue-button order-summary-remove" data-coupon="' . $line_item['data']['code'] . '">Remove</button><div class="ajax-progress"><div class="throbber">&nbsp;</div></div>';
+          }
+
+          $coupons[$line_item['data']['code']] = $line_item['data']['code'];
+        }
+        else {
+          if ($line_item['type'] == 'shipping') {
+            $clone->line_items[$delta]['weight'] = 3;
+          }
+          else {
+            if ($line_item['type'] == 'tax') {
+              $clone->line_items[$delta]['weight'] = 4;
+            }
+            else {
+              if ($line_item['type'] == 'user_credit') {
+                $clone->line_items[$delta]['weight'] = 2;
+              }
+            }
+          }
+        }
+      }
+
+      if ($clone->line_items[$subtotal_delta]['amount'] < 0) {
+        $clone->line_items[$subtotal_delta]['amount'] = 0;
+      }
+
+      $title = 'Order Total';
+      if ($clone->delivery_country == 124) {
+        $title = 'Total Landed Cost';
+      }
+
+      $clone->line_items[] = array(
+        'line_item_id' => 'total',
+        'type'         => 'total',
+        'title'        => $title,
+        'amount'       => $order->order_total,
+        'weight'       => 10,
+        'data'         => NULL,
+      );
+
+      if ($coupons) {
+        $contents['coupons'] = array(
+          '#type'    => 'radios',
+          '#options' => $coupons,
+        );
+      }
+
+      $contents['order_summary'] = array(
+        '#theme' => 'uc_payment_totals',
+        '#order' => $clone,
+
+      );
+
+      return array(
+        'description' => '',
+        'contents'    => $contents,
+      );
+
+    case 'process':
+      if (isset($form_state['values']['panes']['order_summary']['coupons']) && !empty($form_state['values']['panes']['order_summary']['coupons'])) {
+        uc_coupon_session_clear($form_state['values']['panes']['order_summary']['coupons']);
+        module_invoke_all('uc_coupon_remove', uc_coupon_find($form_state['values']['panes']['order_summary']['coupons']), $order);
+      }
+      break;
+    case 'review':
+      $clone = clone $order;
+
+      foreach ($clone->line_items as $delta => $line_item) {
+        if ($line_item['type'] == 'coupon') {
+
+          $coupon = uc_coupon_find($line_item['data']['code']);
+
+          $weight = 1;
+          if (isset($coupon->data['line_items']['shipping'])) {
+            $weight = 5;
+          }
+          $clone->line_items[$delta]['weight'] = $weight;
+        }
+        else {
+          if ($line_item['type'] == 'shipping') {
+            $clone->line_items[$delta]['weight'] = 3;
+          }
+          else {
+            if ($line_item['type'] == 'tax') {
+              $clone->line_items[$delta]['weight'] = 4;
+            }
+            else {
+              if ($line_item['type'] == 'user_credit') {
+                $clone->line_items[$delta]['weight'] = 2;
+              }
+            }
+          }
+        }
+      }
+
+      $title = 'Total';
+      if ($clone->delivery_country == 124) {
+        $title = 'Total Landed Cost';
+      }
+
+      $clone->line_items[] = array(
+        'line_item_id' => 'total',
+        'type'         => 'total',
+        'title'        => $title,
+        'amount'       => $order->order_total,
+        'weight'       => 10,
+        'data'         => NULL,
+      );
+
+      $review[] = theme('checkout_uc_payment_totals_review', array('order' => $clone));
+      return $review;
+  }
+}
+
+function checkout_pane_subscription_confirm($op, &$order, $form = NULL, &$form_state = NULL) {
+  switch ($op) {
+    case 'view':
+      global $user;
+
+      $description = '';
+      $contents    = array();
+
+      $shipping = 'shipping';
+      $tax      = '';
+
+            if (at_home_subscription_order_has_at_home_program_product($order)) {
+              $product = at_home_subscription_get_order_at_home_program_product($order);
+
+              $product_info = at_home_subscription_get_product_info();
+              $shipping_next = array(node_load($product_info['l1m1']->nid));
+              $account = user_load($user->uid);
+
+              $total_calc = at_home_subscription_calculate_total_cost($account, $shipping_next, $order);
+
+              if($product->shippable){
+                if (!empty($order->delivery_country) && !empty($order->delivery_zone) && !empty($order->delivery_postal_code)) {
+                  $shipping = $total_calc['shipping_price'] . ' shipping';
+                  if (!empty($total_calc['tax'])) {
+                    $tax = ' and ' . $total_calc['tax'] . ' tax (if applicable)';
+                  }
+                }
+              }
+              else{
+                $shipping = '';
+                $tax = ''.$total_calc['tax'] . ' tax (if applicable)';
+              }
+
+        $contents['sub_confirm'] = array(
+          '#type'     => 'checkbox',
+          '#title'    => t(_mm('cart_subscription_confirm_text', '', TRUE), array(
+            '@shipping' => $shipping,
+            '@tax'      => $tax
+          )),
+          '#required' => TRUE,
+          '#weight'   => 3,
+        );
+      }
+
+      return array('description' => $description, 'contents' => $contents);
+  }
+}
+
+function checkout_pane_newsletter($op, &$order, $form = NULL, &$form_state = NULL) {
+  switch ($op) {
+    case 'view':
+
+      $contents['newsletter'] = array(
+        '#title'      => _mm('register_newsletter', '', TRUE),
+        '#type'       => 'checkbox',
+        '#attributes' => array('checked' => 'checked'),
+      );
+
+      return array(
+        'description' => '',
+        'contents'    => $contents,
+      );
+
+    case 'process':
+      if ($order->uid) {
+        $account = user_load($order->uid);
+
+        if ($form_state['values']['panes']['newsletter']['newsletter']) {
+          $tag_id = _mm('newsletter_infusionsoft_id', '', TRUE);
+          if ($tag_id) {
+            infusionsoft_contact_apply_tag($account, $tag_id);
+          }
+        }
+        else {
+          $tag_id = _mm('newsletter_infusionsoft_id', '', TRUE);
+          if ($tag_id) {
+            infusionsoft_contact_remove_tag($account, $tag_id);
+          }
+
+          $tag_id = _mm('news_nc_infusionsoft_id', '', TRUE);
+          if ($tag_id) {
+            infusionsoft_contact_apply_tag($account, $tag_id);
+          }
+        }
+      }
+      return TRUE;
+  }
+}
+
+function checkout_backorder_confirm($op, &$order, $form = NULL, &$form_state = NULL) {
+  switch ($op) {
+    case 'view':
+      $description = '';
+      $contents    = array();
+
+      if (order_order_has_backordered_item($order)) {
+        $contents['backorder_confirm'] = array(
+          '#type'     => 'checkbox',
+          '#title'    => _mm('backorder_confirm_text', 'I am aware there is a backordered item.', TRUE),
+          '#required' => TRUE,
+        );
+      }
+
+      return array('description' => $description, 'contents' => $contents);
+  }
+}
+
+function checkout_messages_info() {
+  return array(
+    'cart_text'                              => array(
+      'title'       => "Cart Information Text",
+      'description' => "Text above cart info on checkout",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'cart_subscription_confirm_text'         => array(
+      'title'       => "Cart Subscription Confirm Text",
+      'description' => "Text for checkbox to confirm subscription",
+      'type'        => "textfield",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'customer_pane_left'                     => array(
+      'title'       => 'Guest Checkout Customer Left',
+      'description' => '',
+      'type'        => 'richtext',
+      'group'       => 'checkout',
+      'fieldset'    => 'checkout_page',
+    ),
+    'customer_pane_right'                    => array(
+      'title'       => 'Guest Checkout Customer Right',
+      'description' => '',
+      'type'        => 'richtext',
+      'group'       => 'checkout',
+      'fieldset'    => 'checkout_page',
+    ),
+    'shipping_text'                          => array(
+      'title'       => "Shipping Information Text",
+      'description' => "Text above shipping info on checkout",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'shipping_quote_text'                    => array(
+      'title'       => "Shipping Quote Information Text",
+      'description' => "Text above shipping quote info on checkout",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'holiday_shipping_domestic_less_50'      => array(
+      'title'       => "Shipping Quote Holiday Domestic < $75",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'holiday_shipping_domestic_50_99'        => array(
+      'title'       => "Shipping Quote Holiday Domestic $75-$99",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'holiday_shipping_int_less_50'           => array(
+      'title'       => "Shipping Quote Holiday International < $75",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'holiday_shipping_int_50_99'             => array(
+      'title'       => "Shipping Quote Holiday International $75-$99",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'billing_text'                           => array(
+      'title'       => "Billing Information Text",
+      'description' => "Text above billing info on checkout",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'payment_text'                           => array(
+      'title'       => "Payment Information Text",
+      'description' => "Text above payment info on checkout",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_page',
+    ),
+    'backorder_confirm_text'                 => array(
+      'title'       => 'Checkout backordered confirmation text',
+      'description' => '',
+      'type'        => 'richtext',
+      'group'       => 'checkout',
+      'fieldset'    => 'checkout_page',
+    ),
+    'checkout_review_backordered'            => array(
+      'title'       => 'Checkout review page backordered message',
+      'description' => '',
+      'type'        => 'richtext',
+      'group'       => 'checkout',
+      'fieldset'    => 'checkout_review_page',
+    ),
+    'gift_card_msg'                          => array(
+      'title'       => "Gift Card Message",
+      'description' => "Text on completion page if a gift card is purchased",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_complete_page',
+    ),
+    'wholesale_application_msg'              => array(
+      'title'       => "Wholesale Application Message",
+      'description' => "Text on completion page if Wholesale Application was filled out",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'checkout_complete_page',
+    ),
+    'email_payment_method_net30'             => array(
+      'title'       => "Order Customer Email Payment Method NET30",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'order_email',
+    ),
+    'email_footer_text'                      => array(
+      'title'       => "Order Customer Email Footer Text",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "checkout",
+      'fieldset'    => 'order_email',
+    ),
+    'order_domestic_infusionsoft_tag_id'     => array(
+      'title'       => 'Infusionsoft Tag ID for Domestic Orders',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'checkout',
+      'fieldset'    => 'infusionsoft',
+    ),
+    'order_non_domestic_infusionsoft_tag_id' => array(
+      'title'       => 'Infusionsoft Tag ID for Non-Domestic Orders',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'checkout',
+      'fieldset'    => 'infusionsoft',
+    ),
+    'order_wholesale_infusionsoft_tag_id'    => array(
+      'title'       => 'Infusionsoft Tag ID for Wholesale Orders',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'checkout',
+      'fieldset'    => 'infusionsoft',
+    ),
+  );
+}
+
+function checkout_calculate_weight($order, $conversion = 'lb') {
+  $weight = 0;
+  foreach ($order->products as $product) {
+    if (isset($product->weight_units)) {
+      $weight_units             = $product->weight_units;
+      $weight_conversion_factor = 1;
+      if ($weight_units != $conversion) {
+        $weight_conversion_factor = uc_weight_conversion($weight_units, $conversion);
+      }
+      $weight += $product->weight * $weight_conversion_factor * $product->qty;
+    }
+  }
+  return $weight;
+}
+
+function checkout_order_is_domestic($order) {
+  // Domestic areas include U.S., American Samoa, Guam, Puerto Rico, and the Virgin Islands
+  $countries = array(
+    16  => t('American Samoa'),
+    316 => t('Guam'),
+    630 => t('Puerto Rico'),
+    840 => t('United States'),
+    850 => t('Virgin Islands (US)'),
+  );
+  return isset($countries[$order->delivery_country]);
+}
+
+function checkout_order_is_apo($order) {
+  $zones = array(
+    6  => t('Armed Forces Africa'),
+    7  => t('Armed Forces Americas'),
+    8  => t('Armed Forces Canada'),
+    9  => t('Armed Forces Europe'),
+    10 => t('Armed Forces Middle East'),
+    11 => t('Armed Forces Pacific'),
+  );
+  return isset($zones[$order->delivery_zone]);
+}
+
+/**
+ * @param $order
+ *
+ * @return float
+ */
+function checkout_order_get_physical_product_total($order) {
+  $total = 0;
+
+  foreach ($order->products as $product) {
+    if ($product->shippable) {
+      $total += $product->qty * $product->price;
+    }
+  }
+
+  return $total;
+}
+
+/**
+ * Completes the sale and finishes checkout.
+ */
+function checkout_checkout_complete() {
+
+  if (empty($_SESSION['cart_order']) || empty($_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'])) {
+    drupal_goto('cart');
+  }
+
+  $order = uc_order_load(intval($_SESSION['cart_order']));
+
+  if (empty($order) || empty($order->products)) {
+    // Display messages to customers and the administrator if the order was lost.
+    drupal_set_message(t("We're sorry.  An error occurred while processing your order that prevents us from completing it at this time. Please contact us and we will resolve the issue as soon as possible."), 'error');
+    watchdog('uc_cart', 'An empty order made it to checkout! Cart order ID: @cart_order', array('@cart_order' => $_SESSION['cart_order']), WATCHDOG_ERROR);
+    drupal_goto('cart');
+  }
+
+  $build = checkout_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
+  unset($_SESSION['uc_checkout'][$order->order_id], $_SESSION['cart_order']);
+
+  // Add a comment to let sales team know this came in through the site.
+  uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
+
+  $page = variable_get('uc_cart_checkout_complete_page', '');
+  if (!empty($page)) {
+    drupal_goto($page);
+  }
+
+  return $build;
+}
+
+/**
+ * Implements hook_uc_fedex_rate_request_alter().
+ */
+function checkout_uc_fedex_rate_request_alter(&$request, $alter_params) {
+  if ($alter_params['destination']->country == 840) { //USA
+    $florida_wh_zip_codes = checkout_get_florida_warehouse_zip_codes();
+
+    if (in_array($alter_params['destination']->zone, $florida_wh_zip_codes)) {
+      $request['WebAuthenticationDetail']['UserCredential']['Key']      = 'ztifVmtKmvfi0bHO';
+      $request['WebAuthenticationDetail']['UserCredential']['Password'] = 'ifu4TxHolbZQfZjYts4tDC9Dy';
+      $request['ClientDetail']['AccountNumber']                         = '708661384';
+      $request['ClientDetail']['MeterNumber']                           = '108709358';
+      $request['RequestedShipment']['Shipper']['Address']['PostalCode'] = '33445';
+      $request['RequestedShipment']['SmartPostDetail']['HubId']         = '5327';
+    }
+  }
+
+  if ($alter_params['destination']->country == 124) { //Canada
+    /**
+     * No SmartPost for Canada
+     * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/603#history-9963250
+     */
+    unset($request['RequestedShipment']['SmartPostDetail']);
+
+    $request['WebAuthenticationDetail']['UserCredential']['Key']       = 'Vop4dpbWC6SFn34O';
+    $request['WebAuthenticationDetail']['UserCredential']['Password']  = 'd2V3FHzDkw8gyo3HmIw0RxBs4';
+    $request['ClientDetail']['AccountNumber']                          = '713625949';
+    $request['ClientDetail']['MeterNumber']                            = '109078809';
+    $request['RequestedShipment']['Shipper']['Address']['CountryCode'] = 'CA';
+    $request['RequestedShipment']['Shipper']['Address']['PostalCode']  = 'K1B 4Z4';
+  }
+}
+
+/**
+ * Implements hook_uc_usps_rate_request_alter().
+ */
+function checkout_uc_usps_rate_request_alter(&$request, $alter_params) {
+  if ($alter_params['destination']->country == 840) { //USA
+    $florida_wh_zip_codes = checkout_get_florida_warehouse_zip_codes();
+
+    if (in_array($alter_params['destination']->zone, $florida_wh_zip_codes)) {
+      $request = str_replace('<ZipOrigination>91604</ZipOrigination>', '<ZipOrigination>33445</ZipOrigination>', $request);
+    }
+  }
+}
+
+function checkout_get_florida_warehouse_zip_codes() {
+  return array(
+    1, //AL
+    5, //AR
+    14, //CT
+    16, //DC
+    15, //DE
+    18, //FL
+    19, //GA
+    23, //IL
+    24, //IN
+    27, //KY
+    28, //LA
+    32, //MA
+    31, //MD
+    29, //ME
+    33, //MI
+    34, //MN
+    36, //MO
+    35, //MS
+    44, //NC
+    45, //ND
+    40, //NH
+    41, //NJ
+    43, //NY
+    47, //OH
+    51, //PA
+    53, //RI
+    54, //SC
+    56, //TN
+    61, //VA
+    59, //VT
+    64, //WI
+    63, //WV
+  );
+}
+
+/**
+ * Implements hook_uc_addresses_address_field_alter().
+ */
+function checkout_uc_addresses_address_field_alter(&$element) {
+  if (module_exists('elements')) {
+    $element['phone']['#type'] = 'telfield';
+  }
+
+  if (isset($element['street2'])) {
+    $element['street2']['#title'] = 'Suite/Apt #';
+  }
+  if (isset($element['company'])) {
+    $element['company']['#title'] = 'Company Name';
+  }
+  if (isset($element['zone'])) {
+    $element['zone']['#title'] = 'State/Province';
+  }
+  if (isset($element['postal_code'])) {
+    $element['postal_code']['#title'] = 'Postal/Zip Code';
+  }
+}
+
+function checkout_uc_addresses_form_process_select_address_alter(&$element, &$form_state, &$context){
+  if($element['#id'] == 'edit-panes-quick-checkout-saved-billing-info' && isset($_SESSION['cart_order'])){
+    if($order = uc_order_load(intval($_SESSION['cart_order']))){
+      if(uc_order_is_shippable($order)){
+        $element['#options'][''] = t('Same as shipping...');
+      }
+    }
+  }
+}
+
+/**
+ * Completes a sale, including adjusting order status and creating user account.
+ *
+ * @param $order
+ *   The order object that has just been completed.
+ * @param $login
+ *   Whether or not to login a new user when this function is called.
+ *
+ * @return
+ *   The HTML text of the default order completion page.
+ */
+function checkout_complete_sale($order, $login = FALSE) {
+  global $user;
+
+  // Ensure we have the latest order data.
+  $order->data = unserialize(db_query("SELECT data FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField());
+
+  // Ensure that user creation and triggers are only run once.
+  if (empty($order->data['complete_sale'])) {
+    checkout_complete_sale_account($order);
+
+    // Store account data.
+    db_update('uc_orders')
+      ->fields(array(
+        'uid'  => $order->uid,
+        'data' => serialize($order->data),
+      ))
+      ->condition('order_id', $order->order_id)
+      ->execute();
+
+    // Move an order's status from "In checkout" to "Pending".
+    $status = db_query("SELECT order_status FROM {uc_orders} WHERE order_id = :order_id", array(':order_id' => $order->order_id))->fetchField();
+    if (uc_order_status_data($status, 'state') == 'in_checkout') {
+      $status = uc_order_state_default('post_checkout');
+      if (uc_order_update_status($order->order_id, $status)) {
+        $order->order_status = $status;
+      }
+    }
+
+    // Invoke the checkout complete trigger and hook.
+    $account = user_load($order->uid);
+    module_invoke_all('uc_checkout_complete', $order, $account);
+    rules_invoke_event('uc_checkout_complete', $order);
+  }
+
+  $type = $order->data['complete_sale'];
+
+  // Log in new users, if requested.
+  if ($type == 'new_user' && $login && !$user->uid) {
+    $type = 'new_user_logged_in';
+    $user = user_load($order->uid);
+  }
+
+  $variables['!new_username'] = isset($order->data['new_user']['name']) ? $order->data['new_user']['name'] : '';
+  $variables['!new_password'] = isset($order->password) ? $order->password : t('Your password');
+  $messages                   = array(
+    'uc_msg_order_submit' => uc_get_message('completion_message'),
+  );
+
+  if ($order->payment_method == 'net30') {
+    $messages['uc_msg_net30'] = '';
+  }
+
+  $messages['uc_msg_order_' . $type]    = uc_get_message('completion_' . $type);
+  $messages['uc_msg_continue_shopping'] = uc_get_message('continue_shopping');
+
+  foreach ($messages as $id => &$message) {
+    $message = variable_get($id, $message);
+    $message = token_replace($message, array('uc_order' => $order));
+    if ($id == 'uc_msg_order_' . $type) {
+      $message = strtr($message, $variables);
+    }
+  }
+  $output = filter_xss_admin(implode(' ', $messages));
+
+  if (order_order_has_gift_card($order)) {
+    $output .= '<br />' . _mm('gift_card_msg', '', TRUE);
+  }
+
+  if (module_exists('uc_google_trusted_stores')) {
+    $output .= theme('uc_google_trusted_stores_order_complete_tag', array('order' => $order));
+  }
+
+  if (isset($_SESSION['wholesale_application_submitted'])) {
+    $output .= '<br />' . _mm('wholesale_application_msg', '');
+  }
+
+   // Empty that cart...
+   $cart_id = !empty($_SESSION['ahp_cart_id']) ? $_SESSION['ahp_cart_id'] : NULL;
+   uc_cart_empty($cart_id);
+
+  return array(
+    '#theme'   => 'uc_cart_complete_sale',
+    '#message' => $output,
+    '#order'   => $order,
+  );
+}
+
+function checkout_complete_sale_account($order) {
+  // Order already has a user ID, so the user was logged in during checkout.
+  if ($order->uid) {
+    $order->data['complete_sale'] = 'logged_in';
+    return;
+  }
+
+  $result = db_query("SELECT uid FROM {users} WHERE mail LIKE :email", array(':email' => $order->primary_email));
+
+  // Email address matches an existing account.
+  if ($account = $result->fetchObject()) {
+    $order->uid                   = $account->uid;
+    $order->data['complete_sale'] = 'existing_user';
+    return;
+  }
+
+  // Set up a new user.
+  $fields = array(
+    'name'               => uc_store_email_to_username($order->primary_email),
+    'mail'               => $order->primary_email,
+    'init'               => $order->primary_email,
+    'pass'               => !empty($_SESSION['checkout_new_account_password']) ? $_SESSION['checkout_new_account_password'] : user_password(),
+    'profile_first_name' => $_SESSION['checkout_new_account_first_name'],
+    'profile_last_name'  => $_SESSION['checkout_new_account_last_name'],
+    'roles'              => array(),
+    'status'             => variable_get('uc_new_customer_status_active', TRUE) ? 1 : 0,
+  );
+
+  unset($_SESSION['checkout_new_account_password']);
+
+  // Override the username, if specified.
+  if (isset($order->data['new_user']['name'])) {
+    $fields['name'] = $order->data['new_user']['name'];
+  }
+
+  drupal_alter('uc_cart_order_create_user', $fields, $order);
+
+  // Create the account.
+  $account = user_save('', $fields);
+
+  // Override the password, if specified.
+  if (isset($order->data['new_user']['hash'])) {
+    db_query("UPDATE {users} SET pass = :hash WHERE uid = :uid", array(
+      ':hash' => $order->data['new_user']['hash'],
+      ':uid'  => $account->uid
+    ));
+    $account->password = t('Your password');
+  }
+  else {
+    $account->password = $fields['pass'];
+    $order->password   = $fields['pass'];
+  }
+
+  // Send the customer their account details if enabled.
+  if (variable_get('uc_new_customer_email', TRUE)) {
+    drupal_mail('user', 'register_no_approval_required', $order->primary_email, uc_store_mail_recipient_language($order->primary_email), array('account' => $account), uc_store_email_from());
+  }
+
+  $order->uid                      = $account->uid;
+  $order->data['new_user']['name'] = $fields['name'];
+  $order->data['complete_sale']    = 'new_user';
+}
+
+function checkout_order_tracking_pixels($order) {
+  $tracking_pixels = module_invoke_all('checkout_order_tracking_pixel', $order);
+  return implode('', $tracking_pixels);
+}
+
+/**
+ * Implements hook_checkout_order_tracking_pixel().
+ */
+function checkout_checkout_order_tracking_pixel($order) {
+  return theme('uba_tracking_pixel');
+}
+
+function theme_checkout_uc_payment_totals_review($variables) {
+  return '';
+}
+

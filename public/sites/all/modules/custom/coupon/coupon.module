@@ -1,0 +1,536 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function coupon_menu() {
+  $items['admin/store/coupons/credit/list'] = array(
+    'title' => 'Active store credit',
+    'description' => 'View active coupons.',
+    'page callback' => 'coupon_uc_coupon_credit_display',
+    'access arguments' => array('view store coupons'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 0,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function coupon_menu_alter(&$items) {
+	$items['admin/store/coupons/list']['page callback'] = 'coupon_uc_coupon_display';
+}
+
+/**
+ * Returns whether a cart item can have a discount applied to it
+ * uc_coupon.module has been edited to add this new check
+ */
+function coupon_item_can_use_coupon($item, $coupon, $order){
+	$result = module_invoke_all('coupon_item_can_use_coupon', $item, $coupon, $order);
+	foreach($result as $value){
+		if($value == FALSE){
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+function coupon_sort_coupons($coupons){
+	$auto = array();
+	$non_auto = array();
+	foreach($coupons as $delta => $coupon){
+		if($coupon == 'auto'){
+			$auto[$delta] = $coupon;
+		}
+		else{
+			$non_auto[$delta] = $coupon;
+		}
+	}
+	return array_merge($auto,$non_auto);
+}
+
+/**
+ * Display a brief overview of system coupons
+ *
+ * @param $view_type
+ *   'active' or 'inactive'
+ */
+function coupon_uc_coupon_display($view_type = 'active') {
+  _uc_coupon_paypal_check();
+
+  $header = array(
+    array('data' => t('Actions')),
+    array(
+      'data' => t('Name'),
+      'field' => 'name',
+    ),
+    array(
+      'data' => t('Code'),
+      'field' => 'code',
+      'sort' => 'asc',
+    ),
+    array(
+      'data' => t('Value'),
+      'field' => 'value',
+    ),
+    array(
+      'data' => t('Created'),
+      'field' => 'created',
+    ),
+    array(
+      'data' => t('Valid from'),
+      'field' => 'valid_from',
+    ),
+    array(
+      'data' => t('Valid until'),
+      'field' => 'valid_until',
+    ),
+  );
+
+  $query = db_select('uc_coupons', 'c')
+    ->extend('TableSort')
+    ->extend('PagerDefault')
+    ->orderByHeader($header);
+  $query->condition('c.status', $view_type == 'inactive' ? 0 : 1)->fields('c')->limit(25);
+
+  if($view_type == 'active'){
+  	$query->condition('c.type','credit','<>');
+  }
+
+  $rows = array();
+  $result = $query->execute();
+  foreach ($result as $coupon) {
+    $coupon->data = $coupon->data ? unserialize($coupon->data) : array();
+    $rows[] = array(
+      theme('uc_coupon_actions', array('coupon' => $coupon)),
+      check_plain($coupon->name),
+      check_plain($coupon->code) . ($coupon->bulk ? '* ' . t('(bulk)') : ''),
+      theme('uc_coupon_discount', array('coupon' => $coupon)),
+      _uc_coupon_format_date($coupon->created, variable_get('date_format_uc_store', 'm/d/Y')),
+      $coupon->valid_from ? _uc_coupon_format_date($coupon->valid_from, variable_get('date_format_uc_store', 'm/d/Y H:iT')) : '-',
+      $coupon->valid_until ? _uc_coupon_format_date($coupon->valid_until, variable_get('date_format_uc_store', 'm/d/Y H:iT')) : '-',
+    );
+  }
+
+  if (count($rows)) {
+    $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%')));
+    $output .= theme('pager', array('tags' => NULL));
+  }
+  else {
+    switch ($view_type) {
+      case 'active':
+        $output = '<p>' . t('There are currently no active coupons in the system.') . '</p>';
+        break;
+      case 'inactive':
+        $output = '<p>' . t('There are currently no inactive coupons in the system.') . '</p>';
+        break;
+    }
+  }
+
+  $output .= '<p>' . l(t('Add a new coupon.'), 'admin/store/coupons/add') . '</p>';
+
+  return $output;
+}
+
+function coupon_uc_coupon_credit_display($view_type = 'active') {
+  _uc_coupon_paypal_check();
+
+  $header = array(
+    array('data' => t('Actions')),
+    array(
+      'data' => t('Name'),
+      'field' => 'name',
+    ),
+    array(
+      'data' => t('Code'),
+      'field' => 'code',
+      'sort' => 'asc',
+    ),
+    array(
+      'data' => t('Value'),
+      'field' => 'value',
+    ),
+    array(
+      'data' => t('Created'),
+      'field' => 'created',
+    ),
+    array(
+      'data' => t('Valid from'),
+      'field' => 'valid_from',
+    ),
+    array(
+      'data' => t('Valid until'),
+      'field' => 'valid_until',
+    ),
+  );
+
+  $query = db_select('uc_coupons', 'c')
+    ->extend('TableSort')
+    ->extend('PagerDefault')
+    ->orderByHeader($header);
+  $query->condition('c.status', $view_type == 'inactive' ? 0 : 1)->fields('c')->limit(25);
+  $query->condition('c.type','credit');
+
+  $rows = array();
+  $result = $query->execute();
+  foreach ($result as $coupon) {
+    $coupon->data = $coupon->data ? unserialize($coupon->data) : array();
+    $rows[] = array(
+      theme('uc_coupon_actions', array('coupon' => $coupon)),
+      check_plain($coupon->name),
+      check_plain($coupon->code) . ($coupon->bulk ? '* ' . t('(bulk)') : ''),
+      theme('uc_coupon_discount', array('coupon' => $coupon)),
+      _uc_coupon_format_date($coupon->created, variable_get('date_format_uc_store', 'm/d/Y')),
+      $coupon->valid_from ? _uc_coupon_format_date($coupon->valid_from, variable_get('date_format_uc_store', 'm/d/Y H:iT')) : '-',
+      $coupon->valid_until ? _uc_coupon_format_date($coupon->valid_until, variable_get('date_format_uc_store', 'm/d/Y H:iT')) : '-',
+    );
+  }
+
+  if (count($rows)) {
+    $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%')));
+    $output .= theme('pager', array('tags' => NULL));
+  }
+  else {
+    switch ($view_type) {
+      case 'active':
+        $output = '<p>' . t('There are currently no active coupons in the system.') . '</p>';
+        break;
+      case 'inactive':
+        $output = '<p>' . t('There are currently no inactive coupons in the system.') . '</p>';
+        break;
+    }
+  }
+
+  $output .= '<p>' . l(t('Add a new coupon.'), 'admin/store/coupons/add') . '</p>';
+
+  return $output;
+}
+
+/**
+ * Implements hook_rules_action_info().
+ */
+function coupon_rules_action_info() {
+  $actions = array();
+  $actions['coupon_uc_coupon_purchase_email'] = array(
+    'label' =>  t('Send a styled order email regarding coupon purchase.'),
+    'group' => t('Coupon'),
+    'parameter' => array(
+      'order' => array(
+        'type' => 'uc_order',
+        'label' => t('Order'),
+        'optional' => TRUE,
+      ),
+      'coupon' => array(
+        'type' => 'uc_coupon',
+        'label' => t('Coupon'),
+      ),
+      'from' => array(
+        'type' => 'text',
+        'label' => t('Sender'),
+      ),
+      'addresses' => array(
+        'type' => 'text',
+        'label' => t('Recipients'),
+        'description' => t('Enter the email addresses to receive the notifications, one on each line. You may use order tokens for dynamic email addresses.'),
+      ),
+      'subject' => array(
+        'type' => 'text',
+        'label' => t('Subject'),
+      ),
+      'message' => array(
+        'type' => 'text',
+        'label' => t('Message'),
+      ),
+      'format' => array(
+        'type' => 'text',
+        'label' => t('Message format'),
+        'options list' => 'uc_coupon_purchase_message_formats',
+      ),
+
+    ),
+  );
+
+  return $actions;
+}
+
+/**
+ * Action callback to send an e-mail regarding coupon purchase.
+ */
+function coupon_uc_coupon_purchase_email($order, $coupon, $from, $addresses, $subject, $message, $format) {
+  $settings = array(
+    'from' => $from,
+    'subject' => $subject,
+    'message' => $message,
+    'format' => $format,
+    'replacements' => array(),  // Replacements are handled directly by Rules.
+  );
+
+  // Split up our recipient e-mail addresses.
+  $recipients = array();
+  foreach (explode("\n", $addresses) as $address) {
+    $recipients[] = trim($address);
+  }
+
+  if($coupon->bulk){
+    $bulk_codes = coupon_get_bulk_codes($coupon);
+    $settings['message'] = array();
+    foreach($bulk_codes as $code){
+      $settings['message'] = array(str_replace('%code',$code,$message));
+      coupon_send_email($recipients, $settings, $order);
+    }
+  }
+  else{
+    $settings['message'] = array($message);
+    coupon_send_email($recipients, $settings, $order);
+  }
+}
+
+function coupon_send_email($recipients, $settings, $order){
+  // Send the e-mails.
+  foreach ($recipients as $email) {
+    $sent = drupal_mail('coupon', 'coupon_email', $email, uc_store_mail_recipient_language($email), $settings, empty($settings['from']) ? uc_store_email_from() : $settings['from']);
+    if (!$sent['result']) {
+      watchdog('uc_order', 'Attempt to e-mail @email concerning order @order_id failed.', array('@email' => $email, '@order_id' => $order->order_id), WATCHDOG_ERROR);
+    }
+  }
+}
+
+/**
+ * Implements hook_mail()
+ */
+function coupon_mail($key, &$message, $params){
+  switch($key){
+    case 'coupon_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = $params['message'];
+      break;
+    case 'coupon_uc_user_credit_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%name', '%credit', '%full_credit'),
+        array($params['name'],$params['credit'], $params['full_credit']),
+        _mm('user_credit_email_body','',true)
+      );
+      break;
+  }
+}
+
+function coupon_theme(){
+
+  return array(
+    'coupon_email_wrapper'=>array(
+       'template'=>'tpl/coupon-email-wrapper',
+        'variables'=>array('body'=>"", 'title'=>""),
+    ),
+  );
+}
+
+function coupon_mail_alter(&$message){
+  $html_emails = array(
+    'coupon_email',
+  );
+  
+  if(in_array($message['key'], $html_emails)){
+    if(!empty($message['params']['sender_name']) && !empty($message['params']['sender_email'])){
+      $message['headers']['From'] = $message['headers']['Sender'] = $message['headers']['Return-Path'] = $message['headers']['Errors-To'] = '"'.$message['params']['sender_name'].  '" <'.$message['params']['sender_email'].'>';
+    }
+
+    $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+
+    if(empty($message['no_message_wrap']) || $message['no_message_wrap'] == false){
+        $message['body'] = array(
+          theme("coupon_email_wrapper", array(
+            'body'=>$message['body'],
+            'title'=>$message['subject'],
+          ))
+        );
+    }
+  }
+}
+
+function coupon_get_bulk_codes($coupon){
+  $codes = array();
+  for ($id = 0; $id < $coupon->data['bulk_number']; $id++) {
+    $codes[] = uc_coupon_get_bulk_code($coupon, $id);
+  }
+  return $codes;
+}
+
+/**
+ * Implements hook_uc_user_credit()
+ */
+function coupon_uc_user_credit($account, $credit, $full_credit){
+  if(!empty($credit) && $credit > 0){
+    $settings = array(
+      'name' => account_get_first_name($account),
+      'credit' => uc_currency_format($credit),
+      'full_credit' => uc_currency_format($full_credit),
+      'subject' => _mm('user_credit_email_subject','You have been given store credit.',TRUE),
+    );
+
+    drupal_mail('coupon', 'coupon_uc_user_credit_email', $account->mail, user_preferred_language($account), $settings, _mm('user_credit_email_from','',TRUE) ? _mm('user_credit_email_from','',TRUE) : uc_store_email_from());
+  }  
+}
+
+function coupon_messages_info(){
+  return array(
+    'user_credit_email_from'=>array(
+      'title'=>"User Received Store Credit From Address",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'user_credit',
+      ),
+    'user_credit_email_subject'=>array(
+      'title'=>"User Received Store Credit Email Subject",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'user_credit',
+      ),
+    'user_credit_email_body'=>array(
+      'title'=>"User Received Store Credit Email Body",
+      'description'=>"Body text for the User Received Store Credit e-mail. %name = First Name. %credit = Store credit. %full_credit = Users total store credit.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'user_credit',
+      ),
+    'coupon_error_not_eligible'=>array(
+      'title'=>"Coupon Error - Not Eligible",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"coupon",
+      'fieldset'=>'coupon_errors',
+    ),
+    'coupon_error_expired'=>array(
+      'title'=>"Coupon Error - Expired",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"coupon",
+      'fieldset'=>'coupon_errors',
+    ),
+    'coupon_error_invalid_combination'=>array(
+      'title'=>"Coupon Error - Invalid Combination",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"coupon",
+      'fieldset'=>'coupon_errors',
+    ),
+    'coupon_error_max_redemption'=>array(
+      'title'=>"Coupon Error - Max Redemption Reached",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"coupon",
+      'fieldset'=>'coupon_errors',
+    ),
+    'coupon_error_gc_max_redemption'=>array(
+      'title'=>"Coupon Error - Gift Card Max Redemption Reached",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"coupon",
+      'fieldset'=>'coupon_errors',
+    ),
+    'coupon_error_not_eligible_email'=>array(
+      'title'=>"Coupon Error - Invalid Email Address",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"coupon",
+      'fieldset'=>'coupon_errors',
+    ),
+  );
+}
+
+/**
+ * Implements hook_uc_order_pane_line_items_alter().
+ */
+function coupon_uc_order_pane_line_items_alter(&$line_items, $order) {
+  foreach($line_items as $delta => $line_item){
+    if(!empty($line_item['type']) && $line_item['type'] == 'coupon'){
+      $line_items[$delta]['weight'] = 1;
+    }
+  }
+}
+
+/**
+ * Implements hook_uc_coupon_validate().
+ */
+function coupon_uc_coupon_validate(&$coupon, $order, $account) {
+  $emails = array();
+  $product_requirements = array();
+
+  if(isset($coupon->field_email_addresses[LANGUAGE_NONE][0]['value'])){
+    $emails = coupon_parse_email_list($coupon->field_email_addresses[LANGUAGE_NONE][0]['value']);
+  }
+
+  if(isset($coupon->field_product_requirements[LANGUAGE_NONE][0]['value'])){
+    $product_requirements = coupon_parse_email_list($coupon->field_product_requirements[LANGUAGE_NONE][0]['value']);
+  }
+
+  $not_eligible = FALSE;
+
+  if(!empty($emails)){
+    if($account->uid){
+      if(!in_array($account->mail,$emails)){
+        $not_eligible = TRUE;
+      }
+    }
+    else{
+      if(!empty($_SESSION['anon_checkout_email']) && !in_array($_SESSION['anon_checkout_email'],$emails)){
+        $not_eligible = TRUE;
+      }
+
+      if(!empty($order->primary_email) && !in_array($order->primary_email,$emails)){
+        $not_eligible = TRUE;
+      }
+    }
+  }
+
+  if($not_eligible){
+    return _mm('coupon_error_not_eligible_email',t('You are not allowed to use this coupon.'));
+  }
+
+  if(!empty($product_requirements)){
+    foreach($product_requirements as $product_requirement){
+      $product_requirement = explode('|', $product_requirement);
+      if(count($product_requirement) == 2){
+        $sku = $product_requirement[0];
+        $min_qty = $product_requirement[1];
+
+        $qty_count = 0;
+        foreach($order->products as $product){
+          if(strpos($product->model, $sku) === 0){
+            $qty_count += $product->qty;
+          }
+        }
+
+        if($qty_count < $min_qty){
+          return 'This coupon requires additional products in your cart.';
+        }
+      }
+    }
+  }
+}
+
+function coupon_parse_email_list($text) {
+  $items = array();
+  $lines = explode("\n", $text);
+  foreach ($lines as $line) {
+    $pieces = explode(" ", $line);
+
+    foreach ($pieces as $piece) {
+      $style = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $piece);
+      $style = trim($style);
+      if ($style != '') {
+        $items[$style] = $style;
+      }
+    }
+  }
+
+  return $items;
+}

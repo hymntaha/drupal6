@@ -1,0 +1,300 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function uc_user_credit_menu() {
+  $items['user/%user/credit'] = array(
+    'title' => 'Assign User Credit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_user_credit_admin_form', 1),
+  	'access arguments' => array('administer user credit'),
+  	'type' => MENU_LOCAL_TASK,
+  	'file' => 'uc_user_credit.admin.inc',
+  );
+
+  if(module_exists('data_export')){
+    $items['user/%user/credit/export'] = array(
+      'title' => 'Export User Credit History',
+      'page callback' => 'uc_user_credit_credit_history_export',
+      'page arguments' => array(1),
+      'access arguments' => array('administer user credit'),
+      'type' => MENU_CALLBACK,
+      'file' => 'uc_user_credit.admin.inc',
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function uc_user_credit_permission() {
+  return array(
+    'administer user credit' =>  array(
+      'title' => t('Administer User Credit'),
+      'description' => t(''),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function uc_user_credit_theme($existing, $type, $theme, $path) {
+  return array(
+    'uc_user_credit_history' => array(
+      'variables' => array(
+        'uid' => 0,
+      ),
+    )
+  );
+}
+
+function uc_user_credit_save($params){
+  global $user;
+
+  $params['logged_uid'] = $user->uid;
+  $params['timestamp'] = time();
+
+  if(!isset($params['order_id'])){
+    $params['order_id'] = 0;
+  }
+
+  drupal_write_record('uc_user_credit',$params);
+}
+
+function uc_user_credit_load($uid){
+	return db_select('uc_user_credit','c')->fields('c')->condition('c.uid',$uid)->orderBy('c.timestamp','ASC')->execute();
+}
+
+function uc_user_credit_get_credit_for_user($uid){
+	$user_credit = uc_user_credit_load($uid);
+    $credit = 0;
+
+    foreach($user_credit as $row){
+      $credit += (float) $row->credit;
+    }
+
+	return $credit;
+}
+
+function uc_user_credit_get_adjusted_credit($credit, $order){
+
+  $credit_is_eligible = module_invoke_all('uc_user_credit_order_is_eligible', $credit, $order);
+  foreach($credit_is_eligible as $eligible){
+    if($eligible === FALSE){
+      return 0;
+    }
+  }
+
+  $subtotal = uc_order_get_total($order, TRUE);
+
+  if(module_exists('uc_coupon')){
+    foreach($order->line_items as $line_item){
+      if($line_item['type'] == 'coupon'){
+        $subtotal += $line_item['amount'];
+      }
+    }
+  }
+
+  if($credit > $subtotal){
+    $credit = $subtotal;
+  }
+
+  if($credit <= 0){
+    $credit = 0;
+  }
+
+  return $credit;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function uc_user_credit_admin_paths() {
+  $paths = array(
+  	'user/*/credit' => TRUE,
+  );
+  return $paths;
+}
+
+/**
+ * Implements hook_uc_checkout_pane().
+ */
+function uc_user_credit_uc_checkout_pane() {
+  $panes['uc_user_credit'] = array(
+    'callback' => 'uc_user_credit_checkout_pane',
+    'title' => t('Store Credit'),
+    'desc' => t('User Store Credit'),
+    'weight' => 10,
+  );
+
+  return $panes;
+}
+
+function uc_user_credit_checkout_pane($op, &$order, $form = NULL, &$form_state = NULL){
+  switch ($op) {
+    case 'view':
+      $contents = array();
+      $description = '';
+
+      $credit = uc_user_credit_get_adjusted_credit(uc_user_credit_get_credit_for_user($order->uid), $order);
+      $delta = uc_user_credit_get_order_line_item_delta($order);
+      
+      if(!empty($credit)){
+        $contents['use_store_credit'] = array(
+          '#type' => 'checkbox',
+          '#title' => t(variable_get('store_credit_checkbox_label', 'Use your store credit?'), array('%credit' => uc_currency_format($credit))),
+          '#description' => variable_get('store_credit_description', ''),
+          '#default_value' => uc_user_credit_get_order_line_item_delta($order) !== FALSE ? 1 : 0,
+        );
+
+        //Refresh order line item
+        if($delta !== FALSE){
+          uc_order_update_line_item($order->line_items[$delta]['line_item_id'], $order->line_items[$delta]['title'], $credit * -1);
+          $order->line_items[$delta]['amount'] = $credit * -1;
+        }
+
+      }
+      else{
+        if($delta !== FALSE){
+          //The users credit was removed but the order still has a store credit line item, remove it.
+          uc_order_delete_line_item($order->line_items[$delta]['line_item_id']);
+          unset($order->line_items[$delta]);
+        }
+      }
+
+      return array('description' => $description, 'contents' => $contents);
+      
+    case 'process':
+      if($form_state['values']['panes']['uc_user_credit']['use_store_credit']){
+        $credit = uc_user_credit_get_adjusted_credit(uc_user_credit_get_credit_for_user($order->uid), $order);
+        $delta = uc_user_credit_get_order_line_item_delta($order);
+        if($delta !== FALSE){
+          uc_order_update_line_item($order->line_items[$delta]['line_item_id'], $order->line_items[$delta]['title'], $credit * -1);
+          $order->line_items[$delta]['amount'] = $credit * -1;
+        }
+        else{
+          $order->line_items[] = uc_order_line_item_add($order->order_id, 'user_credit', 'Store Credit',$credit * -1);
+        }
+      }
+      else{
+        $delta = uc_user_credit_get_order_line_item_delta($order);
+        if($delta !== FALSE){
+            uc_order_delete_line_item($order->line_items[$delta]['line_item_id']);
+            unset($order->line_items[$delta]);          
+        }
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function uc_user_credit_form_uc_cart_checkout_settings_form_alter(&$form, &$form_state, $form_id){
+  $form['store_credit_pane'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'User credit pane',
+    '#group' => 'checkout-settings',
+  );
+
+  $form['store_credit_pane']['store_credit_checkbox_label'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Store Credit Label',
+    '#description' => 'Use %credit to subsitute the users current credit amount.',
+    '#default_value' => variable_get('store_credit_checkbox_label', 'Use your store credit?'),
+  );
+
+  $form['store_credit_pane']['store_credit_description'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Store Credit Description',
+    '#default_value' => variable_get('store_credit_description', ''),
+  );
+}
+
+/**
+ * Implements hook_uc_line_item().
+ */
+function uc_user_credit_uc_line_item() {
+  $items[] = array(
+    'id' => 'user_credit',
+    'title' => t('User Credit'),
+    'weight' => 2,
+    'default' => FALSE,
+    'stored' => TRUE,
+    'add_list' => FALSE,
+    'calculated' => TRUE,
+  );
+
+  return $items;
+}
+
+function uc_user_credit_get_order_line_item_delta($order){
+  foreach($order->line_items as $delta => $line_item){
+    if($line_item['type'] == 'user_credit'){
+      return $delta;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_uc_checkout_complete().
+ */
+function uc_user_credit_uc_checkout_complete($order, $account){
+  $delta = uc_user_credit_get_order_line_item_delta($order);
+  if($delta !== FALSE){
+
+    $params = array(
+      'uid' => $account->uid,
+      'credit' => $order->line_items[$delta]['amount'],
+      'order_id' => $order->order_id,
+    );
+
+    uc_user_credit_save($params);
+    
+    watchdog('uc_user_credit', 'User :user_id used :amount store credit.', array(':user_id' => $account->uid, ':amount' => uc_currency_format($order->line_items[$delta]['amount'] * -1)));
+  }
+}
+
+function theme_uc_user_credit_history($variables){
+  if($variables['uid'] == 0){
+    return '';
+  }
+
+  $output = '';
+  $account = user_load($variables['uid']);
+  $credit_history = uc_user_credit_load($account->uid);
+
+  $header = array(
+    'Credit Adjustment',
+    'Type',
+    'Timestamp',
+    'Memo',
+  );
+
+  $rows = array();
+
+  foreach($credit_history as $row){
+    $logged_account = user_load($row->logged_uid);
+
+    $rows[] = array(
+      uc_currency_format($row->credit),
+      $row->order_id ? 'Order #'.l($row->order_id,'user/'.$logged_account->uid.'/orders/'.$row->order_id) : 'Admin adjustment by '.l($logged_account->mail,'user/'.$logged_account->uid),
+      date('m/d/Y h:ia',$row->timestamp),
+      $row->memo,
+    );
+  }
+
+  if(module_exists('data_export')){
+    $output .= '<p>'.l('Export User Credit History','user/'.$account->uid.'/credit/export').'</p>';
+  }
+
+  $output .= theme('table',array('header' => $header, 'rows' => $rows, 'empty' => 'There is no user credit history.'));
+
+  return $output;
+}

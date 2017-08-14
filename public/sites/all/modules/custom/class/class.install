@@ -1,0 +1,60 @@
+<?php
+/**
+ * @file
+ * Install file for the class module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function class_schema() {
+
+  $schema['class_months'] = array(
+    'description' => t('Stores class months'),
+    'fields' => array(
+      'class_nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'description' => t('Class nid'),
+      ),
+      'month' => array(
+        'type' => 'int',
+        'not null' => true,
+        'description' => t('Month in numeric form'),
+      ),
+    ),
+    'primary key' => array('class_nid','month'),
+    'indexes' => array(
+      'class' => array('class_nid'),
+      'month' => array('month'),
+    ),
+  );
+
+  $schema['class_dates'] = array(
+    'description' => t('Stores class dates'),
+    'fields' => array(
+      'class_nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'description' => t('Class nid'),
+      ),
+      'sort_date' => array(
+        'type' => 'int',
+        'not null' => true,
+        'description' => t('Date to sort classes by'),
+      ),
+      'end_date' => array(
+        'type' => 'int',
+        'not null' => false,
+        'description' => t('Date to stop displaying a class'),
+      ),
+    ),
+    'primary key' => array('class_nid'),
+    'indexes' => array(
+      'sort_date' => array('sort_date'),
+      'end_date' => array('end_date'),
+    ),
+  );
+  
+  return $schema;
+}

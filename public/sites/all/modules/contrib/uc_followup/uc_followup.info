@@ -1,0 +1,14 @@
+name = UC Followup
+description = Automatically follow-up customers by e-mail on different stages of ordering.
+dependencies[] = uc_cart
+dependencies[] = uc_order
+dependencies[] = uc_store
+package = Ubercart - extra
+core = 7.x
+configure = admin/store/follow-up
+; Information added by drupal.org packaging script on 2012-10-27
+version = "7.x-1.0-beta1"
+core = "7.x"
+project = "uc_followup"
+datestamp = "1351355531"
+

@@ -1,0 +1,201 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function video_schema() {
+
+  $schema['users_videos'] = array(
+    'description' => t('User video access'),
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('User ID'),
+      ),
+      'video_nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('Video Node ID'),
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'not null' => false,
+        'unsigned' => true,
+        'description' => t('Order ID'),
+      ),
+    ),
+    'primary key' => array('uid','video_nid'),
+    'indexes' => array(
+      'uid' => array('uid'),
+      'video_nid' => array('video_nid'),
+      'order_id' => array('order_id'),
+    ),
+  );
+
+  $schema['users_video_playlists'] = array(
+    'description' => t('User video playlist access'),
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('User ID'),
+      ),
+      'playlist_nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('Video Node ID'),
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'not null' => false,
+        'unsigned' => true,
+        'description' => t('Order ID'),
+      ),
+    ),
+    'primary key' => array('uid','playlist_nid'),
+    'indexes' => array(
+      'uid' => array('uid'),
+      'video_nid' => array('playlist_nid'),
+      'order_id' => array('order_id'),
+    ),
+  );
+
+  $schema['users_video_segments'] = array(
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'video_nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'not null' => false,
+        'unsigned' => true,
+      ),
+      'favorite' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => true,
+        'unsigned' => true,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('uid','video_nid'),
+    'indexes' => array(
+      'uid' => array('uid'),
+      'video_nid' => array('video_nid'),
+      'order_id' => array('order_id'),
+      'favorite' => array('favorite'),
+    ),
+  );
+
+  $schema['users_video_custom_playlists'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'not null' => true,
+        'length' => 255,
+      ),
+      'editable' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => true,
+        'unsigned' => true,
+        'default' => 1,
+      ),
+      'playlist_nid' => array(
+        'type' => 'int',
+        'not null' => false,
+        'unsigned' => true,
+        'default' => null,
+      )
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+  );
+
+  $schema['users_video_custom_playlists_segments'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'custom_playlist_id' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'video_nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'video_nid' => array('video_nid'),
+      'custom_playlist_id' => array('custom_playlist_id'),
+    ),
+  );
+  
+  return $schema;
+}
+
+/**
+ * Added users_video_playlists table
+ */
+function video_update_7111(&$sandbox) {
+
+  if (!db_table_exists('users_video_playlists')) {
+    db_create_table('users_video_playlists',drupal_get_schema_unprocessed('video', 'users_video_playlists'));
+  }
+  
+}
+
+/**
+ * Added users_video_segments table
+ * Added users_video_custom_playlists table
+ * Added users_video_custom_playlists_segments table
+ */
+function video_update_7112(&$sandbox) {
+
+  if (!db_table_exists('users_video_segments')) {
+    db_create_table('users_video_segments',drupal_get_schema_unprocessed('video', 'users_video_segments'));
+  }
+
+  if (!db_table_exists('users_video_custom_playlists')) {
+    db_create_table('users_video_custom_playlists',drupal_get_schema_unprocessed('video', 'users_video_custom_playlists'));
+  }
+
+  if (!db_table_exists('users_video_custom_playlists_segments')) {
+    db_create_table('users_video_custom_playlists_segments',drupal_get_schema_unprocessed('video', 'users_video_custom_playlists_segments'));
+  }
+
+}

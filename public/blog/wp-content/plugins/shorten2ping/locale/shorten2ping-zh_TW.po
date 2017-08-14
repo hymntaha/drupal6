@@ -1,0 +1,199 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Shorten2Ping 1.2 (zh_TW)\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-11-08 04:12+0100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Pseric <pserics@gmail.com>\n"
+"Language-Team: Pseric <pserics@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Chinese\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-Country: TAIWAN\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: shorten2ping.php:57
+msgid "Short URL"
+msgstr "短網址"
+
+#: shorten2ping.php:270
+msgid "Settings saved."
+msgstr "設定已儲存。"
+
+#: shorten2ping.php:278
+msgid "Shorten2Ping Options"
+msgstr "Sohrten2Ping 選項"
+
+#: shorten2ping.php:280
+msgid "Shorten2Ping allows you to update status at Ping.fm or Twitter (only) whenever a new blog entry is published.  To start using it, simply enter the required information below, and press update information button. You only need to fill data for the services you want to use (i.e. if you want to use Ping.fm and not Twitter, you dont need to fill Twitter information)."
+msgstr "Shorten2Ping 讓你可以在發佈新文章後透過 Ping.fm 或 Twitter 來更新狀態。在開始使用以前，只要簡單地填入下方必填欄位，然後按下儲存設定按鈕即可。你只需要填入要使用的第三方服務資訊（舉例來說，如果你想使用 Ping.fm，但不用 Twitter ，你就不用填入 Twitter 的相關設定）。"
+
+#: shorten2ping.php:282
+msgid "You can also customize the message for the status notification by using the \"message\" field below.  You can use [title] to represent the title of the blog entry, and [link] to represent the permalink."
+msgstr "你也可以使用下方的 \"狀態訊息\" 欄位來自訂要產生的狀態通知。你可以使用 [title] 來表示部落格文章標題，[link] 則是固定連結。"
+
+#: shorten2ping.php:288
+msgid "General"
+msgstr "一般"
+
+#: shorten2ping.php:289
+msgid "Notification"
+msgstr "通知"
+
+#: shorten2ping.php:290
+msgid "Shorteners"
+msgstr "縮網址"
+
+#: shorten2ping.php:300
+#: shorten2ping.php:347
+#: shorten2ping.php:376
+msgid "Setting"
+msgstr "設定"
+
+#: shorten2ping.php:302
+#: shorten2ping.php:349
+#: shorten2ping.php:378
+msgid "Description"
+msgstr "說明"
+
+#: shorten2ping.php:306
+msgid "Status Message"
+msgstr "狀態訊息"
+
+#: shorten2ping.php:308
+msgid "Max. 200 characters for Ping.fm (including real title and shortened url), 140 if you wish to send it to Twitter."
+msgstr "Ping.fm 最多 200 個字元（包含真實標題以及縮短後的網址），如果要發送到 Twitter 的話則是 140 個字元。"
+
+#: shorten2ping.php:313
+msgid "Shorten Permalinks With:"
+msgstr "縮短固定連結："
+
+#: shorten2ping.php:315
+#: shorten2ping.php:382
+msgid "Bit.ly"
+msgstr "Bit.ly"
+
+#: shorten2ping.php:316
+#: shorten2ping.php:390
+msgid "Tr.im"
+msgstr "Tr.im"
+
+#: shorten2ping.php:317
+#: shorten2ping.php:395
+msgid "YOURLS"
+msgstr "YOURLS"
+
+#: shorten2ping.php:318
+#: shorten2ping.php:406
+msgid "Su.pr"
+msgstr "Su.pr"
+
+#: shorten2ping.php:319
+msgid "Self domain"
+msgstr "自己的網址"
+
+#: shorten2ping.php:320
+#: shorten2ping.php:331
+msgid "None"
+msgstr "無"
+
+#: shorten2ping.php:322
+msgid "Choose to make short URLs using Bit.ly (default), Tr.im, or turn off this feature."
+msgstr "選擇建立短網址的服務，例如 Bit.ly （預設）、Tr.im 或關閉這個功能。"
+
+#: shorten2ping.php:326
+msgid "Send Notification To:"
+msgstr "發送通知到："
+
+#: shorten2ping.php:328
+#: shorten2ping.php:353
+msgid "Ping.fm"
+msgstr "Ping.fm"
+
+#: shorten2ping.php:329
+#: shorten2ping.php:359
+msgid "Twitter"
+msgstr "Twitter"
+
+#: shorten2ping.php:330
+msgid "Both"
+msgstr "Ping.fm & Twitter"
+
+#: shorten2ping.php:333
+msgid "Choose to send notification to Ping.fm (default), Twitter, both services, or turn off this feature."
+msgstr "選擇要發送通知到 Ping.fm （預設）、Twitter、兩者皆是，或是關閉這個功能。"
+
+#: shorten2ping.php:354
+#: shorten2ping.php:384
+#: shorten2ping.php:408
+msgid "API Key"
+msgstr "API Key"
+
+#: shorten2ping.php:355
+msgid "Put your Ping.fm <a href=\"http://ping.fm/key/\">API key</a> here."
+msgstr "在這裡填入你的 Ping.fm <a href=\"http://ping.fm/key/\">API key</a>。"
+
+#: shorten2ping.php:359
+#: shorten2ping.php:390
+#: shorten2ping.php:396
+msgid "Username"
+msgstr "使用者名稱"
+
+#: shorten2ping.php:360
+#: shorten2ping.php:391
+#: shorten2ping.php:397
+msgid "Password"
+msgstr "密碼"
+
+#: shorten2ping.php:361
+msgid "Unfortunately <a href=\"http://twitter.com\">Twitter</a> doesn't have API keys for users, so you must put here your user login and password if you want to use this service."
+msgstr "很抱歉，<a href=\"http://twitter.com\">Twitter</a> 不提供 API Keys 給一般使用者，所以若要使用這個服務，可能要填入使用者名稱及密碼。"
+
+#: shorten2ping.php:383
+#: shorten2ping.php:407
+msgid "API Login"
+msgstr "API Login"
+
+#: shorten2ping.php:386
+msgid "Put here your API login and <a href=\"http://bit.ly/account/\">Bit.ly</a> API key."
+msgstr "填入你的 API login 和 <a href=\"http://bit.ly/account/\">Bit.ly</a> API key。"
+
+#: shorten2ping.php:392
+msgid "Unfortunately <a href=\"http://tr.im\">Tr.im</a> doesn't have API keys for users, so you must put here your user login and password if you want to use this service."
+msgstr "很抱歉，<a href=\"http://tr.im\">Tr.im</a> 不提供 API Keys 給一般使用者，所以若要使用這個服務，可能要填入使用者名稱及密碼。"
+
+#: shorten2ping.php:398
+msgid "Put here your username and password for <a href=\"http://yourls.org/\">YOURLS</a>."
+msgstr "填入你的 <a href=\"http://yourls.org/\">YOURLS</a> 使用者名稱及密碼。"
+
+#: shorten2ping.php:402
+msgid "YOURLS API URL"
+msgstr "YOURLS API URL"
+
+#: shorten2ping.php:403
+msgid "Example: http://example.com/yourls-api.php"
+msgstr "範例：http://example.com/yourls-api.php"
+
+#: shorten2ping.php:409
+msgid "Put here your API login and <a href=\"http://su.pr/settings/\">Su.pr</a> API key."
+msgstr "填入你的 <a href=\"http://su.pr/settings/\">Su.pr</a> API login 及 API key。"
+
+#: shorten2ping.php:417
+msgid "Save settings"
+msgstr "儲存設定"
+
+#: shorten2ping.php:422
+msgid "If you find this plugin useful, please consider to make a donation to Shorten2Ping's author (any amount will be appreciated)."
+msgstr "如果你覺得這個外掛很實用，請考慮捐贈給 Shorten2Ping 的作者（任何金額都歡迎）。<br />中文翻譯：<a href=\"http://pseric.com/\">Pseric</a>"
+
+#: shorten2ping.php:447
+msgid "Go to settings page"
+msgstr "前往設定頁面"
+
+#: shorten2ping.php:447
+msgid "Settings"
+msgstr "設定"
+

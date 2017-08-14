@@ -1,0 +1,1391 @@
+<?php
+
+define('CLASS_TYPE_VID',4);
+define('CLASS_CATEGORY_VID',5);
+define('CLASS_TYPE_CLASS',8);
+define('CLASS_TYPE_WORKSHOP',9);
+define('CLASS_TYPE_RETREAT',10);
+define('CLASS_TYPE_TEACHER_TRAINING',11);
+define('CLASS_PAGINATION',10);
+define('CLASS_BRING_FORM_ID','webform_client_form_11');
+define('TEACHER_TRAINING_PAGE',18);
+define('YTU_CERT_VID',3);
+define('YTU_CERT_TRAINER_TID',2);
+
+/**
+ * Implements hook_menu().
+ */
+function class_menu() {
+  $items['workshops-classes'] = array(
+    'title' => 'Workshops and Classes',
+    'page callback' => 'class_search_page_callback',
+    'access arguments' => array('access content'),
+  );
+
+  $items['class-list'] = array(
+  	'#title' => 'Class Listings',
+  	'page callback' => 'class_list_page_callback',
+  	'access arguments' => array('access content'),
+  );
+
+  $items['request/class-list'] = array(
+    '#title' => 'Class Listings',
+    'page callback' => 'class_list_page_callback',
+    'page arguments' => array(TRUE),
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function class_block_info() {
+  $blocks['training_search'] = array(
+    'info' => t('Teacher Training Search'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function class_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'training_search':
+      $block['subject'] = t('Search for Trainings');
+      $block['content']['form'] = drupal_get_form('class_training_search_form');
+      $block['content']['form']['#prefix'] = '<div class="training-search-form-wrapper">';
+      $block['content']['form']['#suffix'] = '</div>';
+      break;
+  }
+  return $block;
+}
+
+function class_training_search_form($form, &$form_state){
+
+	$options['type'] = array(CLASS_TYPE_TEACHER_TRAINING);
+
+	$form['wrapper'] = array(
+		'#type' => 'fieldset',
+		'#prefix' => '<div id="training-search">',
+		'#suffix' => '</div>',
+	);
+
+    if(isset($form_state['values']['country'])){
+      $options['country'] = $form_state['values']['country'];
+    }
+
+	if(isset($form_state['values']['state'])){
+		$options['state'] = $form_state['values']['state'];
+	}
+
+	$form['wrapper']['level'] = array(
+		'#prefix' => _mm('search_trainings_copy'),
+		'#type' => 'select',
+		'#title' => t('Select Training:'),
+		'#options' => class_get_training_levels($options),
+		'#ajax' => array(
+			'callback' => 'class_training_search_form_ajax_callback',
+			'wrapper' => 'training-search',
+		),
+	);
+
+	if(!empty($form_state['values']['level'])){
+		$options['level'] = $form_state['values']['level'];
+	}
+
+    $form['wrapper']['country'] = array(
+      '#type' => 'select',
+      '#title' => t('Select Country:'),
+      '#options' => class_get_countries($options),
+      '#ajax' => array(
+        'callback' => 'class_training_search_form_ajax_callback',
+        'wrapper' => 'training-search',
+      ),
+    );
+
+	$form['wrapper']['state'] = array(
+		'#type' => 'select',
+		'#title' => t('Select State:'),
+		'#options' => class_get_states($options),
+		'#ajax' => array(
+			'callback' => 'class_training_search_form_ajax_callback',
+			'wrapper' => 'training-search',
+		),
+	);
+
+	if(!empty($form_state['values']['state'])){
+		$options['state'] = $form_state['values']['state'];
+	}
+
+	$form['wrapper']['city'] = array(
+		'#type' => 'select',
+		'#title' => t('Select City:'),
+		'#options' => class_get_cities($options),
+		'#states' => array(
+			'invisible' => array(
+				':input[name="state"]' => array('empty' => TRUE),
+			),
+		)
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Search Now!',
+		'#suffix' => l('Search All Trainings','class-list',array(
+			'query' => array('type' => CLASS_TYPE_TEACHER_TRAINING),
+			'attributes' => array('class' => array('search-all-trainings')),
+		)),
+	);
+
+	return $form;
+}
+
+function class_training_search_form_ajax_callback($form, &$form_state){
+	return $form['wrapper'];
+}
+
+function class_training_search_form_submit($form, &$form_state){
+	$options['query']['type'] = CLASS_TYPE_TEACHER_TRAINING;
+
+	if(!empty($form_state['values']['level'])){
+		$options['query']['level'] = $form_state['values']['level'];
+	}
+    if(!empty($form_state['values']['country'])){
+      $options['query']['country'] = $form_state['values']['country'];
+    }
+	if(!empty($form_state['values']['state'])){
+		$options['query']['state'] = $form_state['values']['state'];
+	}
+	if(!empty($form_state['values']['city'])){
+		$options['query']['city'] = $form_state['values']['city'];
+	}
+
+	drupal_goto('class-list',$options);
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function class_node_view($node, $view_mode, $langcode) {
+  if($node->type == 'class'){
+  	if(isset($node->content['field_teacher']['#title'])){
+  		$node->content['field_teacher']['#title'] = 'Instructor';
+  	}
+	if(isset($node->content['field_co_teacher'][0]['#markup'])){
+		$node->content['field_teacher']['#title'] = 'Instructors';
+		$node->content['field_teacher'][0]['#markup'] .= ' & '.$node->content['field_co_teacher'][0]['#markup'];
+		unset($node->content['field_co_teacher']);
+	}
+  	$dates = array();
+  	if(isset($node->content['field_single_date'][0]['#markup'])){
+  	  if($view_mode == 'right_block'){
+  	    $min_date = strtotime($node->field_single_date[LANGUAGE_NONE][0]['value']);
+        $max_date = strtotime($node->field_single_date[LANGUAGE_NONE][count($node->content['field_single_date']['#items']) - 1]['value']);
+        $dates['non_recurring'][] = array('#markup' => date('F j-',$min_date).date('jS, Y', $max_date));
+      }
+      else{
+        foreach($node->content['field_single_date']['#items'] as $delta => $sdate){
+          $dates['non_recurring'][] = $node->content['field_single_date'][$delta];
+        }
+      }
+  	}
+  	if(isset($node->content['field_recurring_schedule'][0]['#markup']) && count($node->content['field_recurring_schedule']['#items']) > 0){
+  		$dates['recurring']['times'][] = $node->content['field_recurring_schedule'][0];
+  	}
+  	$node->content['class_schedule']['#markup'] = theme('class_schedule',array('dates' => $dates));
+
+  	if(isset($node->content['field_application'][0]['#markup'])){
+  		$node->content['field_application'][0]['#markup'] = l('Download Application',$node->content['field_application'][0]['#markup'],array(
+  			'attributes' => array('class' => array('download-application')),
+  		));
+  	}
+
+  	if($view_mode == 'teaser' || $view_mode == 'right_block'){
+  		unset($node->content['field_venue']);
+  		unset($node->content['field_address'][0]['street_block']);
+  		unset($node->content['field_address'][0]['country']);
+
+        if($view_mode == 'teaser'){
+          $node->content['field_address']['#label_display'] = 'inline';
+        }
+        else if($view_mode == 'right_block'){
+          $country = $node->content['field_address'][0]['#address']['country'];
+          if($country == 'US'){
+            $country = 'USA';
+          }
+          else{
+            $countries = _addressfield_country_options_list();
+            $country = $countries[$country];
+          }
+          $address = $node->content['field_address'][0]['#address']['locality'].', '.$node->content['field_address'][0]['#address']['administrative_area'].', '.$country;
+          $node->content['field_address'] = array('#markup' => $address);
+        }
+
+  		if(class_is_training($node)){
+  			if(isset($node->field_ytu_certification_training[LANGUAGE_NONE][0]['tid'])){
+	  			$term = taxonomy_term_load($node->field_ytu_certification_training[LANGUAGE_NONE][0]['tid']);
+	  			$node->title = $term->name;
+  			}
+  		}
+  	}
+  	else if($view_mode == 'full'){
+  		if(class_is_training($node)){
+  			if(isset($node->field_ytu_certification_training[LANGUAGE_NONE][0]['tid'])){
+	  			$term = taxonomy_term_load($node->field_ytu_certification_training[LANGUAGE_NONE][0]['tid']);
+	  			$node->title = $term->name;
+	  			drupal_set_title($term->name);
+  			}
+  		}
+  	}
+  }
+  else if($node->nid == TEACHER_TRAINING_PAGE && $view_mode == 'full'){
+  	$node->content['cert_levels']['#prefix'] = _mm('teacher_training_cert_listing_copy');
+  	$terms = taxonomy_get_tree(YTU_CERT_VID);
+  	foreach($terms as $term){
+  		if($term->tid == YTU_CERT_TRAINER_TID){
+  			continue;
+  		}
+
+  		$node->content['cert_levels'][$term->tid] = taxonomy_term_view(taxonomy_term_load($term->tid));
+
+  		$query = class_get_query(array(
+  			'level' => $term->tid,
+  		));
+  		$num_rows = $query->fields('n',array('nid'))->countQuery()->execute()->fetchField();
+  		if($num_rows > 0){
+  			$node->content['cert_levels'][$term->tid]['view_classes']['#markup'] = l('View Upcoming Trainings','class-list',array(
+  				'query' => array('type' => CLASS_TYPE_TEACHER_TRAINING,'level' => $term->tid),
+  				'attributes' => array('class' => array('view-upcoming-trainings')),
+  			));
+  		}
+  	}
+  }
+}
+
+/**
+ * Implements hook_hide_submit_valid_forms().
+ */
+function class_hide_submit_valid_forms() {
+  return 'class_node_form';
+}
+
+function class_search_page_callback(){
+	$render = array();
+
+	$render['workshop-retreat-search']['#prefix'] = '<div class="workshop-search">'._mm('workshop_search_copy').'</div>';
+	$render['workshop-retreat-search'][] = drupal_get_form('class_workshop_search_form');
+
+	$render['class-search']['#prefix'] = '<div class="class-search">'._mm('class_search_copy').'</div>';
+	$render['class-search'][] = drupal_get_form('class_search_form');
+
+	$render['bottom'] = array(
+		'#prefix' => '<div class="class-search-bottom">',
+		'#suffix' => '</div>',
+		'#markup' => _mm('bottom_search_copy'),
+	);
+
+	return $render;
+}
+
+function class_workshop_search_form($form, &$form_state){
+
+	$wrapper = 'workshop-ajax-wrapper';
+	$class_options = array(
+		'type' => array(CLASS_TYPE_WORKSHOP, CLASS_TYPE_RETREAT),
+	);
+
+	$form = array(
+		'#prefix' => '<div id="'.$wrapper.'">',
+		'#suffix' => '</div>',
+	);
+
+	$form['type'] = array(
+		'#type' => 'hidden',
+		'#value' => implode('_',$class_options['type']),
+	);
+
+	$form['category'] = array(
+		'#title' => 'Category',
+		'#type' => 'select',
+		'#options' => class_get_categories($class_options),
+		'#default_value' => isset($form_state['values']['category']) ? $form_state['values']['category'] : null,
+		'#ajax' => array(
+			'callback' => 'class_workshop_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$class_options['category'] = '';
+	if(isset($form_state['values']['category']) && !empty($form_state['values']['category'])){
+		$class_options['category'] = $form_state['values']['category'];
+	}
+	$months = class_get_months($class_options);
+
+	$form['month'] = array(
+		'#title' => 'Month',
+		'#type' => 'select',
+		'#options' => $months,
+		'#ajax' => array(
+			'callback' => 'class_workshop_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$class_options['month'] = '';
+	if(isset($form_state['values']['month']) && !empty($form_state['values']['month'])){
+		$class_options['month'] = $form_state['values']['month'];
+	}
+	$countries = class_get_countries($class_options);
+
+
+	$form['country'] = array(
+		'#title' => 'Country',
+		'#type' => 'select',
+		'#options' => $countries,
+		'#ajax' => array(
+			'callback' => 'class_workshop_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$states = array('' => 'All States');
+	if(isset($form_state['values']['country']) && !empty($form_state['values']['country'])){
+		$class_options['country'] = $form_state['values']['country'];
+		$states = class_get_states($class_options);
+	}
+
+	$form['state'] = array(
+		'#title' => 'State',
+		'#type' => 'select',
+		'#options' => $states,
+		'#states' => array(
+			'invisible' => array(
+				'#'.$wrapper.' :input[name="country"]' => array('empty' => TRUE),
+			),
+		),
+		'#ajax' => array(
+			'callback' => 'class_workshop_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$cities = array('' => 'All Cities');
+	if(isset($form_state['values']['state']) && !empty($form_state['values']['state'])){
+		$class_options['state'] = $form_state['values']['state'];
+		$cities = class_get_cities($class_options);
+	}
+
+	$form['city'] = array(
+		'#title' => 'City',
+		'#type' => 'select',
+		'#options' => $cities,
+		'#states' => array(
+			'invisible' => array(
+				'#'.$wrapper.' :input[name="state"]' => array('empty' => TRUE),
+			),
+		)
+	);
+
+	$form['or'] = array(
+	  '#prefix' => '<div class="sep"><span>OR</span>',
+	  '#suffix' => '</div>',
+	);
+
+	$form['zip'] = array(
+	  '#title' => 'Zip / Postal Code',
+	  '#type' => 'textfield',
+	  '#size' => 15,
+	  '#maxlength' => 15,
+	);
+
+	$form['radius'] = array(
+	  '#title' => 'Radius (For US and Canada only)',
+	  '#type' => 'select',
+	  '#options' => array(
+		'' => 'Select',
+		'5' => '5',
+		'10' => '10',
+		'15' => '15',
+		'20' => '20',
+		'50' => '50',
+		'100' => '100',
+	  )
+	);
+
+	$form['submit-wrapper'] = array(
+		'#prefix' => '<div class="submit-wrapper">',
+		'#suffix' => '</div>',
+	);
+
+	$form['submit-wrapper']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Find Selected',
+		'#suffix' => l('Find All','class-list',array(
+			'attributes' => array('class' => array('find-all')),
+			'query' => array('type' => $form['type']['#value']),
+		)),
+	);
+
+	return $form;
+}
+
+function class_workshop_search_form_ajax($form, &$form_state){
+	return $form;
+}
+
+function class_workshop_search_form_validate($form, &$form_state){
+  if(!empty($form_state['values']['zip']) && !empty($form_state['values']['radius'])) {
+	if (!teacher_zip_is_valid($form_state['values']['zip'])) {
+	  form_set_error('', 'Invalid zip code.');
+	}
+  }
+
+  if(!empty($form_state['values']['zip']) && empty($form_state['values']['radius'])){
+    form_set_error('', 'Please enter a radius to do a zip radius search.');
+  }
+
+  if(empty($form_state['values']['zip']) && !empty($form_state['values']['radius'])){
+    form_set_error('', 'Please enter a zip to do a zip radius search.');
+  }
+}
+
+function class_workshop_search_form_submit($form, &$form_state){
+	$query = array('query' => array('type' => $form_state['values']['type']));
+
+	if(!empty($form_state['values']['zip']) && !empty($form_state['values']['radius'])){
+	  $query['query']['zip'] = $form_state['values']['zip'];
+	  $query['query']['radius'] = $form_state['values']['radius'];
+	}
+	else{
+	  if(isset($form_state['values']['category']) && !empty($form_state['values']['category'])){
+		$query['query']['category'] = $form_state['values']['category'];
+	  }
+
+	  if(isset($form_state['values']['month']) && !empty($form_state['values']['month'])){
+		$query['query']['month'] = $form_state['values']['month'];
+	  }
+
+	  if(isset($form_state['values']['country']) && !empty($form_state['values']['country'])){
+		$query['query']['country'] = $form_state['values']['country'];
+	  }
+
+	  if(isset($form_state['values']['state']) && !empty($form_state['values']['state'])){
+		$query['query']['state'] = $form_state['values']['state'];
+	  }
+
+	  if(isset($form_state['values']['city']) && !empty($form_state['values']['city'])){
+		$query['query']['city'] = $form_state['values']['city'];
+	  }
+	}
+
+	drupal_goto('class-list',$query);
+}
+
+function class_search_form($form, &$form_state){
+
+	$wrapper = 'class-ajax-wrapper';
+	$class_options = array(
+		'type' => array(CLASS_TYPE_CLASS),
+	);
+
+	$form = array(
+		'#prefix' => '<div id="'.$wrapper.'">',
+		'#suffix' => '</div>',
+	);
+
+	$form['type'] = array(
+		'#type' => 'hidden',
+		'#value' => implode('_',$class_options['type']),
+	);
+
+	$months = class_get_months($class_options);
+
+	$form['month'] = array(
+		'#title' => 'Month',
+		'#type' => 'select',
+		'#options' => $months,
+		'#ajax' => array(
+			'callback' => 'class_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$class_options['month'] = '';
+	if(isset($form_state['values']['month']) && !empty($form_state['values']['month'])){
+		$class_options['month'] = $form_state['values']['month'];
+	}
+	$countries = class_get_countries($class_options);
+
+
+	$form['country'] = array(
+		'#title' => 'Country',
+		'#type' => 'select',
+		'#options' => $countries,
+		'#ajax' => array(
+			'callback' => 'class_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$states = array('' => 'All States');
+	if(isset($form_state['values']['country']) && !empty($form_state['values']['country'])){
+		$class_options['country'] = $form_state['values']['country'];
+		$states = class_get_states($class_options);
+	}
+
+	$form['state'] = array(
+		'#title' => 'State',
+		'#type' => 'select',
+		'#options' => $states,
+		'#states' => array(
+			'invisible' => array(
+				'#'.$wrapper.' :input[name="country"]' => array('empty' => TRUE),
+			),
+		),
+		'#ajax' => array(
+			'callback' => 'class_search_form_ajax',
+			'wrapper' => $wrapper,
+		)
+	);
+
+	$cities = array('' => 'All Cities');
+	if(isset($form_state['values']['state']) && !empty($form_state['values']['state'])){
+		$class_options['state'] = $form_state['values']['state'];
+		$cities = class_get_cities($class_options);
+	}
+
+	$form['city'] = array(
+		'#title' => 'City',
+		'#type' => 'select',
+		'#options' => $cities,
+		'#states' => array(
+			'invisible' => array(
+				'#'.$wrapper.' :input[name="state"]' => array('empty' => TRUE),
+			),
+		)
+	);
+
+    $form['or'] = array(
+	  '#prefix' => '<div class="sep"><span>OR</span>',
+	  '#suffix' => '</div>',
+	);
+
+    $form['zip'] = array(
+	  '#title' => 'Zip / Postal Code',
+	  '#type' => 'textfield',
+	  '#size' => 15,
+	  '#maxlength' => 15,
+	);
+
+	$form['radius'] = array(
+	  '#title' => 'Radius (For US and Canada only)',
+	  '#type' => 'select',
+	  '#options' => array(
+		'' => 'Select',
+		'5' => '5',
+		'10' => '10',
+		'15' => '15',
+		'20' => '20',
+		'50' => '50',
+		'100' => '100',
+	  )
+	);
+
+	$form['submit-wrapper'] = array(
+		'#prefix' => '<div class="submit-wrapper">',
+		'#suffix' => '</div>',
+	);
+
+	$form['submit-wrapper']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Find Selected',
+		'#suffix' => l('Find All','class-list',array(
+			'attributes' => array('class' => array('find-all')),
+			'query' => array('type' => $form['type']['#value']),
+		)),
+	);
+
+	return $form;
+}
+
+function class_search_form_ajax($form, &$form_state){
+	return $form;
+}
+
+function class_search_form_validate($form, &$form_state){
+  if(!empty($form_state['values']['zip']) && !empty($form_state['values']['radius'])) {
+	if (!teacher_zip_is_valid($form_state['values']['zip'])) {
+	  form_set_error('', 'Invalid zip code.');
+	}
+  }
+
+  if(!empty($form_state['values']['zip']) && empty($form_state['values']['radius'])){
+    form_set_error('', 'Please enter a radius to do a zip radius search.');
+  }
+
+  if(empty($form_state['values']['zip']) && !empty($form_state['values']['radius'])){
+    form_set_error('', 'Please enter a zip to do a zip radius search.');
+  }
+}
+
+function class_search_form_submit($form, &$form_state){
+	$query = array('query' => array('type' => $form_state['values']['type']));
+
+  	if(!empty($form_state['values']['zip']) && !empty($form_state['values']['radius'])){
+	  $query['query']['zip'] = $form_state['values']['zip'];
+	  $query['query']['radius'] = $form_state['values']['radius'];
+	}
+	else{
+	  if(isset($form_state['values']['category']) && !empty($form_state['values']['category'])){
+		$query['query']['category'] = $form_state['values']['category'];
+	  }
+
+	  if(isset($form_state['values']['month']) && !empty($form_state['values']['month'])){
+		$query['query']['month'] = $form_state['values']['month'];
+	  }
+
+	  if(isset($form_state['values']['country']) && !empty($form_state['values']['country'])){
+		$query['query']['country'] = $form_state['values']['country'];
+	  }
+
+       if(isset($form_state['values']['state']) && !empty($form_state['values']['state'])){
+            $query['query']['state'] = $form_state['values']['state'];
+       }
+
+       if(isset($form_state['values']['city']) && !empty($form_state['values']['city'])){
+            $query['query']['city'] = $form_state['values']['city'];
+       }
+     }
+
+     drupal_goto('class-list',$query);
+}
+function class_get_proper_teacher_name($teacher_id) {
+     $teacher_name = node_load($teacher_id)->title;
+     return $teacher_name. (substr($teacher_name,-1) == 's'?"'":"'s")." Schedule";
+}
+
+function class_list_page_callback($admin_suppress = FALSE){
+  if($admin_suppress){
+    admin_menu_suppress();
+  }
+     $render = array();
+     $options = array();
+     $page_title = '';
+
+     if(!empty($_GET['teacher'])){
+       $page_title = class_get_proper_teacher_name((int)$_GET['teacher']);
+     }
+
+     $no_results = 'No classes found.';
+
+     if(!empty($_GET['type'])){
+          $options['type'] = explode('_',$_GET['type']);
+          if($_GET['type'] == CLASS_TYPE_WORKSHOP.'_'.CLASS_TYPE_RETREAT){
+               $page_title = 'YTU Upcoming Workshops & Retreats';
+            $no_results = 'No workshops/retreats found.';
+          }
+          if($_GET['type'] == CLASS_TYPE_CLASS.'_'.CLASS_TYPE_WORKSHOP){
+               $page_title = 'YTU Upcoming Classes & Workshops';
+          }
+          else if($_GET['type'] == CLASS_TYPE_CLASS){
+               $page_title = 'YTU Upcoming Classes';
+		}
+		else if($_GET['type'] == CLASS_TYPE_TEACHER_TRAINING){
+			$page_title = 'YTU Upcoming Teacher Trainings';
+          $no_results = 'No teacher trainings found.';
+		}
+	}
+
+  if(!empty($page_title)){
+    $page_title = t($page_title);
+    drupal_set_title($page_title);
+    $render['classes']['#prefix'] = '<p class="blue-title">'.$page_title.'</p>';
+  }
+
+	if(!empty($_GET['category'])){
+		$options['category'] = $_GET['category'];
+	}
+
+	if(!empty($_GET['month'])){
+		$options['month'] = $_GET['month'];
+	}
+
+	if(!empty($_GET['country'])){
+		$options['country'] = $_GET['country'];
+	}
+
+	if(!empty($_GET['state'])){
+		$options['state'] = $_GET['state'];
+	}
+
+	if(!empty($_GET['city'])){
+		$options['city'] = $_GET['city'];
+	}
+
+	if(!empty($_GET['teacher'])){
+		$options['teacher'] = $_GET['teacher'];
+	}
+
+	if(!empty($_GET['level'])){
+		$options['level'] = $_GET['level'];
+	}
+
+  	if(!empty($_GET['zip']) && !empty($_GET['radius'])){
+	  $options['zip'] = $_GET['zip'];
+	  $options['radius'] = $_GET['radius'];
+	}
+
+	$classes = class_get_classes($options);
+	if(count($classes) == 0){
+		$render['no_results']['#markup'] = '<p>'.$no_results.'</p>';
+	}
+	else{
+		$classes = node_load_multiple($classes);
+		$render['classes'] = node_view_multiple($classes,'teaser');
+	}
+
+	$render['pager'] = array('#theme' => 'pager');
+
+	return $render;
+}
+
+function class_messages_info(){
+	return array(
+    'workshop_search_copy'=>array(
+      'title'=>"Workshop & Retreat Search Copy",
+      'description'=>"Text copy above Workshop & Retreat search form",
+      'type'=>"richtext",
+      'group'=>"class",
+      'fieldset'=>"search",
+      ),
+    'class_search_copy'=>array(
+      'title'=>"Class Search Copy",
+      'description'=>"Text copy above Class search form",
+      'type'=>"richtext",
+      'group'=>"class",
+      'fieldset'=>"search",
+      ),
+    'bottom_search_copy'=>array(
+      'title'=>"Bottom of Search Page Copy",
+      'description'=>"Text copy below the Class search form",
+      'type'=>"richtext",
+      'group'=>"class",
+      'fieldset'=>"search",
+      ),
+    'search_trainings_copy'=>array(
+    	'title'=>"Search Trainings Copy",
+    	'description'=>"Text copy above Training search form",
+    	'type'=>"richtext",
+    	'group'=>"class",
+    	'fieldset'=>'search',
+    ),
+    'teacher_training_cert_listing_copy'=>array(
+    	'title'=>'Teacher Training Page Cert Listing Copy',
+    	'description'=>'Copy above cert level listings on teacher training page',
+    	'type'=>'richtext',
+    	'group'=>'class',
+    	'fieldset'=>'certification',
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function class_node_insert($node) {
+	if($node->type == 'class'){
+		$months = _class_calc_months($node);
+		if(!empty($months)){
+			$query = db_insert('class_months')->fields(array('class_nid','month'));
+
+			foreach($months as $month){
+				$query->values(array('class_nid' => $node->nid, 'month' => $month));
+			}
+			$query->execute();
+	    }
+
+	    $dates = _class_calc_dates($node);
+	    if(!empty($dates)){
+	    	$query = db_insert('class_dates')->fields(array('class_nid','sort_date','end_date'));
+	    	$query->values(array('class_nid' => $node->nid, 'sort_date' => $dates['sort_date'], 'end_date' => $dates['end_date']));
+	    	$query->execute();
+	    }
+	}
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function class_node_update($node) {
+	if($node->type == 'class'){
+
+		db_delete('class_months')->condition('class_nid', $node->nid)->execute();
+		db_delete('class_dates')->condition('class_nid', $node->nid)->execute();
+
+		$months = _class_calc_months($node);
+		if(!empty($months)){
+			$query = db_insert('class_months')->fields(array('class_nid','month'));
+
+			foreach($months as $month){
+				$query->values(array('class_nid' => $node->nid, 'month' => $month));
+			}
+			$query->execute();
+	    }
+	    $dates = _class_calc_dates($node);
+	    if(!empty($dates)){
+	    	$query = db_insert('class_dates')->fields(array('class_nid','sort_date','end_date'));
+	    	$query->values(array('class_nid' => $node->nid, 'sort_date' => $dates['sort_date'], 'end_date' => $dates['end_date']));
+	    	$query->execute();
+	    }
+	}
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function class_node_delete($node) {
+	if($node->type == 'class'){
+		db_delete('class_months')->condition('class_nid', $node->nid)->execute();
+		db_delete('class_dates')->condition('class_nid', $node->nid)->execute();
+	}
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function class_node_presave($node) {
+	if(account_is_teacher() && $node->type == 'class'){
+		if(!$node->is_new){
+			$node->path['pathauto'] = FALSE;
+		}
+	}
+  $lat_lng = teacher_get_lat_lng($node);
+  if($lat_lng !== FALSE){
+	$node->field_latitude[LANGUAGE_NONE][0]['value'] = $lat_lng['lat'];
+	$node->field_longitude[LANGUAGE_NONE][0]['value'] = $lat_lng['lng'];
+  }
+}
+/**
+ * Implements hook_form_alter().
+ */
+function class_form_alter(&$form, &$form_state, $form_id) {
+	if($form_id == 'class_node_form'){
+		drupal_set_title('Add Class/Workshop/Training');
+
+		drupal_add_js(drupal_get_path('module', 'class').'/class.js');
+		drupal_add_js(drupal_get_path('theme', 'yogatuneup').'/js/date_range_handling.js');
+
+		$form['field_ytu_certification_training']['#states'] = array(
+			'invisible' => array(
+				':input[name="field_class_type[und]['.CLASS_TYPE_TEACHER_TRAINING.']"]' => array('checked' => FALSE),
+			),
+		);
+
+		$form['field_application']['#states'] = array(
+			'invisible' => array(
+				':input[name="field_class_type[und]['.CLASS_TYPE_TEACHER_TRAINING.']"]' => array('checked' => FALSE),
+			),
+		);
+
+		$form['field_price']['#states'] = array(
+			'invisible' => array(
+				':input[name="field_class_type[und]['.CLASS_TYPE_TEACHER_TRAINING.']"]' => array('checked' => FALSE),
+			),
+		);
+
+		$form['body'][LANGUAGE_NONE][0]['#after_build'][] = 'teacher_text_format';
+
+		$form['field_latitude']['#prefix'] = '<div style="display:none;">';
+		$form['field_longitude']['#prefix'] = '<div style="display:none;">';
+		$form['field_latitude']['#suffix'] = '</div>';
+		$form['field_longitude']['#suffix'] = '</div>';
+
+		if(account_is_teacher()){
+			$teacher_page_nid = teacher_get_teacher_page_nid();
+			if($teacher_page_nid){
+				$teacher = node_load($teacher_page_nid);
+				$form['field_teacher'][LANGUAGE_NONE][0]['target_id']['#value'] = $teacher->title.' ('.$teacher->nid.')';
+				$form['field_teacher'][LANGUAGE_NONE][0]['target_id']['#attributes']['disabled'] = 'disabled';
+
+				if(!teacher_is_trainer($teacher_page_nid)){
+					unset($form['field_class_type'][LANGUAGE_NONE]['#options'][CLASS_TYPE_TEACHER_TRAINING]);
+					unset($form['field_ytu_certification_training']);
+					unset($form['field_application']);
+				}
+			}
+			else{
+				drupal_set_message(t('You must create your teacher page before adding classes.'),'warning');
+				drupal_goto('user');
+			}
+		}
+
+		$form['field_categories'][LANGUAGE_NONE]['#prefix'] = '<div class="form-item" style="padding-bottom:0;margin:0;"><input id="check-all-categories" type="checkbox"></input><label class="option" for="check-all-categories">&nbsp;Check All Categories</label></div>';
+		$form['#validate'][] = 'class_node_form_date_validate';
+	}
+
+	//Bring YTU classes and workshops near you webform
+	if($form_id == 'webform_client_form_11'){
+		$form['#submit'][] = 'class_bring_form_submit';
+	}
+}
+
+function class_node_form_date_validate($form, &$form_state){
+	$sched_set = false;
+	if(isset($form_state['values']['field_recurring_schedule'][LANGUAGE_NONE])){
+		foreach($form_state['values']['field_recurring_schedule'][LANGUAGE_NONE] as $delta => $rec_sched){
+			if(!empty($rec_sched['starthours'])){
+				$sched_set = true;
+			}
+		}
+	}
+	$rec_date_set = false;
+	if(isset($form_state['values']['field_recurring_date_range'][LANGUAGE_NONE][0])){
+		if(!empty($form_state['values']['field_recurring_date_range'][LANGUAGE_NONE][0]['value'])){
+			$rec_date_set = true;
+		}
+	}
+
+	if($sched_set != $rec_date_set){
+		if(!$sched_set){
+			form_set_error('field_recurring_schedule','Please set times for the recurring schedule.');
+		}
+		else{
+			form_set_error('field_recurring_date_range','Please set a date range for the recurring schedule.');
+		}
+	}
+
+	$sdate_set = false;
+	if(isset($form_state['values']['field_single_date'][LANGUAGE_NONE][0])){
+		if(!empty($form_state['values']['field_single_date'][LANGUAGE_NONE][0]['value'])){
+			$sdate_set = true;
+		}
+	}
+
+	if(!$rec_date_set && !$sdate_set){
+		form_set_error('','Please set a date for the class.');
+	}
+}
+
+function class_bring_form_submit($form, &$form_state){
+	global $user;
+
+	$address = unserialize($form_state['values']['submitted_tree']['address']);
+
+	require_once DRUPAL_ROOT . '/includes/locale.inc';
+	$countries = country_get_list();
+
+	$infusionsoft_params = array(
+		'FirstName' => $form_state['values']['submitted_tree']['first_name'],
+		'LastName' => $form_state['values']['submitted_tree']['last_name'],
+		'Email' => $form_state['values']['submitted_tree']['email_address'],
+		'Phone3Type' => 'Work',
+		'Phone3' => $form_state['values']['submitted_tree']['phone'],
+		'Address3Street1' => $address['thoroughfare'],
+		'Address3Street2' => $address['premise'],
+		'City3' => $address['locality'],
+		'State3' => isset($address['administrative_area']) ? $address['administrative_area'] : '',
+		'PostalCode3' => $address['postal_code'],
+		'Country3' => $countries[$address['country']],
+	);
+
+	$contact_id = infusionsoft_create_anon_contact($infusionsoft_params,$user->uid);
+
+	if($contact_id){
+		foreach($form_state['values']['submitted_tree']['are_you_interested_in'] as $tag_id){
+			infusionsoft_anon_contact_apply_tag($contact_id,$tag_id);
+		}
+		infusionsoft_anon_contact_apply_tag($contact_id,$form_state['values']['submitted_tree']['are_you_a']);
+	}
+}
+
+/**
+ * Implements hook_theme().
+ */
+function class_theme($existing, $type, $theme, $path) {
+  return array(
+    'class_schedule' => array(
+      'template' => 'class-schedule',
+      'variables' => array('dates' => array()),
+    ),
+  );
+}
+
+/**
+ * Implements hook_date_combo_process_alter().
+ */
+function class_date_combo_process_alter(&$element, $form_state, $context){
+	if($element['#field_name'] == 'field_single_date'){
+		$element['#title'] = str_replace('PROGRAM DATE(S)','ENTER DATE',$element['#title']);
+	}
+	$element['show_todate']['#title'] = t('Provide End Date/Time');
+	$element['show_todate']['#weight'] = 1000;
+	$element['show_todate']['#prefix'] = '<div class="date-no-float">';
+	$element['show_todate']['#suffix'] = '</div>';
+}
+
+function class_get_categories($options){
+ $categories = array('' => 'All Categories');
+
+ $query = db_select('taxonomy_term_data','ttd')->fields('ttd',array('tid','name'))->condition('ttd.vid',CLASS_CATEGORY_VID);
+ $query->innerJoin('taxonomy_index','ti','ttd.tid = ti.tid');
+ $query->innerJoin('node','n','ti.nid = n.nid');
+ $query->condition('n.status',1)->condition('n.type','class')->orderBy('ttd.name');
+ $now = strtotime('now');
+ $query->innerJoin('class_dates','cd','n.nid = cd.class_nid');
+ $query->condition(db_or()->isNull('cd.end_date')->condition('cd.end_date',$now,'>='));
+
+ if(!empty($options['type'])){
+	$query->innerJoin('taxonomy_index','ti2','n.nid = ti2.nid');
+	$query->condition('ti2.tid',$options['type'],'IN');
+ }
+
+ $result = $query->execute();
+ foreach($result as $row){
+ 	$categories[$row->tid] = $row->name;
+ }
+
+ return $categories;
+}
+
+function class_get_classes($options){
+  $classes = array();
+
+  $options['pagination'] = isset($options['pagination']) ? $options['pagination'] : true;
+  $options['date_sort'] = isset($options['date_sort']) ? $options['date_sort'] : true;
+
+  $query = class_get_query($options);
+  $query->fields('n',array('nid'));
+
+  if(isset($options['limit'])){
+    $query->range(0,$options['limit']);
+  }
+  else{
+    $query->limit(CLASS_PAGINATION);
+  }
+
+  $result = $query->execute();
+  foreach($result as $row){
+      $classes[$row->nid] = $row->nid;
+  }
+
+  return $classes;
+}
+
+function class_get_months($options){
+	$months = array('' => 'All Months');
+
+	$query = class_get_query($options);
+	$query->innerJoin('class_months','cm','n.nid = cm.class_nid');
+	$result = $query->fields('cm')->execute();
+
+	foreach($result as $row){
+		$months[$row->month] = _class_get_month_name($row->month);
+	}
+
+	ksort($months);
+
+	return $months;
+}
+
+function class_get_countries($options){
+	$countries = array('' => 'All Countries');
+	$country_list = _addressfield_country_options_list();
+
+	$query = class_get_query($options);
+
+	$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+	$results = $query->fields('a',array('field_address_country'))->orderBy('a.field_address_country')->execute();
+
+	foreach($results as $row){
+		$countries[$row->field_address_country] = $country_list[$row->field_address_country];
+	}
+
+	return $countries;
+}
+
+function class_get_states($options){
+	$states = array('' => 'All States');
+
+	$query = class_get_query($options);
+
+	if(empty($options['country'])){
+		$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+	}
+	$results = $query->fields('a',array('field_address_administrative_area'))->orderBy('a.field_address_administrative_area')->execute();
+
+	foreach($results as $row){
+		if(!empty($options['country'])){
+			$states[$row->field_address_administrative_area] =  _addressfield_tokens_state($options['country'], $row->field_address_administrative_area);
+		}
+		else{
+			$states[$row->field_address_administrative_area] = $row->field_address_administrative_area;
+		}
+	}
+
+	return $states;
+}
+
+function class_get_cities($options){
+	$cities = array('' => 'All Cities');
+
+	$query = class_get_query($options);
+
+	if(empty($options['country']) && empty($options['state'])){
+		$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+	}
+	$query->fields('a',array('field_address_locality'))->orderBy('a.field_address_locality');
+
+	$results = $query->execute();
+
+	foreach($results as $row){
+		$city = trim($row->field_address_locality);
+		$cities[$city] = $city;
+	}
+
+	return $cities;
+}
+
+function class_get_training_levels($options){
+	$levels = array('' => 'All Trainings');
+
+	$query = class_get_query($options);
+	$query->innerJoin('field_data_field_ytu_certification_training','ytr','n.nid = ytr.entity_id');
+	$query->innerJoin('taxonomy_index','yti','n.nid = yti.nid');
+	$query->innerJoin('taxonomy_term_data','yttd','yti.tid = yttd.tid');
+	$query->condition('yttd.vid',YTU_CERT_VID);
+	$query->orderBy('yttd.weight');
+
+	$result = $query->fields('yttd',array('tid','name'))->execute();
+
+	$rmm_levels = array();
+
+	foreach($result as $row){
+		if($row->tid == YTU_CERT_TRAINER_TID){
+			continue;
+		}
+		$levels[$row->tid] = $row->name;
+
+		if(strpos($row->name, 'The Roll Model') !== FALSE){
+		  $rmm_levels[$row->tid] = $row->tid;
+        }
+	}
+
+	if(!empty($rmm_levels)){
+	  $levels[implode(',', $rmm_levels)] = t('Both RMM Trainings');
+    }
+
+	return $levels;
+}
+
+
+function class_get_query($options){
+
+	if(isset($options['pagination']) && $options['pagination']){
+		$query = db_select('node','n')->extend('PagerDefault');
+	}
+	else{
+		$query = db_select('node','n');
+	}
+
+	$query->condition('n.status',1)->condition('n.type','class');
+
+	$now = strtotime('now');
+	$query->innerJoin('class_dates','cd','n.nid = cd.class_nid');
+	$query->condition(db_or()->isNull('cd.end_date')->condition('cd.end_date',$now,'>='));
+
+	if(!empty($options['date_sort'])){
+		$query->orderBy('cd.sort_date')->orderBy('n.title');
+	}
+
+	if(!empty($options['type'])){
+		$query->innerJoin('taxonomy_index','ti','n.nid = ti.nid');
+		$query->condition('ti.tid',$options['type'],'IN');
+	}
+
+	if(!empty($options['category'])){
+		$query->innerJoin('taxonomy_index','ti2','n.nid = ti2.nid');
+		$query->condition('ti2.tid',$options['category']);
+	}
+
+	if(!empty($options['month'])){
+		$query->innerJoin('class_months','cm','n.nid = cm.class_nid');
+		$query->condition('cm.month',$options['month']);
+	}
+
+	if(!empty($options['country'])){
+		$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+		$query->condition('a.field_address_country',$options['country']);
+	}
+
+	if(!empty($options['state'])){
+		if(empty($options['country'])){
+			$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+		}
+		$query->condition('a.field_address_administrative_area',$options['state']);
+	}
+
+	if(!empty($options['city'])){
+		if(empty($options['country']) && empty($options['state'])){
+			$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+		}
+		$query->condition('a.field_address_locality',$options['city']);
+	}
+
+	if(!empty($options['teacher'])){
+		$query->innerJoin('field_data_field_teacher','t','n.nid = t.entity_id');
+		$query->leftJoin('field_data_field_co_teacher','ct','n.nid = ct.entity_id');
+		$query->condition(db_or()->condition('t.field_teacher_target_id',$options['teacher'])->condition('ct.field_co_teacher_target_id',$options['teacher']));
+	}
+
+	if(!empty($options['level'])){
+      if(strpos($options['level'],',') !== FALSE){
+        $levels = explode(',', $options['level']);
+      }
+      else{
+        $levels = array($options['level']);
+      }
+      $query->innerJoin('field_data_field_ytu_certification_training','tr','n.nid = tr.entity_id');
+      $query->condition('tr.field_ytu_certification_training_tid', $levels, 'IN');
+	}
+
+  	$found_zip = false;
+	if(!empty($options['zip']) && !empty($options['radius'])){
+	  module_load_include('class', 'teacher', 'classes/GeoLocation');
+	  $parsed_zip = str_replace(' ','',$options['zip']);
+	  $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',$parsed_zip)->execute();
+	  foreach($result as $row){
+		$found_zip = true;
+
+		$user_lat = (double) $row->lat;
+		$user_lng = (double) $row->lng;
+		$user_country = $row->country;
+
+		$location = GeoLocation::fromDegrees($user_lat, $user_lng);
+		$coordinates = $location->boundingCoordinates($options['radius'], 'miles');
+
+		$lat_min = (double) $coordinates[0]->degLat;
+		$lng_min = (double) $coordinates[0]->degLon;
+		$lat_max = (double) $coordinates[1]->degLat;
+		$lng_max = (double) $coordinates[1]->degLon;
+	  }
+
+	  if($found_zip){
+		$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+		$query->condition('a.bundle','class')->condition('a.field_address_country',$user_country);
+		$query->innerJoin('field_data_field_latitude','lat','n.nid = lat.entity_id');
+        $query->condition('lat.bundle', 'class');
+		$query->innerJoin('field_data_field_longitude','lng','n.nid = lng.entity_id');
+        $query->condition('lng.bundle', 'class');
+		$query->where('lat.field_latitude_value >= '.$lat_min.' AND lat.field_latitude_value <= '.$lat_max);
+		$query->where('lng.field_longitude_value >= '.$lng_min.' AND lng.field_longitude_value <= '.$lng_max);
+		$query->addExpression('3956 * 2 * ASIN(SQRT( POWER(SIN((:user_lat - lat.field_latitude_value) *  pi()/180 / 2), 2) +COS(:user_lat * pi()/180) * COS(lat.field_latitude_value * pi()/180) * POWER(SIN((:user_lng -lng.field_longitude_value) * pi()/180 / 2), 2) ))','distance',array(':user_lat' => $user_lat, ':user_lng' => $user_lng));
+		$query->havingCondition('distance',$options['radius'],'<=');
+	  }
+	}
+
+	return $query;
+}
+
+function class_is_training($node){
+	return $node->field_class_type[LANGUAGE_NONE][0]['tid'] == CLASS_TYPE_TEACHER_TRAINING;
+}
+
+function class_do_rebuild(){
+  set_time_limit(0);
+
+  $query = class_get_query(array());
+  $query->fields('n',array('nid'));
+
+  $result = $query->execute();
+  foreach($result as $row){
+	$class = node_load($row->nid);
+	node_save($class);
+  }
+}
+
+function _class_calc_months($node){
+	$months = array();
+
+	if(!empty($node->field_recurring_date_range[LANGUAGE_NONE]) && $node->field_recurring_date_range[LANGUAGE_NONE][0]['value'] == $node->field_recurring_date_range[LANGUAGE_NONE][0]['value2']){
+		$months = array('1','2','3','4','5','6','7','8','9','10','11','12');
+	}
+	else{
+		if(!empty($node->field_single_date[LANGUAGE_NONE])){
+			foreach($node->field_single_date[LANGUAGE_NONE] as $date){
+				_class_date_get_months($months,$date['value'],$date['value2']);
+			}
+		}
+		if(!empty($node->field_recurring_date_range[LANGUAGE_NONE])){
+			_class_date_get_months($months,$node->field_recurring_date_range[LANGUAGE_NONE][0]['value'],$node->field_recurring_date_range[LANGUAGE_NONE][0]['value2']);
+		}
+	}
+
+	return $months;
+}
+
+function _class_date_get_months(&$months, $start_date, $end_date){
+	$start_date = strtotime(date('Y-m-d',strtotime($start_date)));
+	$end_date = strtotime(date('Y-m-d',strtotime($end_date)));
+	$start_date_index = date('n',$start_date);
+	$end_date_index = date('n',$end_date);
+	$months[$start_date_index] = date('n',$start_date);
+	$months[$end_date_index] = date('n',$end_date);
+	$end_date = strtotime(date('Y-m-d',$end_date).' -1 month');
+	while($end_date > $start_date){
+		$end_date_index = date('n',$end_date);
+		$months[$end_date_index] = date('n',$end_date);
+		$end_date = strtotime(date('Y-m-d',$end_date).' -1 month');
+	}
+}
+
+function _class_get_month_name($month){
+	 return date('F', mktime(0, 0, 0, $month, 1, 2000));
+}
+
+function _class_calc_dates($node){
+	$dates = array();
+
+	$min_start = '';
+	$min_end = '';
+
+	if(isset($node->field_single_date[LANGUAGE_NONE][0])){
+		foreach($node->field_single_date[LANGUAGE_NONE] as $date){
+			$start_timestamp = strtotime($date['value']);
+			$end_timestamp = strtotime($date['value2']);
+			if(empty($min_start) || $min_start > $start_timestamp){
+				$min_start = $start_timestamp;
+			}
+			if(empty($min_end) || $min_end < $end_timestamp){
+				$min_end = $end_timestamp;
+			}
+		}
+	}
+
+	if(isset($node->field_recurring_date_range[LANGUAGE_NONE][0])){
+		$start_timestamp = strtotime($node->field_recurring_date_range[LANGUAGE_NONE][0]['value']);
+		$end_timestamp = strtotime($node->field_recurring_date_range[LANGUAGE_NONE][0]['value2']);
+		if(empty($min_start) || $min_start > $start_timestamp){
+			$min_start = $start_timestamp;
+		}
+		if(empty($min_end) || $min_end < $end_timestamp){
+			$min_end = $end_timestamp;
+		}
+		if($start_timestamp == $end_timestamp){
+			$min_end = null;
+		}
+	}
+
+	if(!empty($min_start)){
+		$dates['sort_date'] = $min_start;
+		$dates['end_date'] = $min_end;
+	}
+
+	return $dates;
+}

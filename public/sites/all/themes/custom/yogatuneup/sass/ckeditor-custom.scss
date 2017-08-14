@@ -1,0 +1,93 @@
+@import "base";
+
+.inline-block{
+	@include inline-block;
+}
+
+.v-top{
+	vertical-align:top;
+}
+
+.blue-title{
+	@include blue-title;
+}
+
+.red-title{
+	@include blue-title;
+	color:#993300;
+}
+
+.grey-content-block{
+	background-color: #F7F7F9;
+	padding: 10px;
+	border: 1px solid #EBECF0;
+	position: relative;
+	font-weight: normal;
+	font-size:11px;
+	line-height:14px;
+
+	ul{
+		background-color: #F7F7F9;
+		padding-left: 15px;
+		margin: 0px;
+		font-weight: normal;
+
+		li{
+			background-color: #F7F7F9;
+			padding-bottom: 4px;
+			margin: 0px;
+			font-weight: normal;
+			list-style-image: url('../images/circle.gif');
+		}
+	}
+}
+
+.small{
+	font-size:11px;
+}
+
+.large{
+	font-size:16px;
+}
+
+.subtitle{
+	margin-top:-10px;
+}
+
+.red-button{
+	@include button;
+	background: url('../images/shade-trans.png') no-repeat -10px -5px #c0332f;
+	&:hover{
+		background-color: #ff4c45;
+		border-color: #ff4c45;
+	}
+}
+
+.green-button{
+	@include button;
+	background: url('../images/shade-trans.png') no-repeat -10px -5px #84a649;
+	border-color: #84a649;
+	&:hover{
+		background-color: #ABf75F;
+		border-color: #ABf75F;
+	}
+}
+
+.blue-button{
+	@include button;
+	background: url('../images/shade-trans.png') no-repeat -10px -5px #62b2ef;
+	border-color: #62b2ef;
+	&:hover{
+		background-color: #62b2ef;
+		border-color: #62b2ef;
+        text-decoration: none;
+	}
+}
+
+.border-image{
+	border:3px solid #EBECF0;
+}
+
+.list-no-margin{
+	margin:0;
+}

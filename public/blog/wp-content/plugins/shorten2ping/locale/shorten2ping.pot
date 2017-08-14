@@ -1,0 +1,235 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Shorten2Ping 1.3.7\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-03-31 00:15+0100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Samuel Aguilera <correo@samuelaguilera.com>\n"
+"Language-Team: Samuel Aguilera <correo@samuelaguilera.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: English\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: shorten2ping.php:47
+msgid "Short URL"
+msgstr ""
+
+#: shorten2ping.php:298
+msgid "Settings saved."
+msgstr ""
+
+#: shorten2ping.php:306
+msgid "Shorten2Ping Options"
+msgstr ""
+
+#: shorten2ping.php:308
+msgid "Shorten2Ping allows you to update status at Ping.fm or Twitter (only) whenever a new blog entry is published.  To start using it, simply enter the required information below, and press update information button. You only need to fill data for the services you want to use (i.e. if you want to use Ping.fm and not Twitter, you dont need to fill Twitter information)."
+msgstr ""
+
+#: shorten2ping.php:310
+msgid "You can also customize the message for the status notification by using the \"message\" field below.  You can use [title] to represent the title of the blog entry, and [link] to represent the permalink."
+msgstr ""
+
+#: shorten2ping.php:316
+msgid "General"
+msgstr ""
+
+#: shorten2ping.php:317
+msgid "Notification"
+msgstr ""
+
+#: shorten2ping.php:318
+msgid "Shorteners"
+msgstr ""
+
+#: shorten2ping.php:332
+#: shorten2ping.php:383
+#: shorten2ping.php:412
+msgid "Setting"
+msgstr ""
+
+#: shorten2ping.php:334
+#: shorten2ping.php:385
+#: shorten2ping.php:414
+msgid "Description"
+msgstr ""
+
+#: shorten2ping.php:338
+msgid "Status Message"
+msgstr ""
+
+#: shorten2ping.php:340
+msgid "Use [title] for the post title, and [link] for the short link. Example: New post, [title] [link]"
+msgstr ""
+
+#: shorten2ping.php:345
+msgid "Shorten Permalinks With:"
+msgstr ""
+
+#: shorten2ping.php:347
+msgid "bit.ly"
+msgstr ""
+
+#: shorten2ping.php:348
+#: shorten2ping.php:426
+msgid "tr.im"
+msgstr ""
+
+#: shorten2ping.php:349
+#: shorten2ping.php:431
+msgid "wp.me"
+msgstr ""
+
+#: shorten2ping.php:350
+#: shorten2ping.php:450
+msgid "su.pr"
+msgstr ""
+
+#: shorten2ping.php:351
+msgid "is.gd"
+msgstr ""
+
+#: shorten2ping.php:352
+msgid "j.mp"
+msgstr ""
+
+#: shorten2ping.php:353
+#: shorten2ping.php:457
+msgid "cli.gs"
+msgstr ""
+
+#: shorten2ping.php:354
+#: shorten2ping.php:438
+msgid "YOURLS"
+msgstr ""
+
+#: shorten2ping.php:355
+msgid "Self domain"
+msgstr ""
+
+#: shorten2ping.php:356
+#: shorten2ping.php:367
+msgid "None"
+msgstr ""
+
+#: shorten2ping.php:358
+msgid "Choose to make short URLs using any of the shorteners or turn off this feature."
+msgstr ""
+
+#: shorten2ping.php:362
+msgid "Send Notification To:"
+msgstr ""
+
+#: shorten2ping.php:364
+#: shorten2ping.php:389
+msgid "Ping.fm"
+msgstr ""
+
+#: shorten2ping.php:365
+#: shorten2ping.php:395
+msgid "Twitter"
+msgstr ""
+
+#: shorten2ping.php:366
+msgid "Both"
+msgstr ""
+
+#: shorten2ping.php:369
+msgid "Choose to send notification to Ping.fm (default), Twitter, both services, or turn off this feature."
+msgstr ""
+
+#: shorten2ping.php:390
+#: shorten2ping.php:420
+#: shorten2ping.php:452
+msgid "API Key"
+msgstr ""
+
+#: shorten2ping.php:391
+msgid "Put your Ping.fm <a href=\"http://ping.fm/key/\">API key</a> here."
+msgstr ""
+
+#: shorten2ping.php:395
+#: shorten2ping.php:426
+#: shorten2ping.php:439
+msgid "Username"
+msgstr ""
+
+#: shorten2ping.php:396
+#: shorten2ping.php:427
+#: shorten2ping.php:440
+msgid "Password"
+msgstr ""
+
+#: shorten2ping.php:397
+msgid "Unfortunately <a href=\"http://twitter.com\">Twitter</a> doesn't have API keys for users, so you must put here your user login and password if you want to use this service."
+msgstr ""
+
+#: shorten2ping.php:418
+msgid "bit.ly or j.mp"
+msgstr ""
+
+#: shorten2ping.php:419
+#: shorten2ping.php:451
+msgid "API Login"
+msgstr ""
+
+#: shorten2ping.php:422
+msgid "Put here your API login and <a href=\"http://bit.ly/account/\">Bit.ly</a> API key. This is the same for <a href=\"http://j.mp/account/\">J.mp</a>."
+msgstr ""
+
+#: shorten2ping.php:428
+msgid "Unfortunately <a href=\"http://tr.im\">Tr.im</a> doesn't have API keys for users, so you must put here your user login and password if you want to use this service."
+msgstr ""
+
+#: shorten2ping.php:432
+msgid "WordPress API Key"
+msgstr ""
+
+#: shorten2ping.php:434
+msgid "Put here your <a href=\"http://en.support.wordpress.com/api-keys/\">API key from wordpress.com</a> account."
+msgstr ""
+
+#: shorten2ping.php:441
+msgid "Put here your username and password for <a href=\"http://yourls.org/\">YOURLS</a>."
+msgstr ""
+
+#: shorten2ping.php:445
+msgid "YOURLS API URL"
+msgstr ""
+
+#: shorten2ping.php:446
+msgid "Example: http://example.com/yourls-api.php"
+msgstr ""
+
+#: shorten2ping.php:453
+msgid "Put here your API login and <a href=\"http://su.pr/settings/\">Su.pr</a> API key."
+msgstr ""
+
+#: shorten2ping.php:458
+msgid "cli.gs API Key"
+msgstr ""
+
+#: shorten2ping.php:460
+msgid "Put here your <a href=\"http://cli.gs/user/api\">API key from cli.gs</a> account."
+msgstr ""
+
+#: shorten2ping.php:468
+msgid "Save settings"
+msgstr ""
+
+#: shorten2ping.php:473
+msgid "If you find this plugin useful, please consider to make a donation to Shorten2Ping's author (any amount will be appreciated)."
+msgstr ""
+
+#: shorten2ping.php:501
+msgid "Go to settings page"
+msgstr ""
+
+#: shorten2ping.php:501
+msgid "Settings"
+msgstr ""
+

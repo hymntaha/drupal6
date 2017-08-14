@@ -1,0 +1,5 @@
+name = Infusionsoft
+description = Infusionsoft API Integration
+package = "Yoga Tune Up"
+core = 7.x
+version = 7.x-1.0

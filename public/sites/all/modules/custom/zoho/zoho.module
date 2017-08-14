@@ -1,0 +1,316 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function zoho_menu() {
+  $items['admin/ytu-settings/zoho'] = array(
+    'title' => 'Zoho Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('zoho_admin_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'zoho.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function zoho_node_insert($node) {
+	if($node->type == 'teacher'){
+		if($zoho_id = zoho_get_zoho_id_by_uid($node->uid)){
+			zoho_node_mark_updated($node->nid, $zoho_id);
+			zoho_update_teacher($node);
+		}
+		else{
+			zoho_add_teacher($node);
+		}
+	}
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function zoho_node_update($node) {
+	if($node->type == 'teacher'){
+		
+		zoho_validate_teacher($node);
+		$account = user_load($node->uid);
+		zoho_validate_user_teacher($account);
+
+		if(zoho_get_zoho_id($node->nid)){
+			zoho_update_teacher($node);
+		}
+		else if(zoho_get_zoho_id_by_uid($node->uid)){
+			$zoho_id = zoho_get_zoho_id_by_uid($node->uid);
+			zoho_node_mark_updated($node->nid, $zoho_id);
+			zoho_update_teacher($node);
+		}
+		else{
+			zoho_add_teacher($node);
+		}
+	}
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+function zoho_user_insert(&$edit, $account, $category) {
+	if(account_is_teacher($account) || isset($account->roles[TEACHER_RID])){
+		zoho_add_user_teacher($account);
+	}
+}
+
+/**
+ * Implements hook_user_update().
+ */
+function zoho_user_update(&$edit, $account, $category) {
+	if(isset($account->roles[TEACHER_RID]) || isset($account->original->roles[TEACHER_RID])){
+		$nid = teacher_get_teacher_page_nid($account);
+		if($nid){
+			$teacher = node_load($nid);
+			zoho_validate_teacher($teacher);
+		}
+		zoho_validate_user_teacher($account);
+
+		if(zoho_get_zoho_id_by_uid($account->uid)){
+			zoho_update_user_teacher($account);
+		}
+		else if($nid && zoho_get_zoho_id($nid)){
+			zoho_user_mark_updated($account->uid, zoho_get_zoho_id($nid));
+			zoho_update_user_teacher($account);
+		}
+		else{
+			zoho_add_user_teacher($account);
+		}		
+	}
+}
+
+function zoho_add_teacher($teacher){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = $api->add('Teacher',zoho_parse_teacher_fields($teacher));
+	$parsed_response = drupal_json_decode($response);
+	if($parsed_response['formname'][1]['operation'][1]['status'] == 'Success'){
+		$zoho_id = $parsed_response['formname'][1]['operation'][1]['values']['ID'];
+		zoho_node_mark_updated($teacher->nid, $zoho_id);
+		watchdog('zoho', 'Zoho Add Teacher completed @teacher', array('@teacher' => print_r($teacher,TRUE)), WATCHDOG_NOTICE);
+	}
+	else{
+		watchdog('zoho', 'Zoho Add Teacher failed with message: @message', array('@message' => $response), WATCHDOG_WARNING);
+	}
+}
+
+function zoho_update_teacher($teacher){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$zoho_id = zoho_get_zoho_id($teacher->nid);
+	$criteria = 'ID='.$zoho_id;
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = $api->edit('Teacher',$criteria,zoho_parse_teacher_fields($teacher));
+	$parsed_response = drupal_json_decode($response);
+
+	if($parsed_response['formname'][1]['operation'][1]['status'] == 'Success'){
+		zoho_node_mark_updated($teacher->nid, $zoho_id);
+		watchdog('zoho', 'Zoho Update Teacher completed @teacher', array('@teacher' => print_r($teacher,TRUE)), WATCHDOG_NOTICE);
+	}
+	else{
+		watchdog('zoho', 'Zoho Update Teacher failed with message: @message', array('@message' => $response), WATCHDOG_WARNING);
+	}
+}
+
+function zoho_add_user_teacher($account){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = $api->add('Teacher',zoho_parse_user_fields($account));
+	$parsed_response = drupal_json_decode($response);
+	if($parsed_response['formname'][1]['operation'][1]['status'] == 'Success'){
+		$zoho_id = $parsed_response['formname'][1]['operation'][1]['values']['ID'];
+		zoho_user_mark_updated($account->uid, $zoho_id);
+		watchdog('zoho', 'Zoho Add User Teacher completed @account', array('@account' => print_r($account,TRUE)), WATCHDOG_NOTICE);
+	}
+	else{
+		watchdog('zoho', 'Zoho Add Teacher failed with message: @message', array('@message' => $response), WATCHDOG_WARNING);
+	}
+}
+
+function zoho_update_user_teacher($account){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$zoho_id = zoho_get_zoho_id_by_uid($account->uid);
+	$criteria = 'ID='.$zoho_id;
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = $api->edit('Teacher',$criteria,zoho_parse_user_fields($account));
+	$parsed_response = drupal_json_decode($response);
+
+	if($parsed_response['formname'][1]['operation'][1]['status'] == 'Success'){
+		zoho_user_mark_updated($account->uid, $zoho_id);
+		watchdog('zoho', 'Zoho Update User Teacher completed @account', array('@account' => print_r($account,TRUE)), WATCHDOG_NOTICE);
+	}
+	else{
+		watchdog('zoho', 'Zoho Update Teacher failed with message: @message', array('@message' => $response), WATCHDOG_WARNING);
+	}
+}
+
+function zoho_list_fields($form_name){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = drupal_json_decode($api->listFields($form_name));
+	return $response;
+}
+
+function zoho_validate_teacher($teacher){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$criteria = 'Email_Address="'.$teacher->field_email[LANGUAGE_NONE][0]['value'].'"';
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = $api->view('All_Teachers',$criteria,array());
+	$response = drupal_json_decode($response);
+
+	$zoho_id = zoho_get_zoho_id($teacher->nid);
+
+	if(isset($response['Teacher'][0]['ID'])){
+		if($response['Teacher'][0]['ID'] != $zoho_id){
+			zoho_update_zoho_id($teacher->nid, $response['Teacher'][0]['ID']);
+		}
+	}
+	else{
+		if($zoho_id){
+			zoho_delete_id($zoho_id);
+		}
+	}
+}
+
+function zoho_validate_user_teacher($account){
+	module_load_include('php', 'zoho', 'inc/ZohoCreatorRESTAPI');
+
+	$criteria = 'Email_Address="'.$account->mail.'"';
+
+	$api = new ZohoCreatorRESTAPI();
+	$response = $api->view('All_Teachers',$criteria,array());
+	$response = drupal_json_decode($response);
+
+	$zoho_id = zoho_get_zoho_id_by_uid($account->uid);
+
+	if(isset($response['Teacher'][0]['ID'])){
+		if($response['Teacher'][0]['ID'] != $zoho_id){
+			zoho_user_update_zoho_id($account->uid, $response['Teacher'][0]['ID']);
+		}
+	}
+	else{
+		if($zoho_id){
+			zoho_delete_id($zoho_id);
+		}
+	}
+}
+
+function zoho_parse_teacher_fields($teacher){
+	$account = user_load($teacher->uid);
+	return array(
+		'First_Name' => account_get_first_name($account),
+		'Last_Name' => account_get_last_name($account),
+		'Combo_Name' => $teacher->title,
+		'Street_Address' => $teacher->field_address[LANGUAGE_NONE][0]['thoroughfare'],
+		'City' => $teacher->field_address[LANGUAGE_NONE][0]['locality'],
+		'State_Province1' => $teacher->field_address[LANGUAGE_NONE][0]['administrative_area'],
+		'Country2' => zoho_get_country_from_code($teacher->field_address[LANGUAGE_NONE][0]['country']),
+		'ZIP' => $teacher->field_address[LANGUAGE_NONE][0]['postal_code'],
+		'Phone' => isset($teacher->field_phone[LANGUAGE_NONE][0]['value']) ? $teacher->field_phone[LANGUAGE_NONE][0]['value'] : '',
+		'License_Date' => date('m-d-y',strtotime($account->field_license_date[LANGUAGE_NONE][0]['value'])),
+		'Renewal_Date' => date('m-d-y',strtotime($account->field_license_renewal_date[LANGUAGE_NONE][0]['value'])),
+		'Additional_YTU_Trainings' => implode(',', teacher_get_cert_levels($teacher)),
+		'License_Status' => account_is_teacher($account) ? 'Active' : 'Non-Renewal',
+		'Trainer' => account_is_trainer($account) ? 'Yes' : 'No',
+		'Email_Address' => $teacher->field_email[LANGUAGE_NONE][0]['value'],
+		'Teacher_ID_from_Drupal' => $teacher->nid,
+		'L1_Training_ID_from_Drupal' => $account->field_training_id[LANGUAGE_NONE][0]['value'],
+		'Integrated' => isset($account->roles[INTEGRATED_TEACHER_RID]) ? 'Yes' : 'No',
+	);
+}
+
+function zoho_parse_user_fields($account){
+	return array(
+		'First_Name' => account_get_first_name($account),
+		'Last_Name' => account_get_last_name($account),
+		'Combo_Name' => account_get_full_name($account),
+		'Street_Address' => $account->field_location[LANGUAGE_NONE][0]['thoroughfare'],
+		'City' => $account->field_location[LANGUAGE_NONE][0]['locality'],
+		'State_Province1' => $account->field_location[LANGUAGE_NONE][0]['administrative_area'],
+		'Country2' => zoho_get_country_from_code($account->field_location[LANGUAGE_NONE][0]['country']),
+		'ZIP' => $account->field_location[LANGUAGE_NONE][0]['postal_code'],
+		'License_Date' => date('m-d-y',strtotime($account->field_license_date[LANGUAGE_NONE][0]['value'])),
+		'Renewal_Date' => date('m-d-y',strtotime($account->field_license_renewal_date[LANGUAGE_NONE][0]['value'])),
+		'License_Status' => isset($account->roles[TEACHER_RID]) ? 'Active' : 'Non-Renewal',
+		'Trainer' => isset($account->roles[TRAINER_RID]) ? 'Yes' : 'No',
+		'Email_Address' => $account->mail,
+		'L1_Training_ID_from_Drupal' => $account->field_training_id[LANGUAGE_NONE][0]['value'],
+		'Integrated' => isset($account->roles[INTEGRATED_TEACHER_RID]) ? 'Yes' : 'No',
+	);
+}
+
+function zoho_node_mark_updated($nid, $zoho_id){
+	$record = array('nid' => $nid, 'zoho_id' => $zoho_id, 'last_update' => time());
+	if(zoho_node_is_tracked($nid)){
+		drupal_write_record('zoho_nodes',$record,'nid');
+	}
+	else{
+		drupal_write_record('zoho_nodes',$record);
+	}
+}
+
+function zoho_node_is_tracked($nid){
+	return db_select('zoho_nodes','z')->fields('z')->condition('nid',$nid)->execute()->fetchField();
+}
+
+function zoho_get_country_from_code($code){
+	return db_select('uc_countries','c')->fields('c',array('country_name'))->condition('country_iso_code_2',$code)->execute()->fetchField();
+}
+
+function zoho_get_zoho_id($nid){
+	return db_select('zoho_nodes', 'z')->fields('z',array('zoho_id'))->condition('nid',$nid)->execute()->fetchField();
+}
+
+function zoho_user_mark_updated($uid, $zoho_id){
+	$record = array('uid' => $uid, 'zoho_id' => $zoho_id, 'last_update' => time());
+	if(zoho_user_is_tracked($uid)){
+		drupal_write_record('zoho_users',$record,'uid');
+	}
+	else{
+		drupal_write_record('zoho_users',$record);
+	}
+}
+
+function zoho_user_is_tracked($uid){
+	return db_select('zoho_users','z')->fields('z')->condition('uid',$uid)->execute()->fetchField();
+}
+
+function zoho_get_zoho_id_by_uid($uid){
+	return db_select('zoho_users', 'z')->fields('z',array('zoho_id'))->condition('uid',$uid)->execute()->fetchField();
+}
+
+function zoho_update_zoho_id($nid, $zoho_id){
+	db_merge('zoho_nodes')
+	->key(array('nid' => $nid))
+	->fields(array('zoho_id' => $zoho_id))
+	->execute();
+}
+
+function zoho_user_update_zoho_id($uid, $zoho_id){
+	db_merge('zoho_users')
+	->key(array('uid' => $uid))
+	->fields(array('zoho_id' => $zoho_id))
+	->execute();
+}
+
+function zoho_delete_id($zoho_id){
+	db_delete('zoho_nodes')->condition('zoho_id',$zoho_id)->execute();
+	db_delete('zoho_users')->condition('zoho_id',$zoho_id)->execute();
+}

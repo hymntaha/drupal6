@@ -1,0 +1,404 @@
+<?php
+
+function tuf_search_get_query($dataset_join = TRUE){
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid'));
+
+  if($dataset_join){
+    $query->leftJoin('search_dataset', 'd', "d.type = 'content' AND d.sid = n.nid");
+
+    $query->condition(db_or()->isNull('d.sid')->condition('d.reindex', 0, '<>'));
+    $query->orderBy('d.reindex')->orderBy('n.nid');
+  }
+
+  $query->condition('n.type', array(
+    'faq',
+    'class',
+    'product',
+    'teacher',
+  ), 'IN');
+
+  $query->condition('n.status', 1);
+
+  $query->leftJoin('field_data_taxonomy_catalog','tc','n.nid = tc.entity_id');
+  $query->condition(db_or()->isNull('tc.taxonomy_catalog_tid')->condition('tc.taxonomy_catalog_tid', 35, '<>'));
+
+  $query->leftJoin('class_dates','cd','n.nid = cd.class_nid');
+  $query->condition(db_or()->isNull('cd.end_date')->condition('cd.end_date', strtotime('now'), '>='));
+
+  $query->leftJoin('field_data_field_at_home_only', 'ah', 'ah.entity_id = n.nid');
+  $query->condition(db_or()->isNull('ah.field_at_home_only_value')->condition('ah.field_at_home_only_value', 0));
+
+  return $query;
+}
+
+function tuf_search_query_get_results($limit, $dataset_join = TRUE){
+  $query = tuf_search_get_query($dataset_join);
+  $query_results = array();
+
+  if($limit){
+    $query->range(0, $limit);
+  }
+
+  $results = $query->execute();
+
+  foreach($results as $node){
+    $loaded_node = node_load($node->nid);
+
+    if($loaded_node->type == 'class'){
+      if(class_is_training($loaded_node)){
+        $query_results[] = $node;
+      }
+    }
+    else{
+      $query_results[] = $node;
+    }
+  }
+
+  return $query_results;
+}
+
+/**
+ * Implements hook_search_info().
+ */
+function tuf_search_search_info() {
+  return array(
+    'title' => 'TUF Content Search',
+    'path' => 'content',
+  );
+}
+
+/**
+ * Implements hook_update_index().
+ */
+function tuf_search_update_index() {
+  $limit = (int) variable_get('search_cron_limit', 100);
+
+  $result = tuf_search_query_get_results($limit);
+
+  foreach ($result as $node) {
+    $node = node_load($node->nid);
+
+    // Save the changed time of the most recent indexed node, for the search
+    // results half-life calculation.
+    variable_set('node_cron_last', $node->changed);
+
+    // Render the node.
+    node_build_content($node, 'search_index');
+    $node->rendered = drupal_render($node->content);
+
+    $text = '<h1>' . check_plain($node->title) . '</h1>' . $node->rendered;
+
+    // Fetch extra data normally not visible
+    $extra = module_invoke_all('node_update_index', $node);
+    foreach ($extra as $t) {
+      $text .= $t;
+    }
+
+    // Update index
+    search_index($node->nid, 'content', $text);
+  }
+}
+
+/**
+ * Implements hook_search_status().
+ */
+function tuf_search_search_status() {
+  $total = count(tuf_search_query_get_results(0, FALSE));
+  $remaining = count(tuf_search_query_get_results(0));
+  return array('remaining' => $remaining, 'total' => $total);
+}
+
+/**
+ * Implements hook_search_reset().
+ */
+function tuf_search_search_reset() {
+  db_update('search_dataset')
+    ->fields(array('reindex' => REQUEST_TIME))
+    ->condition('type', 'content')
+    ->execute();
+}
+
+/**
+ * Implements hook_search_execute().
+ */
+function tuf_search_search_execute($keys = NULL, $conditions = NULL) {
+  $searchResults = new TUFSearchResults($keys);
+
+  $query = tuf_search_drupal_search_query($keys, $searchResults, '', TRUE);
+  $results = $query->execute();
+
+  $productCount = 0;
+  $teacherCount = 0;
+  $trainingCount = 0;
+  $faqCount = 0;
+
+  foreach($results as $node){
+    $node = node_load($node->sid);
+
+    switch($node->type){
+      case 'product':
+        $productCount++;
+        break;
+      case 'teacher':
+        $teacherCount++;
+        break;
+      case 'class':
+        $trainingCount++;
+        break;
+      case 'faq':
+        $faqCount++;
+        break;
+    }
+  }
+
+  $searchResults->setTotalResultsProduct($productCount);
+  $searchResults->setTotalResultsTeacher($teacherCount);
+  $searchResults->setTotalResultsTraining($trainingCount);
+  $searchResults->setTotalResultsFaq($faqCount);
+
+  $wp_results = tuf_search_wordpress_search($keys, array());
+
+  $searchResults->setTotalResultsBlog($wp_results['total']);
+
+  if(!isset($_GET['category']) || $_GET['category'] != 'blog') {
+
+    $category = isset($_GET['category']) ? $_GET['category'] : '';
+
+
+    // Load results.
+    if(empty($category)){
+      $query = tuf_search_drupal_search_query($keys, $searchResults, $category, TRUE);
+    }
+    else{
+      $query = tuf_search_drupal_search_query($keys, $searchResults, $category);
+    }
+
+    if($query instanceof TUFSearchResults){
+      return $query;
+    }
+
+    if(!empty($category)){
+      $query->limit(10);
+    }
+
+    $find = $query->execute();
+
+    foreach ($find as $item) {
+      // Build the node body.
+      $node = node_load($item->sid);
+      node_build_content($node, 'search_result');
+      $node->body = drupal_render($node->content);
+
+      $extra = module_invoke_all('node_search_result', $node);
+
+      $result = array(
+        'link' => url('node/' . $item->sid, array('absolute' => TRUE)),
+        'type' => check_plain(node_type_get_name($node)),
+        'title' => $node->title,
+        'node' => $node,
+        'extra' => $extra,
+        'score' => $item->calculated_score,
+        'snippet' => search_excerpt($keys, $node->body),
+        'tag' => '',
+      );
+
+      if($node->type == 'faq'){
+        $result['link'] = url('faqs', array('fragment' => $node->nid));
+      }
+
+      $searchResults->addResult(TUFSearchResult::createFromResultArray($result));
+    }
+  }
+
+  if(!isset($_GET['category']) || $_GET['category'] == 'blog'){
+
+    $offset = 0;
+    if(isset($_GET['category']) == 'blog'){
+      $ipp          = 10;
+      $current_page = pager_default_initialize($wp_results['total'], $ipp);
+      $offset       = $ipp * $current_page;
+    }
+
+    if($offset > 0){
+      $wp_results = tuf_search_wordpress_search($keys, array('offset' => $offset));
+    }
+
+    foreach($wp_results['results'] as $wp_result){
+      $result = array(
+        'link' => $wp_result['link'],
+        'type' => 'blog',
+        'title' => $wp_result['title']['rendered'],
+        'snippet' => search_excerpt($keys, str_replace('[&hellip;]', '...', $wp_result['content']['rendered'])),
+        'tag' => in_array(TUFSearchResult::TUF_SEARCH_RESULT_WP_VIDEO_CAT_ID, $wp_result['categories']) ? 'video' : '',
+      );
+
+      $searchResults->addResult(TUFSearchResult::createFromResultArray($result));
+    }
+  }
+
+  return $searchResults;
+}
+
+function tuf_search_drupal_search_query($keys, $searchResults, $category = '', $count = FALSE){
+
+  // Build matching conditions
+  if(!$count){
+    $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
+  }
+  else{
+    $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery');
+  }
+
+  $query->join('node', 'n', 'n.nid = i.sid');
+  if ($category && !$count) {
+    switch ($category) {
+      case TUFSearchResult::TUF_SEARCH_RESULT_PRODUCT:
+        $query->condition('n.type', 'product');
+        break;
+      case TUFSearchResult::TUF_SEARCH_RESULT_TEACHER:
+        $query->condition('n.type', 'teacher');
+        break;
+      case TUFSearchResult::TUF_SEARCH_RESULT_TRAINING:
+        $query->condition('n.type', 'class');
+        break;
+      case TUFSearchResult::TUF_SEARCH_RESULT_FAQ:
+        $query->condition('n.type', 'faq');
+        break;
+    }
+  }
+  $query
+    ->condition('n.status', 1)
+    ->addTag('node_access')
+    ->searchExpression($keys, 'content');
+
+  // Insert special keywords.
+  $query->setOption('type', 'n.type');
+  $query->setOption('language', 'n.language');
+  if ($query->setOption('term', 'ti.tid')) {
+    $query->join('taxonomy_index', 'ti', 'n.nid = ti.nid');
+  }
+  // Only continue if the first pass query matches.
+  if (!$query->executeFirstPass()) {
+    if($count){
+      return $query;
+    }
+
+    return $searchResults;
+  }
+
+  // Add the ranking expressions.
+  _node_rankings($query);
+
+  return $query;
+}
+
+function tuf_search_wordpress_search($keys, $params){
+  $query['search'] = $keys;
+
+  if(!empty($params['category'])){
+    $query['categories'] = $params['category'];
+  }
+
+  if(!empty($params['offset'])){
+    $query['offset'] = $params['offset'];
+  }
+
+  $query_args = array(
+    'query' => $query
+  );
+
+  $url = url('https://'.$_SERVER['HTTP_HOST'].'/blog/wp-json/wp/v2/posts', $query_args);
+
+  if($response = drupal_http_request($url)){
+
+    return array(
+      'total' => $response->headers['x-wp-total'],
+      'total_pages' => $response->headers['x-wp-totalpages'],
+      'results' => drupal_json_decode($response->data),
+    );
+  }
+
+  return array();
+}
+
+/**
+ * Implements hook_search_page().
+ * @param TUFSearchResults $results
+ * @return array
+ */
+function tuf_search_search_page($results) {
+  $categories = array();
+
+  $render = array(
+    'header' => array(
+      '#theme' => 'tuf_search_results_header',
+      '#keyword' => $results->getSearchTerm(),
+    ),
+  );
+
+  $limit = 5;
+  if(isset($_GET['category'])){
+    $limit = 0;
+  }
+
+  $total_count = 0;
+  foreach(TUFSearchResults::getCategoryList() as $category => $categoryTitle){
+    $category = array(
+      'code' => $category,
+      'title' => $categoryTitle,
+      'url' => '/'.current_path().'?category='.$category,
+    );
+
+    $category['count'] = $results->getTotalResults($category);
+    $total_count += $category['count'];
+
+    $categories[] = $category;
+    if(isset($_GET['category']) && $category['code'] != $_GET['category']){
+      continue;
+    }
+    $render[] = $results->getRenderArray($category, $limit);
+  }
+
+  $render['header']['#categories'] = $categories;
+  $render['header']['#total_count'] = $total_count;
+
+  if(isset($_GET['category'])){
+    $render['pager'] = array('#theme' => 'pager');
+  }
+
+  return $render;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function tuf_search_theme($existing, $type, $theme, $path) {
+  return array(
+    'tuf_search_result' => array(
+      'template' => 'templates/tuf-search-result',
+      'variables' => array(
+        'title' => '',
+        'teaser' => '',
+        'tag' => '',
+        'url' => '',
+      ),
+    ),
+    'tuf_search_results' => array(
+      'template' => 'templates/tuf-search-results',
+      'variables' => array(
+        'category' => array(),
+        'results' => array(),
+        'limit' => 0,
+      ),
+    ),
+    'tuf_search_results_header' => array(
+      'template' => 'templates/tuf-search-results-header',
+      'variables' => array(
+        'categories' => array(),
+        'keyword' => '',
+        'total_count' => 0,
+      ),
+    ),
+  );
+}

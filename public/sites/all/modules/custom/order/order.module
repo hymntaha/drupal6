@@ -1,0 +1,207 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function order_menu() {
+  $items['admin/orders'] = array(
+    'title' => 'Order Management',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('order_fufillment_form'),
+    'access callback' => 'order_fufillment_access_callback',
+    'access arguments' => array(''),
+    'file' => 'order.admin.inc',
+  );
+
+  $items['admin/orders/fufillment'] = array(
+    'title' => 'Order Fufillment',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('order_fufillment_form'),
+    'access callback' => 'order_fufillment_access_callback',
+    'access arguments' => array(''),
+    'file' => 'order.admin.inc',
+  );
+
+  $items['admin/orders/export'] = array(
+    'title' => 'Order Export',
+    'page callback' => 'order_export_callback',
+    'access callback' => 'order_fufillment_access_callback',
+    'access arguments' => array(''),
+    'file' => 'order.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_uc_order().
+ */
+function order_uc_order($op, $order, $arg2) {
+  switch($op){
+    case 'presave':
+      /**
+       * Trim text fields before order saves
+       * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/313
+       */
+      foreach($order as $field_name => $value){
+        switch($field_name){
+          case 'primary_email':
+          case 'delivery_first_name':
+          case 'delivery_last_name':
+          case 'delivery_street1':
+          case 'delivery_street2':
+          case 'delivery_city':
+          case 'delivery_postal_code':
+          case 'billing_first_name':
+          case 'billing_last_name':
+          case 'billing_street1':
+          case 'billing_street2':
+          case 'billing_city':
+          case 'billing_postal_code':
+            $order->{$field_name} = trim($value);
+            break;
+        }
+      }
+      break;
+  }
+}
+
+function order_get_orders($options = array()){
+	$query = db_select('uc_orders','o');
+
+	$query->addExpression("CONCAT_WS(' ',delivery_first_name,delivery_last_name)",'customer_name');
+	$query->fields('o');
+
+	if($options){
+		if(!empty($options['status'])){
+			$query->condition('order_status',$options['status'],'IN');
+		}
+
+		if(!empty($options['header'])){
+			$query->extend('TableSort')->orderByHeader($options['header']);
+		}
+	}
+
+	return $query->execute();
+}
+
+function order_fufillment_access_callback(){
+	return account_is_admin() || account_is_order_manager();
+}
+
+function order_get_user_latest_placed_order($uid){
+  return db_select('uc_orders','o')
+            ->fields('o',array('order_id'))
+            ->condition('uid',$uid)
+            ->condition('order_status',array('payment_received','completed'),'IN')
+            ->orderBy('order_id','DESC')
+            ->range(0,1)->execute()->fetchField();
+}
+
+function order_get_product_coupon_subtotal($order){
+  $subtotal = 0;
+  foreach($order->line_items as $line_item){
+    if(isset($line_item['type']) && $line_item['type'] == 'subtotal'){
+      $subtotal = $line_item['amount'];
+      break;
+    }
+  }
+
+  if($subtotal){
+    foreach($order->line_items as $line_item){
+      if(isset($line_item['type']) && $line_item['type'] == 'coupon'){
+        $subtotal += $line_item['amount'];
+      }
+    }    
+  }
+
+  return $subtotal;
+}
+
+function order_order_has_gift_card($order){
+  foreach($order->products as $product){
+    if(isset($product->data['type']) && $product->data['type'] == 'gift_card'){
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+function order_order_has_backordered_item($order){
+  foreach($order->products as $product){
+    if(isset($product->data['type']) && $product->data['type'] == 'product'){
+      if(product_is_on_backorder(node_load($product->nid))){
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+function order_order_has_non_shippable_item($order){
+  if (!is_array($order->products) || empty($order->products)) {
+    return FALSE;
+  }
+
+  foreach ($order->products as $product) {
+    if (!uc_order_product_is_shippable($product)) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+function order_get_discounted_amount($order){
+  $amount = 0;
+
+  foreach($order->products as $product){
+    if(isset($product->data['uc_coupon'])){
+      $price_modify = reset($product->data['uc_coupon']);
+    }
+
+    if(isset($product->data['video_discount'])){
+      $price_modify = reset($product->data['video_discount']);
+    }
+
+    if(upsell_cart_item_is_upsell($product)){
+      $price_modify = upsell_get_price_modify($product);
+    }
+
+    if(!empty($price_modify)){
+      $amount += ($price_modify['original_price'] - $price_modify['price']);
+    }
+  }
+
+  return $amount;
+}
+
+/**
+ * Implements hook_uc_order_pane().
+ */
+function order_uc_order_pane() {
+  $panes['po_num'] = array(
+    'callback' => 'order_pane_po_number',
+    'title' => t('PO Number'),
+    'desc' => t('PO Number'),
+    'weight' => 10,
+    'class' => 'pos-left',
+    'show' => array('customer','view','edit','update','invoice'),
+  );
+
+  return $panes;
+}
+
+
+function order_pane_po_number($op, &$order, $form = NULL, &$form_state = NULL) {
+  switch ($op) {
+    default:
+      $contents = array(
+        '#markup' => isset($order->field_po_num[LANGUAGE_NONE][0]['value']) ? $order->field_po_num[LANGUAGE_NONE][0]['value'] : 'NA',
+      );
+      break;
+  }
+  return $contents;
+}

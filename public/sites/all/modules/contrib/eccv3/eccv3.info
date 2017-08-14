@@ -1,0 +1,17 @@
+; $Id$
+
+name = eCC v305 store module
+description = eCC STORE MODULE is to synchronize data with Ubercart and eCC. For more detail click <a href="./ecc">eCC webgility (v3.0)</a>
+
+dependencies[] = uc_store
+dependencies[] = taxonomy
+dependencies[] = uc_payment
+dependencies[] = uc_taxes
+dependencies[] = uc_credit
+
+package = "Webgility (eCC v305)"
+
+version = "305"
+
+core = "7.x"
+project = "ecc"

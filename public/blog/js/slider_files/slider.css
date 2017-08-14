@@ -1,0 +1,9 @@
+#wrapper {width:508px; margin:0 auto}
+.slider {position:relative; overflow:hidden; border:2px solid #9ac1c9; height:225px; background:#eef5f6; margin-bottom:20px}
+.slidercontent {position:absolute}
+.slidercontent .upper {border-bottom:1px solid #9ac1c9}
+.section {padding:10px}
+.newsslider {position:relative; overflow:hidden; border:2px solid #9ac1c9; height:95px; width:300px; background:#eef5f6; margin-bottom:20px}
+.newsslidercontent {position:absolute}
+.newsslidercontent .upper {border-bottom:1px solid #9ac1c9}
+.newssection {padding:10px; height:75px}

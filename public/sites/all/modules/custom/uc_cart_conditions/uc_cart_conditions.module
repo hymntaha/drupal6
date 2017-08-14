@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function uc_cart_conditions_menu() {
+  $items['node/%node/edit/cart-conditions'] = array(
+    'title'            => 'Cart Conditions',
+    'description'      => 'Edit cart condtions.',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('uc_cart_conditions_product_form', 1),
+    'access callback'  => 'uc_cart_conditions_product_access',
+    'access arguments' => array(1),
+    'type'             => MENU_LOCAL_TASK,
+    'weight'           => 1,
+    'file'             => 'uc_cart_conditions.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function uc_cart_conditions_permission() {
+  return array(
+    'administer cart conditions' => array(
+      'title'       => t('Administer Cart Conditions'),
+      'description' => t('Update products to have cart conditions.'),
+    )
+  );
+}
+
+/**
+ * Access callback for editing a product's attributes.
+ */
+function uc_cart_conditions_product_access($node) {
+  return uc_product_is_product($node) && node_access('update', $node) && user_access('administer cart conditions');
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function uc_cart_conditions_node_load($nodes) {
+  $result = db_query('SELECT * FROM uc_cart_conditions WHERE nid IN (:nids)', array(':nids' => array_keys($nodes)));
+  foreach ($result as $row) {
+    $nodes[$row->nid]->uc_cart_conditions = new UcCartConditions($row->id, $row->nid, unserialize($row->conditions));
+  }
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function uc_cart_conditions_admin_paths() {
+  return array(
+    'node/*/edit/cart-conditions' => TRUE,
+  );
+}
+
+function uc_cart_conditions_check_conditions($product, $cart_items) {
+  $found  = array();
+  $result = array();
+
+  if (isset($product->uc_cart_conditions)) {
+    foreach ($product->uc_cart_conditions->getConditions() as $cond_sku => $cond_qty) {
+      $found[$cond_sku] = array(
+        'qty'   => $cond_qty,
+        'found' => FALSE,
+      );
+
+      foreach ($cart_items as $cart_item) {
+        if ($cart_item->model == $cond_sku && $cart_item->qty >= $cond_qty) {
+          $found[$cond_sku]['found'] = TRUE;
+          break;
+        }
+      }
+    }
+
+    foreach ($found as $sku => $found_sku) {
+      if (!$found_sku['found']) {
+        $query = db_select('node', 'n')
+          ->fields('n', array('title'));
+        $query->innerJoin('uc_products', 'p', 'n.nid = p.nid');
+        $title    = $query->condition('p.model', $sku)->execute()->fetchField();
+        $result[] = array(
+          'success' => FALSE,
+          'message' => t('You must have at least :cond_qty of :product_name in your cart to purchase this item.',
+            array(
+              ':cond_qty'     => $found_sku['qty'],
+              ':product_name' => $title
+            )
+          ),
+        );
+      }
+    }
+  }
+
+  return array(
+    'result' => $result,
+    'found'  => $found,
+  );
+
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function uc_cart_conditions_uc_add_to_cart($nid, $qty, $data) {
+  $node   = node_load($nid);
+  $cart   = uc_cart_get_contents();
+  $result = array();
+
+  if ($qty > 0) {
+    $cart_conditions_check = uc_cart_conditions_check_conditions($node, $cart);
+    $result                = $cart_conditions_check['result'];
+  }
+
+  return $result;
+}
+
+/**
+ * Implements hook_uc_cart_alter().
+ */
+function uc_cart_conditions_uc_cart_alter(&$cart_items) {
+  foreach ($cart_items as $delta => $item) {
+    $cart_conditions_check = uc_cart_conditions_check_conditions($item, $cart_items);
+    $message               = '';
+
+    $i = 0;
+    foreach ($cart_conditions_check['found'] as $found_sku) {
+      if($found_sku['found']){
+        continue;
+      }
+      if (empty($message)) {
+        $message = t(':product_name has been removed from your cart. ', array(':product_name' => $item->title));
+      }
+      $message .= $cart_conditions_check['result'][$i]['message'];
+      $i++;
+    }
+
+    if (!empty($message)) {
+      uc_cart_remove_item($item->nid, NULL, $item->data);
+      unset($cart_items[$delta]);
+      drupal_set_message($message, 'error');
+    }
+  }
+}

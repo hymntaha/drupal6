@@ -1,0 +1,118 @@
+// For screens wider than 992px
+@media @normal{
+  #block-system-main-menu ul.menu.nav {
+    & > li {
+      max-width: 200px;
+      font-size: 15px;
+      &:last-child {
+        .dropdown-menu {
+          left: -95px;
+        }
+      }
+    }
+  }
+
+  a, .menu.nav li > span {
+    line-height: 1;
+    padding: 0;
+  }
+
+  .menu.nav {
+    .dropdown-menu li a {
+      line-height: 1.6;
+    }
+  }
+
+  .dropdown-menu {
+    border-top-left-radius: 0;
+    top: 97%;
+    left: 0;
+    border: 1px solid @yoga-red;
+    z-index: 1000;
+    margin-top: 0;
+    .up-drop + &{
+      display:block;
+    }
+  }
+
+  .dropdown-open{
+    .border-radius(3px 3px 0 0);
+    border-top: 1px solid @yoga-red;
+    border-left: 1px solid @yoga-red;
+    border-right: 1px solid @yoga-red;
+    z-index: 1100;
+    border-bottom: 0;
+  }
+
+  #block-system-main-menu ul.menu.nav {
+    margin-left: 65px;
+    & > li {
+      margin-top: 10px;
+
+      & > a, & > span {
+        transition: none;
+        padding: 10px 10px 10px 10px;
+        overflow: visible;
+        background-color: @white;
+        border: 1px solid transparent;
+
+        &.up-drop{
+          .dropdown-open;
+        }
+      }
+      &:last-child {
+        .dropdown-menu {
+          left: -95px;
+          border-top-left-radius: 3px;
+          border-top-right-radius: 0;
+        }
+      }
+      &.open{
+        > a,
+        > span{
+          .dropdown-open;
+        }
+      }
+    }
+  }
+
+  .navbar {
+    nav {
+      height: 40px;
+    }
+  }
+
+  .navbar nav .region.region-navigation {
+    margin: 0 auto !important;
+  }
+
+  ol.breadcrumb{
+    display: block;
+  }
+  footer.footer #block-menu-block-1 ul.menu.nav > li{
+    &:nth-child(2n){
+      clear:none;
+    }
+  }
+  .social.clearfix {
+    .message, #pose-email-form, .addthis_toolbox {
+      margin-bottom: 0;
+    }
+  }
+
+  #pose-email-form {
+    button#edit-submit {
+      width: 20%;
+      margin-top: -10px;
+      padding: 10px;
+    }
+  }
+  .node-type-homepage #node-1 {
+    .products-featured > .field-items > .field-item {
+      height: 380px;
+    }
+    .pose-blog-container .blog-item .blog-description {
+      max-height: 86px;
+    }
+  }
+}

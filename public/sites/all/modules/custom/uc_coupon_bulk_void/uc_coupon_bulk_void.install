@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function uc_coupon_bulk_void_schema() {
+
+  $schema['uc_coupon_bulk_void'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'code' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+        'description' => t('Coupon code'),
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'code' => array('code'),
+    ),
+  );
+  
+  return $schema;
+}

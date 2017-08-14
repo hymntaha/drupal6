@@ -1,0 +1,55 @@
+<?php
+
+function email_theme(){
+
+  return array(
+    'email_wrapper'=>array(
+       'template'=>'tpl/email-wrapper',
+        'variables'=>array('body'=>"", 'title'=>""),
+    ),
+  );
+}
+
+function email_mail_alter(&$message){
+  $html_emails = array(
+    'cc_reg_email',
+    'cc_reminder_email',
+    'cc_1w_reminder_email',
+    'cc_update_email',
+    'teacher_cert_email',
+    'group_invite_email',
+    'video_free_email',
+    'ah_confirm_email',
+    'ah_pm_update_email',
+    'ah_pm_cc_exp_m_email',
+    'ah_pm_cc_exp_email',
+    'ah_pm_cc_prb_email',
+    'ah_pm_cc_prb_a_email',
+    'teacher_cert_email_7',
+    'teacher_cert_email_0t',
+    'teacher_cert_email_0a',
+    'teacher_cert_email_p23',
+    'teacher_cert_email_p30a',
+    'coupon_uc_user_credit_email',
+    'testdotcom_account_email',
+    'testdotcom_test_email',
+  );
+  
+  if(in_array($message['key'], $html_emails)){
+    if(!empty($message['params']['sender_name']) && !empty($message['params']['sender_email'])){
+      $message['headers']['From'] = $message['headers']['Sender'] = $message['headers']['Return-Path'] = $message['headers']['Errors-To'] = '"'.$message['params']['sender_name'].  '" <'.$message['params']['sender_email'].'>';
+    }
+
+    $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+
+    if(empty($message['no_message_wrap']) || $message['no_message_wrap'] == false){
+
+        $message['body'] = array(
+          theme("email_wrapper", array(
+            'body'=>is_array($message['body']) ? implode("\n",$message['body']) : $message['body'],
+            'title'=>$message['subject'],
+          ))
+        );
+    }
+  }
+}

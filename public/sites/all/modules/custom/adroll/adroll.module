@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function adroll_menu() {
+  $items['admin/ytu-settings/adroll-settings'] = array(
+    'title' => 'Adroll Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('adroll_admin_settings_form'),
+	'access arguments' => array('access ytu settings'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function adroll_theme($existing, $type, $theme, $path) {
+  return array(
+    'adroll_tracking_code' => array(
+      'template' => 'adroll-tracking-code',
+      'variables' => array('adv_id' => '', 'pix_id' => '', 'order_subtotal' => ''),
+    ),
+  );
+}
+
+function adroll_admin_settings_form($form, &$form_state){
+	$form['adv_id'] = array(
+		'#type' => 'textfield',
+		'#title' => 'ADV ID',
+		'#default_value' => variable_get('adv_id',''),
+	);
+	$form['pix_id'] = array(
+		'#type' => 'textfield',
+		'#title' => 'PIX ID',
+		'#default_value' => variable_get('pix_id',''),
+	);
+	return system_settings_form($form);
+}

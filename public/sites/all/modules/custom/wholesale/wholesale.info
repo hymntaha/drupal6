@@ -1,0 +1,5 @@
+name = Wholesale
+description = Wholesale Functionality
+package = "Yoga Tune Up"
+core = 7.x
+version = 7.x-1.0

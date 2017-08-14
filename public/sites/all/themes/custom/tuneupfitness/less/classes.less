@@ -1,0 +1,340 @@
+// Classes and Teachers
+.page-class-list{
+  span.date-display-single {
+    display: block;
+  }
+  .field-name-field-single-date{
+    display: none;
+  }
+}
+
+.field-name-field-class-schedule{
+  span.date-display-single{
+    display:block;
+  }
+}
+
+.workshop-search, .class-search, .class-search-bottom{
+  clear:both;
+  .col-sm-3, .col-sm-9{
+    padding-left: 0;
+  }
+}
+#workshop-ajax-wrapper, #class-ajax-wrapper{
+  .make-sm-column(9);
+  .make-sm-column-offset(3);
+  margin: 20px 0 30px;
+  padding-left: 0;
+  form[id^="class-workshop-search-form"], form[id^="class-search-form"]{
+    .form-type-select{
+      .make-sm-column(4);
+      padding-left: 0;
+      margin-bottom: 20px;
+    }
+
+    .form-item-zip,
+    .form-item-radius{
+      .make-sm-column(6);
+      padding-left:0;
+    }
+  }
+
+  .submit-wrapper{
+    clear:both;
+    margin-left: 0;
+  }
+}
+.class-search-bottom{
+     border-top: @border;
+     padding-top: 20px;
+}
+#teacher-search-form, #teacher-search-zip-radius-form, #class-training-search-form{
+     margin-bottom: 30px;
+     .instructor-search-text{
+          margin-bottom: 10px;
+     }
+     .form-item-teacher {
+          & + input.btn.form-submit[value="Search Now"]{
+               display: none;
+          }
+
+     }
+     .meet-all-teachers, .search-all-trainings{
+          .btn;
+          .btn-info;
+          padding-left: 14px;
+          padding-right: 14px;
+     }
+}
+
+.sep{
+     margin-top: 20px;
+     margin-bottom: 10px;
+     text-align: center;
+     border-top: @border;
+     clear: left;
+     span{
+          display: block;
+          position:absolute;
+          left: 45%;;
+
+          margin: -11px auto;
+          background-color: @white;
+          width: 40px;
+     }
+}
+
+#class-training-search-form{
+  input[type="submit"],
+  .search-all-trainings{
+    display:block;
+    width:100%;
+    margin-bottom:15px;
+  }
+}
+
+#teacher-search-zip-radius-form {
+     button[value="Search Now"] {
+          display: block;
+     }
+}
+#block-block-5{
+     margin-bottom: 30px;
+}
+.page-node-18 .node-product-landing,
+.page-faqs .faq-listings{
+     .blue-title {       
+
+          padding-bottom: 5px;
+     }
+     .subtitle {       
+          margin-bottom: 0px;
+          padding-bottom: 0px;
+          height: 30px;
+     }
+  .vocabulary-ytu-cert-levels, .faq-category{
+    & > h2{
+      .title;
+      font-size: ceil(@font-size-base * 0.875);
+      a, & > span{
+        color: @gray-dark;
+        font-weight: @font-bold;
+        &:before{
+          content: "\f105";
+          display: block;
+          font-family: @font-fontAwesome;
+          font-style: normal;
+          font-weight: @font-normal;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          height: 6px;
+          position: relative;
+          width: 9px;
+          float:left;
+        }
+        &:hover{
+          color: @gray-dark;
+        }
+      }
+      &.tab-open{
+        a{
+          &:before{
+            content: "\f107";
+          }
+        }
+      }
+    }
+    .content{
+      margin-bottom:20px;
+    }
+    &.open{
+      & > h2 span{
+        &:before{
+          content: "\f107";
+        }
+      }
+    }
+  }
+}
+
+.node-class{
+  &.node-teaser,
+  &.view-mode-full{
+    padding-bottom: 20px;
+    h2{
+      .title;
+      a {
+        color:@brand-primary;
+        text-decoration: underline;
+      }
+    }
+    .field-name-field-image{
+      .make-sm-column(3);
+      text-align: center;
+    }
+    .field-label{
+      min-width: 100px;
+    }
+    .field-name-field-class-schedule{
+      .field-item{
+        p{
+          .make-sm-column(6);
+          padding-left: 0;
+          &.recurring-times{
+            .make-sm-column-pull(6);
+          }
+        }
+      }
+    }
+  }
+
+  &.node-teaser{
+    .field-name-field-image{
+      height:auto;
+      line-height:inherit;
+      a{
+        border:0;
+
+        img{
+          vertical-align: inherit;
+        }
+      }
+    }
+  }
+
+  &.view-mode-right_block{
+    margin-bottom:10px;
+    .field-name-field-class-schedule{
+      font-weight:bold;
+      .field-label{
+        display:none;
+      }
+    }
+  }
+}
+.node-type-class{
+  .node-class{
+    border-bottom: none;
+  }
+  .field-name-field-class-schedule,
+  .field-name-body{
+    margin-bottom:15px;
+  }
+}
+.node-teacher{
+  .field-name-body{
+    padding-bottom: 20px;
+  }
+  .blue-button{
+    margin: 0 5px 20px 0;
+  }
+  .field-name-field-photos{
+    .make-sm-column(3);
+    text-align: center;
+    margin-bottom: 20px;
+    img{
+      .border-radius(4px);
+    }
+  }
+}
+.node-type-teacher{
+  .node-teacher{
+    border-bottom: none;
+  }
+  .teacher-contact{
+    & > div[class*="col-"]{
+      padding-left:0;
+    }
+    .main-body{
+      & > div{
+        
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+      }
+      .field-collection-container{
+        .field-collection-view{
+          padding-top: 0;
+        }
+         .field-item{
+           margin-bottom: 0;
+         }
+       }
+      .field-name-body{
+        border-bottom: none;
+      }
+    }
+  }
+  .field-name-field-photos{
+    .make-sm-column(12);
+    margin-top: 0;
+  }
+  .view-links{
+    clear:both;
+    a{
+      .btn;
+      .btn-primary;
+      margin:0 20px 20px 0;
+    }
+  }
+}
+.page-photo-gallery{
+  .node-teacher{
+    border-bottom: none;
+  }
+  header{
+    .make-sm-column(12);
+    .make-sm-column-offset(0);
+    padding-left: 0;
+    
+    h2{
+      width: 80%;
+      float: left;
+    }
+    .btn-back{
+      float: right;
+      margin-top: -5px;
+      margin-bottom: 10px;
+    }
+  }
+  .field-name-field-photos{
+    .make-sm-column(12);
+    padding-left: 0;
+    margin-top: 0;
+    .field-item{
+      .make-xs-column(4);
+      .make-sm-column(3);
+      .make-md-column(2);
+      margin-top: 30px;
+      img{
+        .border-radius(3px);
+      }
+    }
+  }
+}
+@media @mobile{
+  .page-photo-gallery .field-name-field-photos .field-item{
+    &:nth-child(4n){
+      clear: left;
+    }
+  }
+}
+@media @tablet{
+  .page-photo-gallery .field-name-field-photos .field-item{
+    &:nth-child(4n){
+      clear: none;
+    }
+    &:nth-child(4n+1){
+      clear: left;
+    }
+  }
+}
+@media @normal{
+  .page-photo-gallery .field-name-field-photos .field-item{
+    &:nth-child(4n+1){
+      clear: none;
+    }
+    &:nth-child(6n+1){
+      clear: left;
+    }
+  }
+}

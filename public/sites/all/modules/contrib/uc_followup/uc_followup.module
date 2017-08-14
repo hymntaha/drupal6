@@ -1,0 +1,383 @@
+<?php
+
+/**
+ * @file
+ * UC Follow-up allows to automatically send e-mails to customers on different stages of ordering.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function uc_followup_menu() {
+  $items['admin/store/follow-up'] = array(
+    'title' => 'Follow-ups',
+    'page callback' => 'uc_followup_list',
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/follow-up/list'] = array(
+    'title' => 'Follow-ups',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -1,
+  );
+  $items['admin/store/follow-up/add'] = array(
+    'title' => 'Add follow-up',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_form'),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/store/follow-up/edit/%uc_followup'] = array(
+    'title' => 'Edit follow-up',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_form', 4),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/follow-up/delete/%uc_followup'] = array(
+    'title' => 'Delete follow-up',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_delete_confirm', 4),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/follow-up/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_settings'),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/store/orders/%uc_order/follow-up'] = array(
+    'title' => 'Follow-up the customer',
+    'page callback' => 'uc_followup_customer',
+    'page arguments' => array(3),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/follow-up/send/%uc_followup'] = array(
+    'title' => 'Preview & send',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_send', 3, 6),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/follow-up/details/%'] = array(
+    'title' => 'Sent follow-up details',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_send', 3, '', 6),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/follow-up/ahah_preview/%uc_followup'] = array(
+    'title' => 'Preview & send',
+    'page callback' => 'uc_followup_send_preview',
+    'page arguments' => array(3, 6),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/follow-up/skip/%uc_followup'] = array(
+    'title' => 'Skip follow-up for this order?',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_followup_skip_confirm', 3, 6),
+    'access arguments' => array('administer order workflow'),
+    'file' => 'uc_followup.admin.inc',
+  );
+  return $items;
+}
+
+function uc_followup_load($followup_id) {
+  $query = db_select('uc_followup', 'f');
+  $query->fields('f');
+  $query->condition('f.followup_id', $followup_id);
+  $result = $query->execute();
+  return $result->fetchAssoc();
+}
+
+function uc_followup_sent_details($follow_id) {
+  $query = db_select('uc_followup_sent', 'fs');
+  $query->fields('fs');
+  $query->condition('fs.follow_id', $follow_id);
+  $result = $query->execute();
+  return $result->fetchAssoc();
+}
+
+/**
+ * Implements hook_uc_order_actions().
+ */
+function uc_followup_uc_order_actions($order, $icon_html = FALSE) {
+  if (user_access('administer order workflow')) {
+
+    // Select pending and sent followups for this order.
+    $select = array(
+      array('o', 'order_status'),  // Order status
+    );
+    $where = array(
+      array('o.order_id', $order->order_id),  // Only return results matching this order.
+    );
+    $result = uc_followup_query_helper($select, $where);  // Execute the query.
+
+    // Loop through the results.
+    $order_status = '';
+    $pending_count = 0;
+    while ($data = $result->fetchAssoc()) {
+
+      // Count the number of pending emails.
+      $pending_count++;
+    }
+
+    // Count the number of sent emails.
+    $query = db_select('uc_followup_sent', 'fs');
+    $query->fields('fs', array('order_id'));
+    $query->condition('fs.order_id', $order->order_id);
+    $sent_count = $query->countQuery()->execute()->fetchField();
+
+    // Create alt text for the followup image.
+    $alt = '<h4>' . t('Folow-up summary') . '</h4>';
+    if ($pending_count || $sent_count) {
+      $alt .= ': ' . t('pending(@pending) | sent(' . ($sent_count ? '@sent' : '0') . ')', array('@pending' => $pending_count, '@sent' => $sent_count));
+    }
+
+    // Add it to the actions array.
+    $actions[] = array(
+      'name' => t('Contact customer'),
+      'url' => 'admin/store/orders/' . $order->order_id . '/follow-up',
+      'icon' => '<img src="' . base_path() . (drupal_get_path('module', 'uc_followup') . '/images/email' . ($pending_count ? ($sent_count ? '-some' : '-active') : '') . '.png') . '" />',
+      'title' => $alt,
+    );
+  }
+  return $actions;
+}
+
+/**
+ * Implements hook_mail().
+ */
+function uc_followup_mail($key, &$message, $params) {
+  $message['subject'] = $params['subject'];
+  $message['body'][] = wordwrap($params['body']);
+  if (variable_get('uc_followup_bcc', '')) {
+    $message['headers']['Bcc'] = variable_get('uc_followup_bcc', '');
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function uc_followup_cron() {
+  if (variable_get('uc_followup_auto_send', TRUE)) {
+
+    // Load all active followups.
+    $followups = array();
+    $query = db_select('uc_followup', 'f');
+    $query->fields('f', array());
+    $query->condition('f.status', 1);
+    $result = $query->execute();
+    while ($row = $result->fetchAssoc()) {
+      $followups[$row['followup_id']] = $row;
+    }
+
+    // Select pending and sent followups from the database.
+    // Add a condition to filter out orders that don't have a primary email address.
+    $where = array(
+      array('o.primary_email', '', '!='),
+    );
+    $result = uc_followup_query_helper(array(), $where);  // Execute the query.
+
+    $i = 0;
+    while (($pending = $result->fetchAssoc()) && ($i < variable_get('uc_followup_send_limit', 100))) {
+
+      // Load the order object to use for token replacements.
+      $order = uc_order_load($pending['order_id']);
+      $replacements = uc_followup_get_token_replacements($order);
+
+      // Load the appropriate followup information to get the sender, subject, and body.
+      $followup = $followups[$pending['followup_id']];
+
+      // Apply token replacements to from and recipient e-mail addressses.
+      $pending['sender'] = token_replace($followup['sender'], $replacements);
+      $pending['subject'] = token_replace($followup['subject'], $replacements);
+      $pending['body'] = token_replace($followup['body'], $replacements);
+      $pending['email'] = token_replace('[uc_order:email]', $replacements);
+
+      // Filter the body text with the selected text format.
+      $pending['body'] = check_markup($pending['body'], $followup['body_format']);
+
+      // If a sender isn't specified, use the store's default.
+      if (empty($pending['sender'])) {
+        $pending['sender'] = uc_store_email_from();
+
+        // If a store email isn't specified, use the site's default.
+        if (empty($pending['sender'])) {
+          $pending['sender'] = variable_get('site_mail', '');
+        }
+      }
+
+      // Send message
+      if (valid_email_address($pending['email'])) {
+        $sent = drupal_mail('uc_followup', '', $pending['email'], '', $pending, $pending['sender']);
+        if ($sent['result']) {
+          $pending['date'] = REQUEST_TIME;
+          $pending['manual'] = FALSE;
+          drupal_write_record('uc_followup_sent', $pending);
+        }
+      }
+      $i++;
+    }
+  }
+}
+
+/**
+ * UC Followup query helper.
+ * Builds and executes a query to find pending and sent followup emails.
+ *
+ * @param $select
+ *   Allows additional fields to be selected by the query. Must be in the following format:
+ *   $select = array(
+ *     array('o', 'order_id'),  // 'o' is the table alias, 'order_id' is the field.
+ *   );
+ * @param $where
+ *   Allows additional WHERE conditions to be added to the query. Must be in the following format:
+ *   $where = array(
+ *     array('o.primary_email', '', '!='),  // 'o.primary_email' is the field to check, '' is the value to compare it to, '!=' is the comparison operation to perform (defaults to '=').
+ *   );
+ * @param $debug
+ *   Debugging mode (off by default). See @return below.
+ *
+ * @return
+ *   If $debug is FALSE, the function will execute the query and return the result.
+ *   If $debug is TRUE, the query object will be returned, and the query will not be executed.
+ */
+function uc_followup_query_helper($select=array(), $where=array(), $debug=FALSE) {
+
+  // Get the current time.
+  $time = REQUEST_TIME;
+
+  // Start the query with a selection from the {uc_followup} table.
+  $query = db_select('uc_followup', 'f');
+
+  // Join all orders, for which there is a folowup rule (this will multiply the number of rows returned).
+  $query->join('uc_orders', 'o', 'f.order_status = o.order_status');
+
+  // Put together a sub-query for selecting all previously sent followups, and join to the original query on the followup_id and order_id, to get a count of the number of emails sent, and the last sent timestamp.
+  $sent_followups = db_select('uc_followup_sent', 'fs');
+  $sent_followups->fields('fs', array('followup_id', 'order_id'));
+  $sent_followups->addExpression('COUNT(order_id)', 'sent_count');
+  $sent_followups->addExpression('MAX(date)', 'last_sent');
+  $sent_followups->groupBy('fs.order_id');
+  $sent_followups->groupBy('fs.followup_id');
+  $query->leftjoin($sent_followups, 'fs', 'o.order_id = fs.order_id AND f.followup_id = fs.followup_id');
+
+  // Add the default fields that should always be returned.
+  $query->addField('f', 'followup_id');
+  $query->addField('o', 'order_id');
+
+  // If the function was called with extra SELECT field, add them also.
+  if (!empty($select)) {
+    foreach ($select as $field) {
+      $query->addField($field[0], $field[1]);
+    }
+  }
+
+  // If the function was called with extra WHERE conditions, add them.
+  if (!empty($where)) {
+    foreach ($where as $condition) {
+
+      // If the comparison operator wasn't specified, default to '='.
+      if (!isset($condition[2])) {
+        $condition[2] = '=';
+      }
+
+      // Add the condition.
+      $query->condition($condition[0], $condition[1], $condition[2]);
+    }
+  }
+
+  // Add default WHERE condtions...
+
+  // Only include potential emails for followups that are active.
+  $query->condition('f.status', 1);
+
+  // Only followups with an effective date less than the order modified date.
+  $query->where('f.effective_date < o.modified');
+
+  // Only include orders in which the specified amount of time has past.
+  $query->where($time . ' > o.modified + (f.hours_past * 3600)');
+
+  // If the last_order setting is set, then we only want to include the user's most recent order.
+  // We'll do this with a subquery to find the user's latest order.
+  $latest_order = db_select('uc_orders');
+  $latest_order->addField('uc_orders', 'order_id');
+  $latest_order->where('primary_email = o.primary_email');
+  $latest_order->orderBy('created', 'DESC');
+  $latest_order->range(0, 1);
+  $query->condition(
+
+    // If one of the two following are true...
+    db_or()
+
+    // If the followup's 'last_order' setting is 0.
+    ->condition('f.last_order', 0)
+
+    // Or, if it's the most recent order for the customer.
+    ->where('o.order_id = (' . $latest_order . ')')
+  );
+
+  // This one's a doozie...
+  $query->condition(
+
+    // If one of the two following are true...
+    db_or()
+
+    // If we haven't contacted them yet...
+    ->isNull('fs.last_sent')
+
+    // Or...
+    ->condition(
+
+      // If all of the following are true...
+      db_and()
+
+      // If repeat emails should be sent...
+      ->condition('f.repeat_after', 0, '>')
+
+      // And, the amount of time between repeats has passed since the last email was sent (this will also be true if an email hasn't been sent yet)...
+      ->where($time . ' > fs.last_sent + (f.repeat_after * 3600)')
+
+      // And...
+      ->condition(
+
+        // If one of the two following are true...
+        db_or()
+
+        // If we should repeat indefinitely...
+        ->condition('f.repeat_max', 0)
+
+        // Or, we haven't sent the max number of repeats yet...
+        ->where('fs.sent_count < f.repeat_max')
+      )
+    )
+  );
+
+  // Execute the query and return the result, or just return the query object if $debug is set to TRUE.
+  if (!$debug) {
+    return $query->execute();
+  }
+  else {
+    return $query;
+  }
+}
+
+/**
+ * Get token replacements for uc_followup emails.
+ */
+function uc_followup_get_token_replacements($order) {
+  $account = user_load($order->uid);
+  $replacements = array(
+    'global' => NULL,
+    'user' => $account,
+    'uc_order' => $order,
+  );
+  return $replacements;
+}

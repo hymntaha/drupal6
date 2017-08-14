@@ -1,0 +1,111 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function uc_cart_limit_qty_menu() {
+  $items['node/%node/edit/limit-cart-qty'] = array(
+    'title'            => 'Limit Cart Quantity',
+    'description'      => 'Edit cart quantity limits.',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('uc_cart_limit_qty_product_form', 1),
+    'access callback'  => 'uc_cart_limit_qty_product_access',
+    'access arguments' => array(1),
+    'type'             => MENU_LOCAL_TASK,
+    'weight'           => 1,
+    'file'             => 'uc_cart_limit_qty.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function uc_cart_limit_qty_permission() {
+  return array(
+    'administer cart limit qty' => array(
+      'title'       => t('Administer Cart Limit Quantity'),
+      'description' => t('Update products to have limited cart quantities.'),
+    )
+  );
+}
+
+/**
+ * Access callback for editing a product's attributes.
+ */
+function uc_cart_limit_qty_product_access($node) {
+  return uc_product_is_product($node) && node_access('update', $node) && user_access('administer cart limit qty');
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function uc_cart_limit_qty_node_load($nodes) {
+  $result = db_query('SELECT * FROM uc_cart_limit_qty WHERE nid IN (:nids)', array(':nids' => array_keys($nodes)));
+  foreach ($result as $row) {
+    $nodes[$row->nid]->uc_cart_limit_qty = new UcCartLimitQty($row->id, $row->nid, $row->qty_limit);
+  }
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function uc_cart_limit_qty_admin_paths() {
+  return array(
+    'node/*/edit/limit-cart-qty' => TRUE,
+  );
+}
+
+function uc_cart_limit_qty_quantity_check($product, $qty) {
+  $result = array();
+
+  if (isset($product->uc_cart_limit_qty)) {
+
+    /** @var UcCartLimitQty $limit_qty */
+    $limit_qty = $product->uc_cart_limit_qty;
+    if ($qty > $limit_qty->getQtyLimit()) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t('There is a limit of :max_qty :product_name per order.',
+          array(
+            ':max_qty'      => $limit_qty->getQtyLimit(),
+            ':product_name' => $product->title
+          )),
+      );
+    }
+  }
+
+  return array(
+    'result' => $result,
+  );
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function uc_cart_limit_qty_uc_add_to_cart($nid, $qty, $data) {
+  $node = node_load($nid);
+
+  $limit_quantity_check = uc_cart_limit_qty_quantity_check($node, $qty);
+
+  return $limit_quantity_check['result'];
+}
+
+/**
+ * Implements hook_uc_cart_alter().
+ */
+function uc_cart_limit_qty_uc_cart_alter(&$cart_items) {
+  foreach ($cart_items as $cart_item) {
+    $limit_quantity_check = uc_cart_limit_qty_quantity_check($cart_item, $cart_item->qty);
+    if (!empty($limit_quantity_check['result'])) {
+      $cart_item->qty = $cart_item->uc_cart_limit_qty->getQtyLimit();
+      uc_cart_update_item($cart_item);
+      drupal_set_message(t('There is a limit of :max_qty :product_name per order',
+        array(
+          ':product_name' => $cart_item->title,
+          ':max_qty'      => $cart_item->uc_cart_limit_qty->getQtyLimit()
+        )),'error');
+    }
+  }
+}

@@ -1,0 +1,295 @@
+<?php
+
+function avatar_utils_init(){
+	if(path_is_admin(current_path())){
+		drupal_add_css(".cke_top { white-space: normal !important; }",'inline');
+	}
+}
+
+function pr($arr, $bg_color = '#F1F6FA', $txt_color = '#000000') {
+  echo sprintf('<pre style="background-color: %s; color: %s;">', $bg_color, $txt_color);
+  if($arr) {
+    print_r($arr);
+  }
+  else {
+    var_dump($arr);
+  }
+  echo '</pre>';
+}
+
+function prr($arr,$bg_color = '#F1F6FA', $txt_color = '#000000'){
+	$ret =  sprintf('<pre style="background-color: %s; color: %s;">', $bg_color, $txt_color);
+	$ret .= print_r($arr, true);
+	$ret .= "</pre>";
+	return $ret;
+}
+
+function format_bytes($size) {
+    $units = array(' B', ' KB', ' MB', ' GB', ' TB');
+    for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
+    return round($size, 2).$units[$i];
+}
+
+/**
+ *   Calculate a precise time difference.
+ *   @param string $start result of microtime()
+ *   @param string $end result of microtime(); if NULL/FALSE/0/'' then it's now
+ *   @return flat difference in seconds, calculated with minimum precision loss
+ */
+function microtime_diff( $start, $end=NULL ) {
+    if( !$end ) {
+        $end= microtime();
+    }
+    list($start_usec, $start_sec) = explode(" ", $start);
+    list($end_usec, $end_sec) = explode(" ", $end);
+    $diff_sec= intval($end_sec) - intval($start_sec);
+    $diff_usec= floatval($end_usec) - floatval($start_usec);
+    return floatval( $diff_sec ) + $diff_usec;
+}
+
+function xmlToArray($xml,$ns=null){
+  $a = array();
+  for($xml->rewind(); $xml->valid(); $xml->next()) {
+    $key = $xml->key();
+    if(!isset($a[$key])) { $a[$key] = array(); $i=0; }
+    else $i = count($a[$key]);
+    $simple = true;
+    foreach($xml->current()->attributes() as $k=>$v) {
+        $a[$key][$i][$k]=(string)$v;
+        $simple = false;
+    }
+    if($ns) foreach($ns as $nid=>$name) {
+      foreach($xml->current()->attributes($name) as $k=>$v) {
+         $a[$key][$i][$nid.':'.$k]=(string)$v;
+         $simple = false;
+      }
+    } 
+    if($xml->hasChildren()) {
+        if($simple) $a[$key][$i] = xmlToArray($xml->current(), $ns);
+        else $a[$key][$i]['content'] = xmlToArray($xml->current(), $ns);
+    } else {
+        if($simple) $a[$key][$i] = strval($xml->current());
+        else $a[$key][$i]['content'] = strval($xml->current());
+    }
+    $i++;
+  }
+  return $a;
+}
+
+/*
+ * @see http://www.php.net/manual/en/function.in-array.php#101132
+ */
+function in_arrayi($needle, $haystack) {
+    for($h = 0 ; $h < count($haystack) ; $h++)
+    {
+        $haystack[$h] = strtolower($haystack[$h]);
+    }
+    return in_array(strtolower($needle),$haystack);
+}
+
+function is_local() {
+	return stristr($_SERVER['HTTP_HOST'], 'avatarnewyork.com') ? true : false;
+}
+
+
+/**
+ * Mail a message easier than setting up a hook_mail.
+ *
+ * Gotten from: http://www.midwesternmac.com/blogs/jeff-geerling/wrapper-function-simple
+ * Referenced from: http://api.drupal.org/api/drupal/includes--mail.inc/function/drupal_mail/7#comment-23958
+ *
+ * @param $to
+ * @param $subject
+ * @param $body
+ * @param null $from
+ * @param null $module
+ * @param null $key
+ * @return bool
+ */
+function avatar_easy_mail($to, $subject, $body, $from = null, $module=null, $key=null){
+  $my_module = $module ? $module : 'custom';
+  $my_mail_token = $key ? $key : microtime();
+  $from = $from ? $from : variable_get('system_mail', 'My Email Address <example@example.com>');
+
+  $body = is_array($body) ? $body : array($body);
+
+
+  $message = array(
+    'id' => $my_module . '_' . $my_mail_token,
+    'to' => $to,
+    'subject' => $subject,
+    'body' =>$body,
+    'headers' => array(
+      'From' => $from,
+      'Sender' => $from,
+      'Return-Path' => $from,
+    ),
+  );
+  $system = drupal_mail_system($my_module, $my_mail_token);
+  $message = $system->format($message);
+  if ($system->mail($message)) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+
+
+}
+
+function avatar_util_ip_in_array($ip_addr_array, $user_ip_address) {
+	foreach ( $ip_addr_array as $ip_address ) {
+		if ( trim($user_ip_address) == trim($ip_address) ) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+function avatar_util_get_file_list($dir) {
+  # array to hold return value
+  $retval = array();
+  # add trailing slash if missing
+  if (substr($dir, -1) != "/") $dir .= "/";
+  # open pointer to directory and read list of files
+  $d = @dir($dir);
+  if (!empty($d)) {
+    while (false !== ($entry = $d->read())) {
+      # skip hidden files
+      if ($entry[0] == ".") {
+        continue;
+      }
+      if (is_dir("$dir$entry")) {
+        $retval[] = array(
+          "name" => "$dir$entry/",
+          "type" => filetype("$dir$entry"),
+          "size" => 0,
+          "lastmod" => filemtime("$dir$entry")
+        );
+      }
+      elseif (is_readable("$dir$entry")) {
+        $retval[] = array(
+          "name" => "$dir$entry",
+          //"type" => mime_content_type("$dir$entry"),
+          "type" => 'file',
+          "size" => filesize("$dir$entry"),
+          "lastmod" => filemtime("$dir$entry")
+        );
+      }
+    }
+    $d->close();
+  }
+  return $retval;
+}
+
+
+function avatar_util_crc32($value) {
+  $ret_val = crc32(strtolower($value));
+  return sprintf("%u", $ret_val);
+}
+
+function avatar_util_money_format($val){
+  $str = '';
+  if($val < 0 ){
+    $val = abs($val);
+    $str .= '-';
+  }
+  
+  $str = '$'.number_format($val, 2);
+  
+  return $str;
+}
+
+function safe_dpm($var, $pr_fallback = false){
+
+	if(function_exists("dpm")){
+		dpm($var);
+	}else if($pr_fallback){
+		drupal_set_message(prr($var));
+	}
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function avatar_utils_menu_alter(&$items) {
+  if(module_exists('clone')){
+    if(isset($items['node/%node/clone'])){
+      $items['node/%node/clone']['type'] = MENU_LOCAL_TASK;
+      unset($items['node/%node/clone']['context']);
+    }
+  }
+}
+
+function avatar_get_menu_children($nid,$menu_name = 'main-menu', $view_mode = 'teaser', $types = array()){
+  $teasers = array();
+  $menu = array();
+
+  $parent_menu = menu_tree($menu_name);
+  foreach($parent_menu as $parent){
+    if(isset($parent['#href']) && $parent['#href'] == 'node/'.$nid){
+      $menu = $parent;
+      break;
+    }
+  }
+
+  //If not found on the first level, search one level deeper
+  if(empty($menu)){
+    foreach($parent_menu as $parent){
+      if(!isset($parent['#below'])){
+        continue;
+      }
+      foreach($parent['#below'] as $child){
+        if(isset($child['#href']) && $child['#href'] == 'node/'.$nid){
+          $menu = $child;
+          break;
+        }
+      }
+    }
+  }
+
+  if(!empty($menu)){
+
+    foreach($menu['#below'] as $child_mid => $child_menu){
+      if(isset($child_menu['#href'])){
+        $child_nid = explode('/',$child_menu['#href']);
+        if($child_nid[0] == 'node'){
+          $node = node_load($child_nid[1]);
+          if(empty($types) || in_array($node->type, $types)){
+            $teasers[] = node_view($node, $view_mode);
+          }
+        }
+      }
+    }
+  }
+
+  return $teasers;
+}
+
+/**
+ * Implements hook_query_alter().
+ */
+function avatar_utils_query_alter(QueryAlterableInterface $query) {
+  if ($query->hasTag('efq_debug') && module_exists('devel')) {
+    dpm((string) $query);
+    dpm($query->arguments());
+  }
+}
+
+function avatar_utils_parse_custom_list($text){
+  $items = array();
+  $lines = explode("\n", $text);
+  foreach ($lines as $line) {
+    $pieces = explode(" ", $line);
+
+    foreach ($pieces as $piece) {
+      $style = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $piece);
+      $style = trim($style);
+      if ($style != '') {
+        $items[$style] = $style;
+      }
+    }
+  }
+
+  return $items;
+}

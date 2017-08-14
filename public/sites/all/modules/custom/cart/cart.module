@@ -1,0 +1,339 @@
+<?php
+
+function cart_menu() {
+  $items = array();
+
+  $items['cart/login'] = array(
+    'title'            => "Cart Login",
+    'page callback'    => array('cart_login_page'),
+    'access arguments' => array("access content"),
+  );
+
+  return $items;
+}
+
+function cart_theme() {
+  return array(
+    'cart_login' => array(
+      'template'  => "cart_login",
+      'variables' => array(
+        'login_form' => array(),
+        'anon_login_form' => array(),
+      ),
+    )
+  );
+}
+
+function cart_uc_add_to_cart_data($form_values) {
+  if (isset($form_values['nid'])) {
+    $node = node_load($form_values['nid']);
+    if (product_is_on_backorder($node)) {
+      return array('backordered' => TRUE);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function cart_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'uc_cart_view_form') {
+    drupal_set_title('Yoga Tune Up® Shopping Cart');
+    $form['top'] = array(
+      '#weight'           => -1,
+      '#prefix'           => '<div class="cart-top clearfix">',
+      '#suffix'           => '</div>',
+      'empty'             => $form['actions']['empty'],
+      'update'            => $form['actions']['update'],
+      'continue_shopping' => array('#markup' => '<a href="' . (variable_get('uc_continue_shopping_url', '') ? variable_get('uc_continue_shopping_url', '') : '/') . '" class="continue-shopping">' . (variable_get('uc_continue_shopping_text', '') ? variable_get('uc_continue_shopping_text', '') : 'Continue shopping') . '</a>'),
+    );
+
+    if(at_home_display_cart_link_to_program_finder()){
+      $form['top']['program-finder'] = array('#markup' => l('Go Back to Package Selection', 'customized-program', array('attributes' => array('class' => array('customized-program')))));
+    }
+
+    unset($form['actions']['empty']);
+    unset($form['actions']['update']);
+    unset($form['actions']['continue_shopping']);
+
+    $form['actions']['checkout']['checkout']['#value']    = 'Proceed to Checkout';
+    $form['actions']['checkout']['checkout']['#submit'][] = 'cart_checkout_submit';
+
+    foreach ($form['items'] as $delta => $item) {
+
+      if(isset($item['#entity']->data['at_home_product_queue_info'])){
+        $form['items'][$delta]['desc']['#markup'] = $item['#entity']->title;
+      }
+
+      //Add Backordered if item is backordered
+      if (isset($item['#entity']->data['backordered']) && $item['#entity']->data['backordered']) {
+        $form['items'][$delta]['desc']['#markup'] .= '<div class="backordered">Backordered</div>';
+      }
+
+      //Remove Qty field on cart for At Home Programs, Renewals, Quickfix Videos and Playlists
+      if (is_array($item) && isset($item['#entity']->type)) {
+        if ($item['#entity']->type == 'renewal' ||
+            $item['#entity']->type == 'uc_recurring_subscription' ||
+            ($item['#entity']->type == 'product' && module_exists('testdotcom') && testdotcom_product_is_test($item['#entity'])) ||
+            $item['#entity']->type == 'playlist' ||
+            $item['#entity']->type == 'video_segment_product'
+        ) {
+
+          $form['items'][$delta]['qty']['#type']  = 'hidden';
+          $form['items'][$delta]['qty']['#value'] = '1';
+          $form['items'][$delta]['desc']['#markup'] = $item['#entity']->title;
+          $form['items'][$delta]['image']['#path']  = array();
+        }
+      }
+    }
+  }
+}
+
+function cart_checkout_submit($form, &$form_state) {
+  if (!user_is_logged_in()) {
+    $form_state['redirect'] = array("cart/login", array('query' => array('destination' => 'cart/checkout')));
+  }
+  else{
+    if(wholesale_cart_has_wholesale()){
+      if(!account_is_authenticated_wholesale() && !account_is_pending_wholesale() && !account_is_denied_wholesale() && !isset($_SESSION['wholesale_application_submitted'])){
+        $form_state['redirect'] = 'wholesale-application';
+      }
+    }
+  }
+}
+
+function cart_login_page() {
+  if (user_is_logged_in()) {
+    drupal_goto("cart/checkout");
+  }
+
+  drupal_set_title("Checkout");
+
+  $breadcrumb   = array();
+  $breadcrumb[] = l('Home', '<front>');
+  $breadcrumb[] = l('Shopping Bag', 'cart');
+  drupal_set_breadcrumb($breadcrumb);
+
+  $login_form = drupal_get_form("user_login");
+
+  $login_form['pass']['#suffix']                    = '<div class="forgot-pass"><a class="forgot-pass-link" href="' . url("user/password") . '">Forgot Password?</a></div>';
+  $login_form['actions']['submit']['#return_value'] = $login_form['actions']['submit']['#value'];
+  $login_form['actions']['submit']['#value']        = "Sign in & Checkout";
+
+  return array(
+    '#theme'      => "cart_login",
+    '#login_form' => $login_form,
+    '#anon_login_form' => drupal_get_form('cart_checkout_as_guest_form'),
+  );
+}
+
+function cart_user_login(&$edit, $account) {
+
+}
+
+/**
+ * Implements hook_uc_order().
+ */
+function cart_uc_order($op, $order, $status) {
+  switch ($op) {
+    case 'new':
+      if(!empty($_SESSION['anon_checkout_email'])){
+        $order->primary_email = $_SESSION['anon_checkout_email'];
+      }
+      break;
+    case 'update':
+      if ($status == 'abandoned') {
+        $tag_id = _mm('cart_abandon_infusionsoft_tag_id', '', TRUE);
+        if ($tag_id) {
+          if ($order->uid) {
+            $latest_order_id = order_get_user_latest_placed_order($order->uid);
+            if ($order->order_id > $latest_order_id) {
+              infusionsoft_contact_apply_tag(user_load($order->uid), $tag_id);
+            }
+          }
+          else {
+            if ($order->primary_email) {
+              $params     = array(
+                'Email'     => $order->primary_email,
+                'FirstName' => $order->delivery_first_name,
+                'LastName'  => $order->delivery_last_name,
+              );
+              $contact_id = infusionsoft_create_anon_contact($params, $order->uid);
+              if ($contact_id) {
+                infusionsoft_anon_contact_apply_tag($contact_id, $tag_id);
+              }
+            }
+          }
+        }
+      }
+      break;
+  }
+}
+
+function cart_messages_info() {
+  return array(
+    'cart_custom_text' => array(
+      'title'       => "Cart Custom Text",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "cart",
+    ),
+    'cart_abandon_infusionsoft_tag_id' => array(
+      'title'       => "Infusionsoft Tag ID for Cart Abandons",
+      'description' => "",
+      'type'        => "textfield",
+      'group'       => "cart",
+      'fieldset'    => 'infusionsoft',
+    ),
+    'cart_sign_in_and_checkout' => array(
+      'title'       => "Cart sign in and checkout message",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "cart",
+      'fieldset'    => 'login',
+    ),
+    'cart_login_as_guest' => array(
+      'title'       => "Cart login as guest message",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "cart",
+      'fieldset'    => 'login',
+    ),
+    'cart_anonymous_wholesale' => array(
+      'title'       => "Cart message for anonymous users with a wholesale coupon",
+      'description' => "",
+      'type'        => "richtext",
+      'group'       => "cart",
+    ),
+  );
+}
+
+
+function cart_has_subscription() {
+  $cart = uc_cart_get_contents();
+  foreach ($cart as $item) {
+    if (isset($item->type) && $item->type == 'uc_recurring_subscription') {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_tapir_table_alter()
+ */
+function cart_tapir_table_alter(&$table, $table_id) {
+  if ($table_id == 'uc_cart_view_table') {
+    //Rename the cart remove item input to x
+    foreach (element_children($table) as $delta) {
+      if (isset($table[$delta]['remove'])) {
+        $table[$delta]['remove']['#value'] = 'x';
+
+        if(isset($table[$delta]['#entity']->data['at_home_product_queue_info'])){
+          $table[$delta]['title']['#markup'] = $table[$delta]['#entity']->title;
+        }
+
+        $price_modify = array();
+        $table[$delta]['price']['#markup'] = theme('uc_price',array('price' => $table[$delta]['#entity']->price));
+
+        if(isset($table[$delta]['#entity']->data['uc_coupon'])){
+          $price_modify = reset($table[$delta]['#entity']->data['uc_coupon']);
+        }
+
+        if(isset($table[$delta]['#entity']->data['video_discount'])){
+          $price_modify = reset($table[$delta]['#entity']->data['video_discount']);
+        }
+
+        if(upsell_cart_item_is_upsell($table[$delta]['#entity'])){
+          $price_modify = upsell_get_price_modify($table[$delta]['#entity']);
+        }
+
+        if(!empty($price_modify)){
+          $table[$delta]['price']['#markup'] = '<span class="strikethrough">'.theme('uc_price',array('price' => $price_modify['original_price'])).'</span><br />'.theme('uc_price',array('price' => $price_modify['price']));
+          if(isset($price_modify['max_discount_quantity'])){
+            $prices = array();
+            foreach($price_modify['max_discount_quantity'] as $max_discount_qty){
+              $prices[] = theme('uc_price',array('price' => $max_discount_qty['unit_price'])).' x'.$max_discount_qty['qty'];
+            }
+            $table[$delta]['price']['#markup'] = implode('<br />', $prices);
+          }
+        }
+      }
+    }
+
+    $table['#columns']['price'] = array(
+      'cell' => 'Unit Price',
+      'weight' => 2.5,
+    );
+
+    $table['#columns']['total']['cell'] = '<div style="float: right;">Total</div>';
+  }
+}
+
+function cart_checkout_as_guest_form($form, &$form_state){
+  $form['email'] = array(
+    '#type' => module_exists('elements') ? 'emailfield' : 'textfield',
+    '#title' => 'E-mail Address',
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Checkout as a Guest',
+  );
+
+  return $form;
+}
+
+function cart_checkout_as_guest_form_validate($form, &$form_state){
+  if (db_query("SELECT uid FROM {users} WHERE mail LIKE :mail", array(':mail' => $form_state['values']['email']))->fetchField() > 0) {
+    form_set_error('email', t('An account already exists for your e-mail address. You will either need to login with this e-mail address or use a different e-mail address.'));
+  }
+
+  if (!filter_var($form_state['values']['email'], FILTER_VALIDATE_EMAIL)) {
+    form_set_error('email', t('Invalid email address'));
+  }
+}
+
+function cart_checkout_as_guest_form_submit($form, &$form_state){
+  $_SESSION['anon_checkout_email'] = $form_state['values']['email'];
+  $form_state['redirect'] = 'cart/checkout';
+}
+
+/**
+ * Implements hook_uc_cart_pane().
+ */
+function cart_uc_cart_pane($items) {
+  $panes = array();
+  $text = _mm('cart_custom_text','');
+
+  if(!empty($text)){
+    $panes['cart_custom_text'] = array(
+      'title' => t('Cart custom text'),
+      'enabled' => TRUE,
+      'weight' => 0,
+      'body' => array(
+        '#prefix' => '<div id="cart-custom-text">',
+        '#suffix' => '</div>',
+        '#markup' => $text,
+      ),
+    );
+  }
+
+  return $panes;
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function cart_page_build(&$page) {
+  /**
+   * Show message when a user not logged in and is on the cart page and has a wholesale coupon
+   * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/716#history-12390766
+   */
+  if(request_path() == 'cart'){
+    if(!user_is_logged_in() && wholesale_cart_has_wholesale()){
+      drupal_set_message(_mm('cart_anonymous_wholesale',''), 'error');
+    }
+  }
+}

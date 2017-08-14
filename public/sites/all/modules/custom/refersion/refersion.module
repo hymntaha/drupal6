@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function refersion_theme($existing, $type, $theme, $path) {
+  return array(
+    'refersion_page_tracking' => array(
+      'template' => 'refersion-page-tracking',
+    ),
+    'refersion_order_tracking' => array(
+      'template' => 'refersion-order-tracking',
+      'variables' => array(
+        'order_id' => '',
+        'shipping' => '',
+        'tax' => '',
+        'discount' => array(),
+        'customer' => array(),
+        'items' => array(),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_checkout_order_tracking_pixel().
+ */
+function refersion_checkout_order_tracking_pixel($order) {
+  $shipping = '';
+  $tax = '';
+  $discount = array();
+  $items = array();
+
+  foreach($order->line_items as $line_item){
+    switch ($line_item['type']){
+      case 'shipping':
+        $shipping = $line_item['amount'];
+        break;
+      case 'tax':
+        $tax = $line_item['amount'];
+        break;
+      case 'coupon':
+        if((int) $line_item['amount'] != 0){
+          $discount['code'] = $line_item['data']['code'];
+          $discount['amount'] = $line_item['amount'];
+        }
+        break;
+    }
+  }
+
+  $customer = array(
+    'first_name' => $order->delivery_first_name,
+    'last_name' => $order->delivery_last_name,
+    'email' => $order->primary_email,
+    'ip_address' => ip_address(),
+  );
+
+  foreach($order->products as $product){
+    $items[] = array(
+      'sku' => $product->model,
+      'qty' => $product->qty,
+      'price' => $product->price,
+    );
+  }
+
+  return theme('refersion_order_tracking', array(
+      'order_id' => $order->order_id,
+      'shipping' => $shipping,
+      'tax' => $tax,
+      'discount' => $discount,
+      'customer' => $customer,
+      'items' => $items,
+    ));
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function refersion_page_alter(&$page) {
+  $page['page_bottom']['refersion']['#markup'] = theme('refersion_page_tracking');
+}

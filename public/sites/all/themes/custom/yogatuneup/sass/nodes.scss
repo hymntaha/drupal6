@@ -1,0 +1,1015 @@
+/**
+ * @file
+ * Node Styling
+ *
+ * Style anything that isn't in the $content variable.
+ */
+
+@import "base";
+
+.node-unpublished { /* Unpublished nodes */
+  /* background-color: #fff4f4; */ /* Drupal core uses a #fff4f4 background */
+
+  p.unpublished { /* The word "Unpublished" displayed underneath the content. */
+    @include unpublished-div;
+  }
+}
+
+.node-type-homepage{
+  background-image:url('../images/yt_home_back1.jpg');
+  
+  #page-title{
+    display:none;
+  }
+
+  .home-divider{
+  	margin-top:18px;
+  }
+}
+
+.pose-blog-container{
+  margin-top:18px;
+
+  a{
+    color:#6CF;
+  }
+
+  & > div{
+    width:458px;
+    float:left;
+    
+    h2{
+      text-decoration: underline;
+    }
+
+    &.pose{
+      margin-right:20px;
+
+      .pose-teaser-more-link{
+        display:block;
+        margin:15px 0;
+      }
+    }
+
+    &.blog{
+      width:502px;
+
+      .item-list{
+        ul{
+          @include list-reset;
+          overflow:hidden;
+          margin-left:-10px;
+          margin-right:-10px;
+
+          li{
+            @include inline-block;
+            padding:0 10px;
+            width:239px;
+            vertical-align:top;
+            margin-bottom:15px;
+
+            h3{
+              line-height:1.5em;
+              height:42px;
+              a{
+                color:black;
+                text-decoration:none;
+              }
+            }
+          }
+        }
+      }
+
+      .more-link{
+        display:none;
+      }
+    }
+  }
+}
+
+.node-teacher{
+  .node-title{
+    @include blue-title;
+    margin-bottom:0;
+    padding-bottom:10px;
+    border-bottom:1px solid #E8E8E8;
+  }
+
+  &.node-teaser{
+    border-top:1px solid #E8E8E8;
+    padding-top:18px;
+    padding-bottom:22px;
+
+    .node-title{
+      @include spacing-reset;
+      font-size:14px;
+      margin-bottom:10px;
+      a{
+        text-decoration:none;
+      }
+    }
+
+    .field-name-field-photos,
+    .body-wrapper{
+      @include inline-block;
+      vertical-align:top;
+    }
+
+    .body-wrapper{
+      width:457px;
+
+      .teacher-links{
+        margin-top:7px;
+
+        a{
+          font-size:11px;
+          margin-right:6px;
+        }
+      }
+    }
+
+    .field-name-field-photos{
+      margin-right:34px;
+    }
+  }
+
+  &.view-mode-photo_gallery{
+    header{
+      position:relative;
+
+      .node-title{
+        a{
+          text-decoration:none;
+        }
+      }
+      .btn-back{
+        position:absolute;
+        top:5px;
+        right:0;
+      }
+    }
+  }
+
+  &.view-mode-full{
+
+    .left-column,
+    .right-column{
+      @include inline-block;
+      vertical-align:top;
+    }
+
+    .left-column{
+      width:400px;
+      
+      & > .field-type-text,
+      & > .field-type-link-field,
+      & > .field-type-taxonomy-term-reference,
+      .field-type-addressfield .address-item,
+      & > .field-collection-container{
+        line-height:27px;
+        border-bottom:1px solid #E8E8E8;
+
+        .field-label{
+          margin-right:6px;
+        }
+      }
+
+      & > .field-collection-container .field-collection-view{
+        .field-items{
+          padding-top:4px;
+
+          .field-item{
+            line-height:20px;
+          }
+        }
+      }
+
+      & > .field-collection-container .field-name-field-ytu-certification-level > .field-items{
+        padding:3px 0;
+      }
+
+      & > .field-collection-container .field-type-taxonomy-term-reference{
+        .field-items{
+          .field-item{
+            line-height:13px;
+          }
+        }
+      }
+    }
+
+    .right-column{
+      padding-top:10px;
+      width:164px;
+      float:right;
+    }
+
+    .teacher-bio{
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid #E8E8E8;
+    }
+
+    .teacher-links{
+      line-height:33px;
+      border-top:1px solid #E8E8E8;
+      border-bottom:1px solid #E8E8E8;
+      margin-top:10px;
+
+      a{
+        @include inline-block;
+        @include text-indent;
+        height:18px;
+        background-color:transparent;
+        background-repeat:no-repeat;
+        vertical-align:middle;
+        margin-right:12px;
+
+        &.view-schedule{
+          width:100px;
+          background-image:url('../images/view-schedule.gif');
+        }
+        &.view-image-gallery{
+          width:126px;
+          background-image:url('../images/view-images.gif');
+        }
+      }
+      #teacher-join-student-group-form{
+        @include inline-block;
+
+        .form-submit{
+          @include spacing-reset;
+          @include link-image-background;
+          vertical-align:middle;
+          background-image:url('../images/join.gif');
+          width:100px;
+          height:18px;
+        }
+      }
+    }
+  }
+}
+
+.node-class{
+
+  .node-title{
+    @include blue-title;
+    margin-bottom:10px;
+    padding-bottom:10px;
+    border-bottom:1px solid #E8E8E8;
+  }
+
+  .left-column,
+  .right-column{
+    @include inline-block;
+    vertical-align:top;
+  }
+
+  .left-column{
+    margin-right:15px;
+    width:104px;
+  }
+
+  .right-column{
+    $label-offset:85px;
+    width:760px;
+
+    .field{
+      .field-label{
+        width:$label-offset;
+      }
+      padding:4px 0;
+    }
+    .field-name-field-venue{
+      padding-bottom:0;
+    }
+    .field-name-field-address{
+      padding-top:0;
+      padding-bottom:4px;
+      margin-left:$label-offset;
+    }
+    .field-name-field-class-schedule{
+      .date-display-single{
+        display:block;
+        margin-bottom:3px;
+      }
+    }
+    a.download-application{
+       @include link-image-background;
+      height:18px;
+      margin-right:10px;
+      background-image:url('../images/download-application.gif');
+      width:137px;
+    }
+  }
+
+  &.node-teaser{
+    border-top:1px solid #E8E8E8;
+    padding:15px 0;
+
+    .right-column{
+      width:470px;
+    }
+
+    .node-title{
+      padding-bottom:0;
+      border-bottom:0;
+      font-size:17px;
+    }
+
+    .field-name-field-address{
+      padding-top:4px;
+      margin-left:0;
+    }
+  }
+
+}
+
+.node-coaching-call{
+  .node-title{
+    @include blue-title;
+  }
+  .field{
+    margin-bottom:15px;
+  }
+
+  .field-name-field-call-date{
+    font-weight:bold;
+  }
+  
+}
+
+.node-type-product-landing{
+  background-image:url('../images/yt_back_tt_nodiv.jpg');
+
+  &.no-feature-image{
+    background-image:url('../images/yt_home_back3.jpg');
+  }
+
+  #page-title{
+    display:none;
+  }
+
+  .cert-levels{
+    border-top:1px solid #e8e8e8;
+    padding-top:10px;
+  }
+
+  .vocabulary-ytu-cert-levels{
+    border-bottom:1px solid #E8E8E8;
+    background-image:url('../images/ico-acc-closed.png');
+    background-repeat:no-repeat;
+    background-position:left 9px;
+    padding-left:15px;
+
+    &.open{
+      background-image:url('../images/ico-acc-open.png');
+
+      .content{
+        display:block;
+      }
+    }
+
+    .blue-title{
+      font-size:13px;
+      line-height:27px;
+      margin-bottom:0;
+      span{
+        cursor:pointer;
+      }
+    }
+    .content{
+      display:none;
+
+      .taxonomy-term-description{
+
+      }
+
+      .links{
+        padding-bottom:15px;
+
+        a{
+          @include link-image-background;
+          height:18px;
+          margin-right:10px;
+
+          &.view-upcoming-trainings{
+            background-image:url('../images/upcoming-trainings.gif');
+            width:160px;
+          }
+          &.download-application{
+            background-image:url('../images/download-application.gif');
+            width:137px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.node-product-landing{
+  &.node-teaser{
+    @include inline-block;
+    vertical-align:top;
+    margin-bottom:30px;
+    margin-right:18px;
+
+    .node-title{
+      @include blue-title;
+
+      a{
+        text-decoration:none;
+      }
+    }
+
+    .field-name-field-teaser-image,
+    .text-wrapper{
+      @include inline-block;
+      vertical-align:top;
+    }
+    .field-name-field-teaser-image{
+      margin-right:8px;
+    }
+    .text-wrapper{
+      width:284px;
+
+      .field-name-field-price-ranges{
+        margin-top:5px;
+        border-top:1px solid #e8e8e8;
+        padding-top:5px;
+      }
+    }
+  }
+  &.view-mode-sidebar{
+    margin-top:10px;
+    border-top:1px solid #e8e8e8;
+    padding-top:10px;
+    
+    .node-title{
+      font-size:14px;
+      line-height:20px;
+      a{
+        text-decoration:none;
+      }
+    }
+  }
+}
+
+.node-type-section-landing{
+  .field-name-field-product-landing-pages{
+    margin-top:20px;
+
+    & > .field-items > .field-item,
+    .ad-space{
+      @include inline-block;
+      vertical-align:top;
+    }
+  }
+}
+
+.node-testimonial{
+  margin-bottom:20px;
+  
+  .field-name-field-image,
+  .testimonial-text-wrapper{
+    @include inline-block;
+    vertical-align:top;
+  }
+  .field-name-field-image{
+    margin-right:10px;
+  }
+  .testimonial-text-wrapper{
+    font-size:14px;
+
+    &.no-image{
+      width:auto;
+    }
+
+    .field-name-body{
+      color:#666;
+      font-style:italic;
+    }
+    .field-name-field-persons-name{
+      color:#333;
+    }
+  }
+}
+
+.node-faq{
+  border-bottom:1px solid #e8e8e8;
+  padding:6px 10px;
+  background-color:#F7F7F9;
+  font-size:11px;
+}
+
+.faq-listings{
+  .faq-category{
+    background-image:url('../images/ico-acc-closed.png');
+    background-repeat:no-repeat;
+    background-position:left 14px;
+    padding-left:15px;
+
+    .category-name{
+      @include blue-title;
+      margin-bottom:0;
+      border-bottom:1px solid #e8e8e8;
+      font-size:14px;
+      line-height:26px;
+      padding:5px 0;
+
+      span{
+        cursor:pointer;
+      }
+    }
+    .node-faq{
+      display:none;
+    }
+
+    &.open{
+      background-image:url('../images/ico-acc-open.png');
+
+      .node-faq{
+        display:block;
+      }
+    }
+  }
+}
+
+.node-product,
+.node-playlist,
+.node-gift-card{
+  .field-name-uc-product-image{
+    @include inline-block;
+    overflow:hidden;
+    margin-left:-10px;
+    margin-right:20px;
+
+    & > .field-items > .field-item{
+      float:left;
+      margin:10px;
+      margin-top:0;
+    }
+  }
+  .right-content{
+    @include inline-block;
+    vertical-align:top;
+    max-width:600px;
+  }
+
+  header{
+    margin-bottom:20px;
+
+    .node-title{
+      @include blue-title;
+      margin-bottom:0;
+      a{
+        text-decoration:none;
+      }
+    }
+  }
+
+  .product-type-selector{
+    .product-type{
+      display:inline-block;
+      vertical-align:top;
+      margin-right:10px;
+      label,
+      input{
+        float:left;
+      }
+      input{
+        margin:1px 5px;
+      }
+    }
+  }
+
+  &.node-teaser{
+    .product-type-selector{
+      margin-bottom:10px;
+    }
+  }
+
+  .add-to-cart-wrapper{
+    margin-top:20px;
+
+    &.product-selector{
+      display:none;
+      &.active{
+        display:block;
+      }
+    }
+
+    .uc-price-label{
+      font-weight:bold;
+    }
+
+    .attributes,
+    .sell-price,
+    .add-to-cart,
+    .form-type-uc-quantity,
+    .form-actions{
+      @include inline-block;
+      margin:0;
+      margin-right:10px;
+    }
+    .attributes{
+      .form-item{
+        margin:0;
+      }
+      label{
+        display:inline;
+      }
+    }
+    .form-type-uc-quantity{
+      label{
+        display:inline;
+      }
+      input{
+        width:37px;
+      }
+    }
+    .form-submit{
+      @include link-image-background;
+      background-image:url('../images/add_to_cart_button.gif');
+      width:86px;
+      height:18px;
+    }
+  }
+  &.view-mode-full{
+    .field-name-uc-product-image{
+      width:266px;
+    }
+  }
+  &.node-teaser,
+  &.view-mode-video{
+    header{
+      margin-bottom:10px;
+    }
+    .field-name-uc-product-image{
+      margin-right:0;
+    }
+    .right-content{
+      max-width:476px;
+      .add-to-cart-wrapper{
+        margin:0;
+      }
+    }
+  }
+  &.node-teaser{
+    .field-name-body{
+      margin-bottom:8px;
+    }
+  }
+  &.view-mode-video{
+    header{
+      margin-bottom:0;
+      @include inline-block;
+      margin-right:10px;
+
+      h2{
+        font-size:13px;
+        line-height:16px;
+      }
+    }
+  }
+  &.view-mode-upsell{
+    .add-to-cart-wrapper,
+    .sell-price,
+    .add-to-cart,
+    .form-type-uc-quantity,
+    .form-actions,
+    .field-name-uc-product-image{
+      margin:0;
+    }
+    header{
+      margin-bottom:5px;
+    }
+  }
+}
+
+.node-quickfix-video{
+  margin-bottom:20px;
+
+  & > header{
+    margin-bottom:20px;
+    .node-title{
+      @include blue-title;
+      margin-bottom:0;
+      a{
+        text-decoration:none;
+      }
+    }
+  }
+
+  & > .field-name-field-image,
+  & > .right-content{
+    @include inline-block;
+  }
+  & > .field-name-field-image{
+    margin-right:20px;
+  }
+  & > .right-content{
+    max-width:600px;
+    vertical-align:top;
+
+    .field-name-body{
+      margin-bottom:10px;
+    }
+    .form-type-uc-quantity{
+      display:none;
+    }
+    .field-name-field-videos{
+      & > .field-items > .field-item{
+        margin-bottom:10px;
+      }
+    }
+  }
+  .view-video-intro{
+    margin-right:10px;
+  }
+
+  &.view-mode-full{
+    .node-product.view-mode-video{
+      .right-content{
+        max-width:100%;
+      }
+    }
+  }
+
+  &.node-teaser,
+  &.view-mode-free_video{
+    margin-bottom:0;
+    
+    & > .right-content{
+      max-width:466px;
+      & > header {
+        margin-bottom:10px;
+        .node-title{
+          line-height:16px;
+          margin-bottom:10px;
+          a{
+            text-decoration:none;
+          }
+        } 
+      }
+    }
+  }
+  &.view-mode-free_video{
+    width:420px;
+    margin-right:20px;
+    margin-top:10px;
+    margin-bottom:10px;
+    @include inline-block;
+    vertical-align:top;
+    & > .field-name-field-image{
+      margin-right:15px;
+    }
+    & > .right-content{
+      max-width:269px;
+    }
+  }
+}
+
+.node-pose{
+  .field-name-field-video-file-name,
+  .right-content{
+    @include inline-block;
+    vertical-align:top;
+  }
+
+  .field-name-field-video-file-name{
+    width:458px;
+    margin-right:15px;
+  }
+
+  .right-content{
+    width:400px;
+    margin-top:-8px;
+
+    .field-label{
+      color:#3776C0;
+    }
+
+    & > .field{
+      padding:5px 0;
+      border-bottom:1px solid #e8e8e8;
+    }
+
+    .video-warning{
+      margin-top:10px;
+    }
+  }
+}
+
+//At Home Program Finder
+.node-54{
+  width:600px;
+  margin:0 auto;
+  .field-name-body{
+    text-align:center;
+    padding-bottom:10px;
+    border-bottom:1px solid #e8e8e8;
+    margin-bottom:20px;
+  }
+
+  .program-finder-progress{
+    & > div{
+      @include inline-block;
+      background-color:#f8f8f8;
+      margin:0 3px;
+      padding-left:13px;
+      width:178px;
+      font-size:20px;
+      line-height:57px;
+      font-weight:bold;
+
+      &.active{
+        background-color:#eeeef8;
+      }
+    }
+  }
+}
+
+.node-uc-recurring-subscription{
+  .attributes,
+  .form-type-uc-quantity{
+    display:none;
+  }
+  &.view-mode-full{
+    .node-title{
+      @include blue-title;
+    }
+    .column{
+      @include inline-block;
+      vertical-align:top;
+
+    }
+    .left-column{
+      width:600px;
+      margin-right:20px;
+    }
+    .right-column{
+      width:261px;
+    }
+    .add-to-cart-wrapper{
+      margin-top:20px;
+
+      .uc-price-label{
+        font-weight:bold;
+      }
+
+      .sell-price,
+      .add-to-cart,
+      .form-actions{
+        @include inline-block;
+        margin:0;
+        margin-right:10px;
+      }
+      .form-submit{
+        @include link-image-background;
+        background-image:url('../images/add_to_cart_button.gif');
+        width:86px;
+        height:18px;
+      }
+    }
+  }
+  &.node-teaser{
+    .node-title{
+      font-size:12px;
+    }
+    .product-info{
+      &.sell-price{
+        display:inline;
+
+        .uc-price-label{
+          display:none;
+        }
+      }
+    }
+  }
+}
+
+.node-at-home-level{
+  .product-wrapper{
+    padding-top:10px;
+    border-top:1px solid #E8E8E8;
+    margin-top:10px;
+    &:first-child{
+      @include spacing-reset;
+    }
+  }
+  .node-product-landing.node-teaser{
+    margin-bottom:0;
+    .field-name-field-teaser-image,
+    .field-name-field-price-ranges{
+      display:none;
+    }
+    .text-wrapper{
+      width:100%;
+      .field-name-body{
+        margin-bottom:10px;
+      }
+    }
+  }
+}
+
+.node-renewal{
+  &.node-teaser{
+    .field-name-body{
+      margin-bottom:15px;
+    }
+    
+    .display-price{
+      float:left;
+      line-height:25px;
+    }
+
+    .add-to-cart{
+      float:left;
+      margin-right:10px;
+
+      .form-actions{
+        margin:0;
+      }
+    }
+  }
+}
+
+.node-pr{
+
+  .node-title{
+    @include blue-title;
+  }
+
+  .field-name-body{
+    width:70%;
+  }
+
+  #ytu-tabs{
+    a.active{
+      background-color:#abd75f;
+    }
+  }
+
+  .ytu-tab-content{
+    display:none;
+    &.active{
+      display:block;
+    }
+  }
+
+  .blue-title{
+    margin-top:20px;
+  }
+
+  .field-name-field-print-media,
+  .field-name-field-international-print,
+  .field-name-field-trade-print,{
+    margin-left:-8px;
+    margin-right:-8px;
+    & > .field-items > .field-item{
+      display:inline-block;
+      vertical-align:top;
+      width:161px;
+      margin:5px 8px;
+      text-align:center;
+    }
+  }
+
+  .field-name-field-image-link{
+    margin-left:-8px;
+    margin-right:-8px;
+    & > .field-items > .field-item{
+      display:inline-block;
+      vertical-align:top;
+      width:207px;
+      margin:5px 8px;
+      text-align:center;
+    }
+  }
+
+  .field-name-field-electronic-media{
+    margin-left:-8px;
+    margin-right:-8px;
+    & > .field-items > .field-item{
+      display:inline-block;
+      vertical-align:top;
+      width:433px;
+      margin:5px 8px;
+
+      .media_embed,
+      iframe{
+        width:100% !important;
+      }
+    }
+  }
+
+  .field-name-field-pm-image{
+    .field-item{
+      display:none;
+      &.first{
+        display:block;
+      }
+    }
+  }
+
+}

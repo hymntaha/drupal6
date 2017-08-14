@@ -1,0 +1,17 @@
+name = Ubercart Authorize.net Payment Gateway
+description = Replacement for Ubercart's core Authorize.net gateway. Integrates with the Authorize.net API module to provide CIM profile management, with a fallback on AIM.
+dependencies[] = authnet
+dependencies[] = authnet_cim_entity
+dependencies[] = authnet_ui
+dependencies[] = authnet_user
+dependencies[] = uc_payment
+dependencies[] = uc_credit
+package = Ubercart - payment
+core = 7.x
+
+; Information added by drupal.org packaging script on 2013-03-01
+version = "7.x-2.0-beta1+1-dev"
+core = "7.x"
+project = "uc_authnet"
+datestamp = "1362147810"
+

@@ -1,0 +1,1532 @@
+<?php
+
+define('USER_AT_HOME_RID', 7);
+
+define('AH_NUM_LEVELS', 4);
+define('AH_NUM_MONTHS', 6);
+
+define('AH_LEVEL_1_TID', 36);
+define('AH_LEVEL_2_TID', 37);
+define('AH_LEVEL_3_TID', 38);
+define('AH_LEVEL_4_TID', 39);
+
+define('AH_QUEUE_SHIPPED', 'Shipped');
+define('AH_QUEUE_SHIPPING_NEXT', 'Shipping Next');
+define('AH_QUEUE_SKIPPED', 'Skipped');
+define('AH_QUEUE_PENDING', 'Pending');
+
+define('AH_STATUS_ACTIVE', 'Active');
+define('AH_STATUS_COMPLETED', 'Completed');
+define('AH_STATUS_HOLD', 'On Hold');
+define('AH_STATUS_CANCELED', 'Canceled');
+
+define('AH_TYPE_DVD', 'dvd');
+define('AH_TYPE_PLAYLIST', 'playlist');
+
+/**
+ * Implements hook_menu().
+ */
+function at_home_subscription_menu() {
+
+  $items['admin/ytu-settings/at-home-settings'] = array(
+    'title'            => 'At Home Program Settings',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('at_home_subscription_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file'             => 'at_home_subscription.admin.inc',
+  );
+
+  $items['admin/ytu-settings/at-home-settings/exports'] = array(
+    'title'            => 'At Home Program Data Exports',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('at_home_subscription_exports_form'),
+    'access arguments' => array('access ytu settings'),
+    'file'             => 'at_home_subscription.admin.inc',
+  );
+
+  $items['ajax/at-home-settings-autocomplete/%'] = array(
+    'title'            => 'At Home Program Settings Autocomplete',
+    'page callback'    => 'at_home_subscription_settings_autocomplete_ajax_callback',
+    'page arguments'   => array(2),
+    'access arguments' => array('access ytu settings'),
+    'type'             => MENU_CALLBACK,
+  );
+
+  $items['user/%user_uid_optional/program-manager'] = array(
+    'title'            => 'At Home Program Control Center',
+    'page callback'    => 'at_home_subscription_program_manager_callback',
+    'page arguments'   => array(1),
+    'access arguments' => array('access program manager'),
+    'file'             => 'at_home_subscription.pages.inc',
+  );
+
+  $items['user/%user_uid_optional/at-home-cancel'] = array(
+    'title'            => t('At Home Program Cancel'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('at_home_subscription_cancel_form', 1),
+    'access arguments' => array('access program manager'),
+    'file'             => 'at_home_subscription.pages.inc',
+  );
+
+  $items['user/%user_uid_optional/at-home-type-switch'] = array(
+    'title'            => t('At Home Program Switch Subscription Type'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array(
+      'at_home_subscription_subscription_type_form',
+      1
+    ),
+    'access arguments' => array('access program manager'),
+    'file'             => 'at_home_subscription.pages.inc',
+  );
+
+  $items['user/%user/at-home-queue'] = array(
+    'title'            => 'Create/View At Home Queue',
+    'page callback'    => 'at_home_subscription_at_home_queue_callback',
+    'page arguments'   => array(1),
+    'access arguments' => array('access ytu settings'),
+    'type'             => MENU_LOCAL_TASK,
+    'file'             => 'at_home_subscription.admin.inc',
+  );
+
+  $items['user/%user/at-home-ship-now'] = array(
+    'title'            => 'At Home Program Ship Now',
+    'page callback'    => 'at_home_subscription_ship_now_callback',
+    'page arguments'   => array(1),
+    'access arguments' => array('access program manager'),
+    'type'             => MENU_CALLBACK,
+    'file'             => 'at_home_subscription.pages.inc',
+  );
+
+  $items['user/%user_uid_optional/at-home-videos'] = array(
+    'title'            => 'My At Home Program Videos',
+    'page callback'    => 'at_home_subscription_videos_callback',
+    'page arguments'   => array(1),
+    'access arguments' => array('access content'),
+    'file'             => 'at_home_subscription.pages.inc'
+  );
+
+  $items['request/at-home-process-orders'] = array(
+    'title'            => 'At Home Program Process Orders',
+    'page callback'    => 'at_home_subscription_process_orders_cron_callback',
+    'access arguments' => array('access content'),
+    'file'             => 'at_home_subscription.cron.inc',
+  );
+
+  $items['request/cc-expire-1-month'] = array(
+    'title'            => 'At Home Program Credit Card Expires in 1 Month',
+    'page callback'    => 'at_home_subscription_cc_exp_1_month_cron_callback',
+    'access arguments' => array('access content'),
+    'file'             => 'at_home_subscription.cron.inc',
+  );
+
+  $items['request/cc-expired'] = array(
+    'title'            => 'At Home Program Credit Card Expired',
+    'page callback'    => 'at_home_subscription_cc_exp_cron_callback',
+    'access arguments' => array('access content'),
+    'file'             => 'at_home_subscription.cron.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function at_home_subscription_permission() {
+  return array(
+    'access program manager' => array(
+      'title'       => t('Access At Home Program Mananger'),
+      'description' => t('Allows access to the At Home Program Mananger'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_dashboard_links_alter().
+ */
+function at_home_subscription_dashboard_links_alter(&$links, $account) {
+  if (account_is_at_home($account)) {
+    $links[] = l('At Home Control Center', 'user/' . $account->uid . '/program-manager', array('attributes' => array('class' => array('program-manager'))));
+  }
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function at_home_subscription_block_view_alter(&$data, $block) {
+
+  $do_not_display = array(
+    'dashboard_links',
+    'teacher_dashboard_links',
+    'account_upsell',
+  );
+
+  //Do not display the dashboard_links blocks on the program-manager page
+  if (arg(0) == 'user' && (arg(2) == 'program-manager' || arg(2) == 'at-home-ship-now') && in_array($block->delta, $do_not_display)) {
+    unset($data['content']);
+  }
+}
+
+/**
+ * Implements hook_uc_checkout_complete()
+ */
+function at_home_subscription_uc_checkout_complete($order, $account) {
+  $rebuild_at_home_queue = FALSE;
+
+  foreach ($order->products as $product) {
+    if (isset($product->data['type']) && $product->data['type'] == 'uc_recurring_subscription') {
+      at_home_subscription_send_confirmation_email($account);
+      at_home_subscription_create_program($product, $account);
+      infusionsoft_contact_apply_tag($account, _mm('ah_user_infusionsoft_tag_id', '', TRUE));
+
+      $node = node_load($product->nid);
+      if (!$node->shippable) {
+        $items = field_get_items('node', $node, 'field_playlist');
+        if (!empty($items)) {
+          $userVideoManager = new UserVideoManager($account->uid);
+
+          foreach ($items as $item) {
+            $playlist = node_load($item['target_id']);
+            $userVideoManager->addPlaylistFromNode($playlist, $order);
+          }
+        }
+      }
+      break;
+    }
+
+    if (isset($product->data['at_home_product_queue_info'])) {
+      $rebuild_at_home_queue = TRUE;
+    }
+
+  }
+
+  if ($rebuild_at_home_queue) {
+    $account_info = at_home_subscription_account_info_load($account);
+    at_home_subscription_rebuild_queue($account_info, AH_QUEUE_PENDING);
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function at_home_subscription_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'ah_confirm_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%firstname'),
+        array($params['firstname']),
+        _mm('ah_confirm_email_body', '', TRUE)
+      );
+      break;
+    case 'ah_pm_update_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%firstname'),
+        array($params['firstname']),
+        _mm('ah_pm_update_email_body', '', TRUE)
+      );
+      break;
+    case 'ah_pm_cc_exp_m_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%firstname'),
+        array($params['firstname']),
+        _mm('ah_pm_cc_exp_m_email_body', '', TRUE)
+      );
+      break;
+    case 'ah_pm_cc_exp_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%firstname'),
+        array($params['firstname']),
+        _mm('ah_pm_cc_exp_email_body', '', TRUE)
+      );
+      break;
+    case 'ah_pm_cc_prb_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%firstname'),
+        array($params['firstname']),
+        _mm('ah_pm_cc_prb_email_body', '', TRUE)
+      );
+      break;
+    case 'ah_pm_cc_prb_a_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%order_link'),
+        array($params['order_link']),
+        _mm('ah_pm_cc_prb_a_email_body', '', TRUE)
+      );
+      break;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function at_home_subscription_theme($existing, $type, $theme, $path) {
+  return array(
+    'program_manager' => array(
+      'template'  => 'program-manager',
+      'variables' => array(
+        'header'             => '',
+        'name'               => '',
+        'last_shipment'      => '',
+        'status'             => '',
+        'joined'             => '',
+        'cancel_link'        => '',
+        'next_shipment_info' => array(),
+        'shipping_options'   => array(),
+        'shipping_address'   => array(),
+        'billing_address'    => array(),
+        'credit_card_info'   => array(),
+        'queue_header'       => '',
+        'queue_form'         => array(),
+        'account_info'       => array(),
+      ),
+    ),
+    'next_shipment'   => array(
+      'template'  => 'next-shipment',
+      'variables' => array(
+        'next_shipment_date' => '',
+        'shipping_option'    => '',
+        'shipping_next'      => array(),
+        'total_calc'         => array(
+          'shipping_title' => '',
+          'shipping_price' => '',
+          'tax'            => '',
+          'total'          => ''
+        ),
+      ),
+    ),
+    'address_info'    => array(
+      'template'  => 'address-info',
+      'variables' => array(
+        'type'        => '',
+        'first_name'  => '',
+        'last_name'   => '',
+        'street1'     => '',
+        'street2'     => '',
+        'city'        => '',
+        'zone'        => '',
+        'postal_code' => '',
+        'country'     => '',
+        'edit_link'   => '',
+      ),
+    ),
+    'cc_info'         => array(
+      'template'  => 'credit-card-info',
+      'variables' => array(
+        'last_four' => '',
+        'exp_year'  => '',
+        'exp_month' => '',
+        'edit_link' => '',
+      ),
+    ),
+    'at_home_subscription_uc_cart_checkout_review' => array(
+      'variables' => array(
+        'account_info' => array(),
+        'form' => array(),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function at_home_subscription_node_view($node, $view_mode, $langcode) {
+  if (($node->type == 'product' || $node->type == 'playlist') && $view_mode == 'full') {
+    if (!account_is_admin() && at_home_subscription_product_is_at_home_only($node)) {
+      drupal_goto('node/25');
+    }
+  }
+  if ($node->type == 'uc_recurring_subscription') {
+    $items = field_get_items('node', $node, 'field_digital_version');
+    if (isset($items[0]['target_id'])) {
+      $digital_version      = node_load($items[0]['target_id']);
+      $digital_version_view = node_view($digital_version);
+
+      $node->content['video_playlist']['#node']       = $digital_version;
+      $node->content['video_playlist']['sell_price']  = $digital_version_view['sell_price'];
+      $node->content['video_playlist']['add_to_cart'] = $digital_version_view['add_to_cart'];
+      drupal_add_js(drupal_get_path('module', 'product') . '/product.js');
+      $node->content['product_active']['#value'] = isset($_GET['type']) && $_GET['type'] == 'product';
+      $node->content['video_active']['#value']   = !isset($_GET['type']) || $_GET['type'] == 'video';
+    }
+  }
+}
+
+/**
+ * Implements hook_js_alter().
+ */
+function at_home_subscription_js_alter(&$javascript) {
+  if (arg(2) == 'program-manager' || (isset($_REQUEST['form_id']) && $_REQUEST['form_id'] == 'at_home_subscription_queue_form')) {
+
+    //This js causes an issue where the blockUI is removed earlier than it is supposed to during ajax calls on this form
+    unset($javascript['sites/all/modules/contrib/uc_ajax_cart/js/uc_ajax_cart.js']);
+  }
+}
+
+function at_home_subscription_messages_info() {
+  return array(
+    'ah_confirm_email_from'        => array(
+      'title'       => "At Home Confirm From Address",
+      'description' => "From address for the At Home Confirm e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_confirm',
+    ),
+    'ah_confirm_email_subject'     => array(
+      'title'       => "At Home Confirm Email Subject",
+      'description' => "Subject for the At Home Confirm e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_confirm',
+    ),
+    'ah_confirm_email_body'        => array(
+      'title'       => "At Home Confirm Email Body",
+      'description' => "Body text for the At Home Confirm e-mail. %firstname = Users First Name.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_confirm',
+    ),
+    'ah_pm_update_email_from'      => array(
+      'title'       => "At Home Program Update From Address",
+      'description' => "From address for the At Home Program Update e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_update',
+    ),
+    'ah_pm_update_email_subject'   => array(
+      'title'       => "At Home Program Update Email Subject",
+      'description' => "Subject for the At Home Program Update e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_update',
+    ),
+    'ah_pm_update_email_body'      => array(
+      'title'       => "At Home Program Update Email Body",
+      'description' => "Body text for the At Home Program Update e-mail. %firstname = Users First Name.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_update',
+    ),
+    'ah_pm_cc_exp_m_email_from'    => array(
+      'title'       => "At Home Program CC Expire in 1 Month From Address",
+      'description' => "From address for the At Home Program CC Expire in 1 Month e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_exp_1_month',
+    ),
+    'ah_pm_cc_exp_m_email_subject' => array(
+      'title'       => "At Home Program CC Expire in 1 Month Email Subject",
+      'description' => "Subject for the At Home Program CC Expire in 1 Month e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_exp_1_month',
+    ),
+    'ah_pm_cc_exp_m_email_body'    => array(
+      'title'       => "At Home Program CC Expire in 1 Month Email Body",
+      'description' => "Body text for the At Home Program CC Expire in 1 Month e-mail. %firstname = Users First Name.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_exp_1_month',
+    ),
+    'ah_pm_cc_exp_email_from'      => array(
+      'title'       => "At Home Program CC Expired From Address",
+      'description' => "From address for the At Home Program CC Expired e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_exp',
+    ),
+    'ah_pm_cc_exp_email_subject'   => array(
+      'title'       => "At Home Program CC Expired Email Subject",
+      'description' => "Subject for the At Home Program CC Expired e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_exp',
+    ),
+    'ah_pm_cc_exp_email_body'      => array(
+      'title'       => "At Home Program CC Expired Email Body",
+      'description' => "Body text for the At Home Program CC Expired e-mail. %firstname = Users First Name.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_exp',
+    ),
+    'ah_pm_cc_prb_email_from'      => array(
+      'title'       => "At Home Program CC Problem From Address",
+      'description' => "From address for the At Home Program CC Problem e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_prb',
+    ),
+    'ah_pm_cc_prb_email_subject'   => array(
+      'title'       => "At Home Program CC Problem Email Subject",
+      'description' => "Subject for the At Home Program CC Problem e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_prb',
+    ),
+    'ah_pm_cc_prb_email_body'      => array(
+      'title'       => "At Home Program CC Problem Email Body",
+      'description' => "Body text for the At Home Program CC Problem e-mail. %firstname = Users First Name.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_prb',
+    ),
+    'ah_pm_cc_prb_a_email_from'    => array(
+      'title'       => "At Home Program CC Problem Admin From Address",
+      'description' => "From address for the At Home Program CC Problem e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_prb',
+    ),
+    'ah_pm_cc_prb_a_email_subject' => array(
+      'title'       => "At Home Program CC Problem Admin Email Subject",
+      'description' => "Subject for the At Home Program CC Problem e-mail",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_prb',
+    ),
+    'ah_pm_cc_prb_a_email_body'    => array(
+      'title'       => "At Home Program CC Problem Admin Email Body",
+      'description' => "Body text for the At Home Program CC Problem e-mail. %order_link = Link to order.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'at_home_cc_prb',
+    ),
+    'ah_pm_header'                 => array(
+      'title'       => "At Home Program Manager Header",
+      'description' => "Header copy for the At Home Program Mananger",
+      'type'        => "richtext",
+      'group'       => "at_home_manager",
+      'fieldset'    => 'At Home Program Mananger Page',
+    ),
+    'ah_pm_q_header'               => array(
+      'title'       => "At Home Program Manager Queue Header",
+      'description' => "Header copy for the At Home Program Mananger Queue",
+      'type'        => "richtext",
+      'group'       => "at_home_manager",
+      'fieldset'    => 'At Home Program Mananger Page',
+    ),
+    'ah_pm_shipping_options'       => array(
+      'title'       => "At Home Program Manager Shipping Options Text",
+      'description' => "Text copy under Shipping Options for the At Home Program Mananger",
+      'type'        => "richtext",
+      'group'       => "at_home_manager",
+      'fieldset'    => 'At Home Program Mananger Page',
+    ),
+    'ah_pm_cancel_confirm_message' => array(
+      'title'       => "At Home Program Manager Cancel Confirmation Message",
+      'description' => "Message for cancel confirmation page",
+      'type'        => "richtext",
+      'group'       => "at_home_manager",
+      'fieldset'    => 'At Home Program Cancel',
+    ),
+    'ah_pm_cancel_message'         => array(
+      'title'       => "At Home Program Manager Cancel Message",
+      'description' => "Message for when a user cancels the At Home Program",
+      'type'        => "richtext",
+      'group'       => "at_home_manager",
+      'fieldset'    => 'At Home Program Cancel',
+    ),
+    'ah_user_infusionsoft_tag_id'  => array(
+      'title'       => "At Home Program User Infusionsoft Tag ID",
+      'description' => "",
+      'type'        => "textfield",
+      'group'       => "at_home_manager",
+      'fieldset'    => 'Infusionsoft',
+    ),
+    'ah_account_cc_exp'            => array(
+      'title'       => 'At Home CC expired dashboard message',
+      'description' => '',
+      'type'        => 'textarea',
+      'group'       => 'account',
+      'fieldset'    => 'dashboard',
+    ),
+    'ah_account_cc_prb'            => array(
+      'title'       => 'At Home CC problem dashboard message',
+      'description' => '',
+      'type'        => 'textarea',
+      'group'       => 'account',
+      'fieldset'    => 'dashboard',
+    ),
+  );
+}
+
+function at_home_subscription_send_confirmation_email($account) {
+  $name = account_get_first_name($account);
+  drupal_mail(
+    "at_home_subscription",
+    "ah_confirm_email",
+    $account->mail,
+    language_default(),
+    array(
+      'firstname' => $name,
+      'subject'   => _mm('ah_confirm_email_subject', 'Yoga Tune Up At Home Program Confirmation', TRUE)
+    ),
+    _mm('ah_confirm_email_from', 'support@yogatunuep.com', TRUE)
+  );
+}
+
+function at_home_subscription_send_update_email($account) {
+  $name = account_get_first_name($account);
+  drupal_mail(
+    "at_home_subscription",
+    "ah_pm_update_email",
+    $account->mail,
+    language_default(),
+    array(
+      'firstname' => $name,
+      'subject'   => _mm('ah_pm_update_email_subject', 'At Home Program Change Request', TRUE)
+    ),
+    _mm('ah_pm_update_email_from', 'support@yogatunuep.com', TRUE)
+  );
+}
+
+function at_home_subscription_send_cc_exp_1_month_email($account) {
+  $name = account_get_first_name($account);
+  drupal_mail(
+    "at_home_subscription",
+    "ah_pm_cc_exp_m_email",
+    $account->mail,
+    language_default(),
+    array(
+      'firstname' => $name,
+      'subject'   => _mm('ah_pm_cc_exp_m_email_subject', 'At Home Program Credit Card Notification', TRUE)
+    ),
+    _mm('ah_pm_cc_exp_m_email_from', 'support@yogatunuep.com', TRUE)
+  );
+}
+
+function at_home_subscription_send_cc_exp_email($account) {
+  $name = account_get_first_name($account);
+  drupal_mail(
+    "at_home_subscription",
+    "ah_pm_cc_exp_email",
+    $account->mail,
+    language_default(),
+    array(
+      'firstname' => $name,
+      'subject'   => _mm('ah_pm_cc_exp_email_subject', 'At Home Program Credit Card Notification', TRUE)
+    ),
+    _mm('ah_pm_cc_exp_email_from', 'support@yogatunuep.com', TRUE)
+  );
+}
+
+function at_home_subscription_send_cc_prb_email($account) {
+  $name = account_get_first_name($account);
+  drupal_mail(
+    "at_home_subscription",
+    "ah_pm_cc_prb_email",
+    $account->mail,
+    language_default(),
+    array(
+      'firstname' => $name,
+      'subject'   => _mm('ah_pm_cc_prb_email_subject', 'At Home Program Credit Card Notification', TRUE)
+    ),
+    _mm('ah_pm_cc_prb_email_from', 'support@yogatunuep.com', TRUE)
+  );
+}
+
+function at_home_subscription_send_cc_prb_a_email($order) {
+  $order_link = url('admin/store/orders/' . $order->order_id, array('absolute' => TRUE));
+  drupal_mail(
+    "at_home_subscription",
+    "ah_pm_cc_prb_a_email",
+    _mm('ah_pm_cc_prb_a_mail_from', 'support@yogatunuep.com', TRUE),
+    language_default(),
+    array(
+      'order_link' => $order_link,
+      'subject'    => _mm('ah_pm_cc_prb_a_email_subject', 'At Home Program Credit Card Admin Notification', TRUE)
+    ),
+    _mm('ah_pm_cc_prb_a_mail_from', 'support@yogatunuep.com', TRUE)
+  );
+}
+
+function at_home_subscription_create_program($product, $account, $blank = FALSE) {
+  if ($blank) {
+    $purchased_level   = 0;
+    $purchased_package = 'blank';
+    $type              = AH_TYPE_DVD;
+  }
+  else {
+    $node              = node_load($product->nid);
+    $purchased_level   = $node->field_program_start[LANGUAGE_NONE][0]['tid'];
+    $purchased_package = $node->field_program_type[LANGUAGE_NONE][0]['value'];
+
+    if ($node->shippable) {
+      $type = AH_TYPE_DVD;
+    }
+    else {
+      $type = AH_TYPE_PLAYLIST;
+    }
+  }
+
+  $at_home_products = at_home_subscription_get_product_info($type);
+
+  switch ($purchased_level) {
+    case AH_LEVEL_1_TID:
+      $purchased_level = 1;
+      $level_start     = 1;
+      break;
+    case AH_LEVEL_2_TID:
+      $purchased_level = 2;
+      $level_start     = 2;
+      break;
+    case AH_LEVEL_3_TID:
+      $purchased_level = 3;
+      $level_start     = 3;
+      break;
+    case AH_LEVEL_4_TID:
+      $purchased_level = 4;
+      $level_start     = 4;
+      break;
+    case 0:
+      $level_start = 0;
+      break;
+  }
+
+  switch ($purchased_package) {
+    case 'gold':
+      $month_start = 3;
+      break;
+    case 'platinum':
+      $level_start++;
+      $month_start = 1;
+      break;
+    case 'blank':
+      $month_start = 0;
+      break;
+  }
+
+  //Calculate initial subscription queue info
+  for ($level = 1; $level <= AH_NUM_LEVELS; $level++) {
+    for ($month = 1; $month <= AH_NUM_MONTHS; $month++) {
+      $key              = 'l' . $level . 'm' . $month;
+      $queue_info[$key] = array(
+        'ahp_id' => $at_home_products[$key]->id,
+        'status' => '',
+      );
+      if ($level == $level_start && $month == $month_start) {
+        $queue_info[$key]['status'] = AH_QUEUE_SHIPPING_NEXT;
+      }
+      else if ($level < $purchased_level) {
+        $queue_info[$key]['status'] = AH_QUEUE_SKIPPED;
+      }
+      else if ($level == $purchased_level) {
+        if ($purchased_package == 'gold') {
+          if ($month == 1 || $month == 2) {
+            $queue_info[$key]['status'] = AH_QUEUE_SHIPPED;
+          }
+        }
+        else if ($purchased_package == 'platinum') {
+          $queue_info[$key]['status'] = AH_QUEUE_SHIPPED;
+        }
+      }
+    }
+  }
+
+  $account_info = array(
+    'uid'             => $account->uid,
+    'status'          => AH_STATUS_ACTIVE,
+    'joined'          => strtotime('now'),
+    'last_shipment'   => strtotime('now'),
+    'next_shipment'   => strtotime('now + 1 month'),
+    'shipping_option' => 'monthly',
+    'type'            => $type,
+    'queue_info'      => $queue_info,
+  );
+
+  at_home_subscription_account_info_save($account_info);
+}
+
+function at_home_subscription_product_is_at_home_only($node) {
+  if (isset($node->field_at_home_only[LANGUAGE_NONE][0]['value'])) {
+    return $node->field_at_home_only[LANGUAGE_NONE][0]['value'];
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function at_home_subscription_account_info_load($account) {
+  static $account_info_array = array();
+
+  if (isset($account_info_array[$account->uid])) {
+    return $account_info_array[$account->uid];
+  }
+
+  $account_info['account']          = db_select('users_at_home', 'uah')
+    ->fields('uah')
+    ->condition('uid', $account->uid)
+    ->execute()
+    ->fetchObject();
+  $account_info['account']->address = at_home_subscription_get_address($account);
+  $account_info['account']->cc_info = at_home_subscription_get_billing_info($account);
+
+  $query = db_select('users_at_home_queue', 'q')
+    ->fields('q')
+    ->condition('uid', $account->uid);
+  $query->innerJoin('at_home_products', 'ahp', 'q.ahp_id = ahp.id');
+  $result = $query->fields('ahp')
+                  ->orderBy('ahp.level')
+                  ->orderBy('ahp.month')
+                  ->execute();
+  foreach ($result as $row) {
+    $account_info['queue']['l' . $row->level . 'm' . $row->month] = $row;
+  }
+
+  $account_info_array[$account->uid] = $account_info;
+
+  return $account_info;
+}
+
+function at_home_subscription_account_info_save($account_info) {
+  $queue_info = $account_info['queue_info'];
+  unset($account_info['queue_info']);
+
+  if (!empty($account_info)) {
+    db_merge('users_at_home')
+      ->key(array('uid' => $account_info['uid']))
+      ->fields($account_info)
+      ->execute();
+  }
+
+  foreach ($queue_info as $queue) {
+    db_merge('users_at_home_queue')
+      ->key(array('uid' => $account_info['uid'], 'ahp_id' => $queue['ahp_id']))
+      ->fields(array(
+        'uid'    => $account_info['uid'],
+        'ahp_id' => $queue['ahp_id'],
+        'status' => $queue['status'],
+      ))
+      ->execute();
+  }
+}
+
+function at_home_subscription_account_info_get_shipping_next($account_info) {
+  $products = array();
+  foreach ($account_info['queue'] as $queue) {
+    if ($queue->status == AH_QUEUE_SHIPPING_NEXT) {
+      $product                = node_load($queue->nid);
+      $product->display_price = '$' . number_format($product->price, 2);
+      $product->level         = $queue->level;
+      $product->month         = $queue->month;
+      $products[$queue->nid]  = $product;
+    }
+  }
+
+  return $products;
+}
+
+function at_home_subscription_get_address($account) {
+  $addresses = array();
+
+  $address = UcAddressesAddressBook::get($account->uid)
+                                   ->getDefaultAddress('shipping');
+  if ($address) {
+    $addresses['shipping']['formatted'] = $address->getFieldData();
+    $addresses['shipping']['raw']       = $address->getRawFieldData();
+  }
+
+  return $addresses;
+}
+
+function at_home_subscription_get_billing_info($account) {
+  $customer_profile_id = authnet_cim_entity_profile_id_load('user', $account->uid);
+  $payment_profiles    = authnet_cim_entity_customer_payment_profiles_load($customer_profile_id);
+  $default_pid         = authnet_cim_entity_customer_payment_profile_default($customer_profile_id);
+
+  if ($default_pid) {
+    foreach ($payment_profiles as $payment_profile_id => $payment_profile) {
+      if ($payment_profile['pid'] == $default_pid) {
+        $authnet = authnet_cim_payment_profile_load($customer_profile_id, $payment_profile_id);
+        return array(
+          'billTo'  => $authnet->billTo,
+          'profile' => $payment_profile,
+        );
+      }
+    }
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function at_home_subscription_calculate_total_cost($account, $shipping_next, $current_order = NULL) {
+  $cart_id = $account->uid . '_ahp';
+
+  //This is setting the session variable to rebuild the cart to true, if there is a current order it will be reset to false.
+  uc_cart_empty($cart_id);
+
+  $total_calc = array(
+    'subtotal'       => '',
+    'shipping_title' => '',
+    'shipping_price' => '',
+    'tax'            => '',
+    'total'          => '',
+  );
+
+  if (count($shipping_next) == 0) {
+    return $total_calc;
+  }
+
+  $total     = 0;
+  $shippable = FALSE;
+  foreach ($shipping_next as $product) {
+    $shippable = $shippable || $product->shippable;
+    $total += $product->price;
+    uc_cart_add_item($product->nid, 1, module_invoke_all('uc_add_to_cart_data', array('nid' => $product->nid)), $cart_id, FALSE, FALSE);
+  }
+
+  $subtotal = $total;
+
+  $items = uc_cart_get_contents($cart_id);
+
+  $min_quote = array(
+    'label'  => '',
+    'format' => '',
+    'rate'   => 0,
+  );
+
+  if ($current_order) {
+    $addresses['shipping']['raw']['country']     = $current_order->delivery_country;
+    $addresses['shipping']['raw']['zone']        = $current_order->delivery_zone;
+    $addresses['shipping']['raw']['postal_code'] = $current_order->delivery_postal_code;
+
+    //We are modifing a secondary temporary cart. We do not want to flag the original cart as needing to be rebuilt.
+    $_SESSION['uc_cart_order_rebuild'] = FALSE;
+  }
+  else {
+    $addresses = at_home_subscription_get_address($account);
+  }
+
+  $order                       = new UcOrder($account->uid);
+  $order->delivery_country     = $addresses['shipping']['raw']['country'];
+  $order->delivery_zone        = $addresses['shipping']['raw']['zone'];
+  $order->delivery_postal_code = $addresses['shipping']['raw']['postal_code'];
+  $order->products             = $items;
+
+  if ($shippable) {
+    module_load_include('inc', 'uc_quote', 'uc_quote.pages');
+    $quotes = uc_quote_assemble_quotes($order);
+
+
+    $shipping_key = 'usps';
+    if (empty($quotes[$shipping_key])) {
+      $shipping_key = 'usps_intl';
+    }
+
+    foreach ($quotes[$shipping_key] as $quote) {
+      if (empty($min_quote['rate']) || $quote['rate'] < $min_quote['rate']) {
+        $min_quote = $quote;
+      }
+    }
+  }
+
+  $taxes     = uc_taxes_calculate($order);
+  $total_tax = 0.00;
+  foreach ($taxes as $tax) {
+    $total_tax += $tax->amount;
+  }
+
+  $tax_amount = '';
+  if (!empty($total_tax)) {
+    $total += $total_tax;
+    $tax_amount = '$' . number_format($total_tax, 2);
+  }
+
+  $total += $min_quote['rate'];
+
+  $total_calc = array(
+    'subtotal'       => '$' . number_format($subtotal, 2),
+    'shipping_title' => $min_quote['label'],
+    'shipping_price' => $min_quote['format'],
+    'tax'            => $tax_amount,
+    'total'          => '$' . number_format($total, 2),
+  );
+
+  return $total_calc;
+}
+
+function at_home_subscription_get_date_changes($last_shipment, $date_format = FALSE) {
+  return array(
+    'monthly'           => at_home_subscription_time_calc('+1 month', $last_shipment, $date_format),
+    'bi_weekly'         => at_home_subscription_time_calc('+2 weeks', $last_shipment, $date_format),
+    'weekly'            => at_home_subscription_time_calc('+1 week', $last_shipment, $date_format),
+    'hold_month'        => at_home_subscription_time_calc('+2 months', $last_shipment, $date_format),
+    'hold_three_months' => at_home_subscription_time_calc('+3 months', $last_shipment, $date_format),
+    'hold_six_months'   => at_home_subscription_time_calc('+6 months', $last_shipment, $date_format),
+    'hold_indefinate'   => 'N/A',
+  );
+}
+
+function at_home_subscription_time_calc($amount, $timestamp, $date_format) {
+  $tomorrow      = strtotime('tomorrow');
+  $new_timestamp = strtotime($amount, $timestamp);
+  while ($new_timestamp < $tomorrow){
+    $new_timestamp = strtotime($amount, $new_timestamp);
+  }
+  if ($date_format) {
+    return date('m/d/Y', $new_timestamp);
+  }
+  else {
+    return $new_timestamp;
+  }
+}
+
+function at_home_subscription_settings_autocomplete_ajax_callback($type, $string) {
+  $results = array();
+
+  if ($type == 'dvd') {
+    $type = 'product';
+  }
+
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid', 'title'))
+    ->condition('type', $type)
+    ->condition('status', 1)
+    ->condition('title', '%' . $string . '%', 'LIKE');
+  $query->innerJoin('field_data_field_at_home_only', 'o', 'n.nid = o.entity_id');
+  $result = $query->condition('o.field_at_home_only_value', 1)->execute();
+
+  foreach ($result as $row) {
+    $results[$row->nid] = $row->title;
+  }
+
+  drupal_json_output($results);
+}
+
+function at_home_subscription_get_product_info($type = 'dvd') {
+  $products = array();
+
+  $result = db_select('at_home_products', 'ahp')
+    ->fields('ahp')
+    ->condition('type', $type)
+    ->execute();
+
+  foreach ($result as $row) {
+    $products['l' . $row->level . 'm' . $row->month] = $row;
+  }
+
+  return $products;
+}
+
+function at_home_subscription_get_active_users($next_shipment = NULL) {
+  $query = db_select('users_at_home', 'uah')
+    ->fields('uah')
+    ->condition('status', AH_STATUS_ACTIVE)
+    ->isNotNull('next_shipment');
+  if ($next_shipment) {
+    $query->where('DATE(FROM_UNIXTIME(next_shipment)) <= :next_shipment', array(':next_shipment' => $next_shipment));
+  }
+  $query->innerJoin('authnet_cim_entity', 'ace', 'uah.uid = ace.id');
+  $query->innerJoin('authnet_cim_entity_payment_profile', 'app', 'ace.customer_profile_id = app.customer_profile_id');
+  $query->condition('app.is_default', 1)->fields('app');
+
+  $users = $query->execute()->fetchAllAssoc('uid');
+
+  return $users;
+}
+
+function at_home_subscription_flag_error($account) {
+  $updated_info = array(
+    'uid'                => $account->uid,
+    'display_cc_problem' => 1,
+    'queue_info'         => array(),
+  );
+
+  at_home_subscription_account_info_save($updated_info);
+}
+
+function at_home_subscription_unflag_error($account) {
+  $updated_info = array(
+    'uid'                => $account->uid,
+    'display_cc_problem' => 0,
+    'queue_info'         => array(),
+  );
+
+  at_home_subscription_account_info_save($updated_info);
+}
+
+function at_home_subscription_set_on_hold($account) {
+  $updated_info = array(
+    'uid'             => $account->uid,
+    'status'          => AH_STATUS_HOLD,
+    'next_shipment'   => NULL,
+    'shipping_option' => 'hold_indefinate',
+    'queue_info'      => array(),
+  );
+
+  at_home_subscription_account_info_save($updated_info);
+}
+
+function at_home_subscription_set_canceled($account) {
+  $updated_info = array(
+    'uid'             => $account->uid,
+    'status'          => AH_STATUS_CANCELED,
+    'next_shipment'   => NULL,
+    'shipping_option' => 'hold_indefinate',
+    'queue_info'      => array(),
+  );
+
+  at_home_subscription_account_info_save($updated_info);
+}
+
+function at_home_subscription_cc_expired($account_info, $now = '') {
+  if (empty($now)) {
+    $now = strtotime('now');
+  }
+  $now         = strtotime(date('Y-m', $now) . '-01');
+  $cc_exp_date = $account_info['account']->cc_info['profile']['cc_exp_year'] . '-';
+  $cc_exp_date .= strlen($account_info['account']->cc_info['profile']['cc_exp_month']) == 1 ? '0' . $account_info['account']->cc_info['profile']['cc_exp_month'] : $account_info['account']->cc_info['profile']['cc_exp_month'];
+  $cc_exp_date = strtotime($cc_exp_date . '-01');
+  return $cc_exp_date <= $now;
+}
+
+function at_home_subscription_process_automatic_order($account_info) {
+  $account = user_load($account_info['account']->uid);
+  $cart_id = $account->uid . '_ahp';
+
+  $_SESSION['ahp_cart_id'] = $cart_id;
+
+  uc_cart_empty($cart_id);
+
+  $shipping_next = at_home_subscription_account_info_get_shipping_next($account_info);
+
+  if (!empty($shipping_next)) {
+
+    //Build secondary cart with the products from the queue
+    foreach ($shipping_next as $product) {
+      uc_cart_add_item($product->nid, 1, module_invoke_all('uc_add_to_cart_data', array('nid' => $product->nid)), $cart_id, FALSE, FALSE);
+    }
+
+    //Create new order and assign the secondary cart products to the order
+    $order                   = uc_order_new($account->uid);
+    $_SESSION['cart_order']  = $order->order_id;
+    $order->products         = uc_cart_get_contents($cart_id);
+    $order->billing_country  = $account_info['account']->address['shipping']['raw']['country'];
+    $order->delivery_country = $account_info['account']->address['shipping']['raw']['country'];
+
+    module_load_include('inc', 'uc_cart', 'uc_cart.pages');
+
+    //Set the form state values, any values not specified will be automatically calculated (shipping quotes)
+    $uc_cart_checkout_form_state['values']['op'] = t('Review order');
+
+    $uc_cart_checkout_form_state['values']['panes']['customer']['primary_email'] = $account->mail;
+
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_first_name']  = $account_info['account']->address['shipping']['raw']['first_name'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_last_name']   = $account_info['account']->address['shipping']['raw']['last_name'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_company']     = $account_info['account']->address['shipping']['raw']['company'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_street1']     = $account_info['account']->address['shipping']['raw']['street1'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_street2']     = $account_info['account']->address['shipping']['raw']['street2'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_city']        = $account_info['account']->address['shipping']['raw']['city'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_zone']        = $account_info['account']->address['shipping']['raw']['zone'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_country']     = $account_info['account']->address['shipping']['raw']['country'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_postal_code'] = $account_info['account']->address['shipping']['raw']['postal_code'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_postal_code'] = $account_info['account']->address['shipping']['raw']['postal_code'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_phone']       = $account_info['account']->address['shipping']['raw']['phone'];
+    $uc_cart_checkout_form_state['values']['panes']['delivery']['address']['delivery_aid']         = $account_info['account']->address['shipping']['raw']['aid'];
+
+    $uc_cart_checkout_form_state['values']['panes']['billing']['copy_address']                   = 1;
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_first_name']  = $account_info['account']->address['shipping']['raw']['first_name'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_last_name']   = $account_info['account']->address['shipping']['raw']['last_name'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_company']     = $account_info['account']->address['shipping']['raw']['company'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_street1']     = $account_info['account']->address['shipping']['raw']['street1'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_street2']     = $account_info['account']->address['shipping']['raw']['street2'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_city']        = $account_info['account']->address['shipping']['raw']['city'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_zone']        = $account_info['account']->address['shipping']['raw']['zone'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_country']     = $account_info['account']->address['shipping']['raw']['country'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_postal_code'] = $account_info['account']->address['shipping']['raw']['postal_code'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_postal_code'] = $account_info['account']->address['shipping']['raw']['postal_code'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_phone']       = $account_info['account']->address['shipping']['raw']['phone'];
+    $uc_cart_checkout_form_state['values']['panes']['billing']['address']['billing_aid']         = $account_info['account']->address['shipping']['raw']['aid'];
+
+    $uc_cart_checkout_form_state['values']['panes']['quotes']['uid'] = $account->uid;
+
+    $uc_cart_checkout_form_state['values']['panes']['payment']['payment_method']       = 'credit';
+    $uc_cart_checkout_form_state['values']['panes']['payment']['details']['cc_select'] = $account_info['account']->cc_info['profile']['pid'];
+    $uc_cart_checkout_form_state['values']['panes']['payment']['details']['cc_number'] = '';
+
+    $uc_cart_checkout_form_state['build_info']['args'] = array($order);
+
+    $uc_cart_checkout_form_state['automatic_order_info']['uid']   = $account->uid;
+    $uc_cart_checkout_form_state['automatic_order_info']['email'] = $account->mail;
+
+    drupal_form_submit('uc_cart_checkout_form', $uc_cart_checkout_form_state);
+
+    if (strpos($uc_cart_checkout_form_state['redirect'], '/checkout/review') !== FALSE) {
+      // We're good to move forward!!
+      $uc_cart_checkout_review_form_state = array();
+
+      // Define the session's sescrd info in the $_POST directly
+      // See uc_credit_cart_review_pre_form_submit() for why this is necessary.
+      $_POST['sescrd'] = base64_encode($_SESSION['sescrd']);
+
+      //Programmatically emulate the hitting of the 'Submit order' button
+      $uc_cart_checkout_review_form_state['values']['op'] = t('Submit order');
+
+      $uc_cart_checkout_review_form_state['build_info']['args'] = array($order);
+      drupal_form_submit('uc_cart_checkout_review_form', $uc_cart_checkout_review_form_state);
+
+      if (strpos($uc_cart_checkout_review_form_state['redirect'], '/checkout/complete') !== FALSE) {
+        // The order checks out -- go ahead and complete it using uc_cart_checkout_complete()!
+        checkout_checkout_complete();
+        at_home_subscription_rebuild_queue($account_info);
+      }
+      else {
+        watchdog('at_home_subscription_order', 'Error during order %order_id checkout review form submit: %errors -- %data', array(
+          '%order_id' => $order->order_id,
+          '%errors'   => print_r(form_get_errors(), TRUE),
+          '%data'     => print_r($uc_cart_checkout_review_form_state, TRUE)
+        ), WATCHDOG_ERROR);
+        at_home_subscription_set_on_hold($account);
+        at_home_subscription_flag_error($account);
+        at_home_subscription_send_cc_prb_email($account);
+        at_home_subscription_send_cc_prb_a_email($order);
+      }
+    }
+    else {
+      watchdog('at_home_subscription_order', 'Error during order %order_id checkout form submit: %errors -- %data', array(
+        '%order_id' => $order->order_id,
+        '%errors'   => print_r(form_get_errors(), TRUE),
+        '%data'     => print_r($uc_cart_checkout_form_state, TRUE)
+      ), WATCHDOG_ERROR);
+    }
+  }
+  else {
+    watchdog('at_home_subscription_order', 'An automatic order was attempted for user %uid but that user has no items for the next shipment.', array('%uid' => $account_info['account']->uid), WATCHDOG_ERROR);
+
+    //Queue is most likely complete, rebuild queue will set complete status
+    at_home_subscription_rebuild_queue($account_info);
+  }
+
+  unset($_SESSION['ahp_cart_id']);
+}
+
+/**
+ * @param $account_info
+ * @param string $rebuild_status
+ *  Status Code to indicate which items to set as shipped
+ */
+function at_home_subscription_rebuild_queue($account_info, $rebuild_status = AH_QUEUE_SHIPPING_NEXT) {
+  $queue_info = array();
+
+  //Build the queue and set all shipping next to shipped
+  foreach ($account_info['queue'] as $key => $queue) {
+    $status = $queue->status;
+    if ($status == $rebuild_status) {
+      $status = AH_QUEUE_SHIPPED;
+    }
+    $queue_info[$key] = array('ahp_id' => $queue->ahp_id, 'status' => $status);
+  }
+
+  //Find the first queue item with a blank status and set it to shipping next
+  $program_end = TRUE;
+  foreach ($account_info['queue'] as $key => $queue) {
+    if ($queue->status == '') {
+      $queue_info[$key]['status'] = AH_QUEUE_SHIPPING_NEXT;
+      $program_end                = FALSE;
+      break;
+    }
+  }
+
+  $program_status  = $account_info['account']->status;
+  $last_shipment   = strtotime('now');
+  $shipping_option = $account_info['account']->shipping_option;
+
+  if ($program_end) {
+    $program_status = AH_STATUS_COMPLETED;
+    $next_shipment  = NULL;
+  }
+  else {
+    //If coming from hold option, reset shipping option to monthly
+    if (strpos($shipping_option, 'hold_') === 0) {
+      $shipping_option = 'monthly';
+    }
+
+    $date_calc     = at_home_subscription_get_date_changes($last_shipment);
+    $next_shipment = $date_calc[$shipping_option];
+  }
+
+  $updated_info = array(
+    'uid'             => $account_info['account']->uid,
+    'status'          => $program_status,
+    'last_shipment'   => $last_shipment,
+    'next_shipment'   => $next_shipment,
+    'shipping_option' => $shipping_option,
+    'queue_info'      => $queue_info,
+  );
+
+  at_home_subscription_account_info_save($updated_info);
+}
+
+function at_home_subscription_get_user_at_home_program_product($uid) {
+  $query = db_select('uc_orders', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('o.uid', $uid)
+    ->condition('o.order_status', array('payment_received', 'completed'), 'IN');
+  $query->innerJoin('uc_order_products', 'p', 'o.order_id = p.order_id');
+  $query->innerJoin('node', 'n', 'p.nid = n.nid');
+  $query->condition('n.type', 'uc_recurring_subscription')
+        ->fields('n', array('title'));
+
+  return $query->execute()->fetchObject();
+}
+
+/*
+  All at home products model numbers start with D-AHP
+  https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/288#history-5978524
+*/
+function at_home_subscription_order_has_at_home_program_product($order) {
+  foreach ($order->products as $product) {
+    if (at_home_subscription_product_is_at_home_program_product($product)) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+function at_home_subscription_cart_has_at_home_program_product() {
+  $cart = uc_cart_get_contents();
+  foreach ($cart as $product) {
+    if (at_home_subscription_product_is_at_home_program_product($product)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+function at_home_subscription_product_is_at_home_program_product($product) {
+  if (isset($product->type) && $product->type == 'uc_recurring_subscription') {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+function at_home_subscription_get_order_at_home_program_product($order) {
+  foreach ($order->products as $product) {
+    if (at_home_subscription_product_is_at_home_program_product($product)) {
+      return $product;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function at_home_subscription_uc_add_to_cart($nid, $qty, $data) {
+  $result = array();
+  $node   = node_load($nid);
+  $cart   = uc_cart_get_contents();
+
+  if ($node->type == 'uc_recurring_subscription') {
+    $message = 'You can only have one subscription in your cart.';
+    if (account_is_at_home()) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t('You are already an At Home Program member.'),
+      );
+    }
+    else if ($qty > 1) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t($message),
+      );
+    }
+    else {
+      foreach ($cart as $item) {
+        if ($item->type == 'uc_recurring_subscription') {
+          $result[] = array(
+            'success' => FALSE,
+            'message' => t($message),
+          );
+          break;
+        }
+      }
+    }
+  }
+
+  return $result;
+}
+
+function at_home_subscription_get_types() {
+  return array(
+    AH_TYPE_DVD      => 'DVD',
+    AH_TYPE_PLAYLIST => 'Online Video',
+  );
+}
+
+function at_home_subscription_switch_type($uid, $type) {
+  $account      = user_load($uid);
+  $account_info = at_home_subscription_account_info_load($account);
+  $queue_info   = array();
+
+  foreach ($account_info['queue'] as $queue) {
+    $ahp_id = db_select('at_home_products', 'ahp')
+      ->fields('ahp', array('id'))
+      ->condition('level', $queue->level)
+      ->condition('month', $queue->month)
+      ->condition('month', $queue->month)
+      ->condition('type', $type)->execute()->fetchField();
+
+    $queue_info[] = array(
+      'uid'    => $uid,
+      'status' => $queue->status,
+      'ahp_id' => $ahp_id,
+    );
+  }
+
+
+  db_delete('users_at_home_queue')
+    ->condition('uid', $uid)
+    ->execute();
+
+  $updated_info = array(
+    'uid'        => $uid,
+    'type'       => $type,
+    'queue_info' => $queue_info,
+  );
+
+  at_home_subscription_account_info_save($updated_info);
+}
+
+function at_home_subscription_get_at_home_videos($account) {
+  $at_home_playlists = array();
+
+  $playlists = video_user_get_playlists($account->uid);
+  $playlists = node_load_multiple($playlists);
+
+  foreach ($playlists as $playlist) {
+    if (at_home_subscription_product_is_at_home_only($playlist)) {
+      $at_home_playlists[] = $playlist->nid;
+    }
+  }
+
+  return $at_home_playlists;
+}
+
+/**
+ * Implements hook_uc_add_to_cart_data().
+ */
+function at_home_subscription_uc_add_to_cart_data($form_values) {
+  if (isset($form_values['at_home_product_queue_info'])) {
+    return array('at_home_product_queue_info' => $form_values['at_home_product_queue_info']);
+  }
+}
+
+/**
+ * Implements hook_uc_cart_item_delete().
+ */
+function at_home_subscription_uc_cart_item_delete($entity) {
+  if (isset($entity->data['at_home_product_queue_info'])) {
+    db_query('UPDATE users_at_home_queue SET status = :status WHERE uid = :uid AND ahp_id = :ahp_id AND status != :status_shipped', array(
+      ':status'         => AH_QUEUE_SHIPPING_NEXT,
+      ':uid'            => $entity->data['at_home_product_queue_info']['uid'],
+      ':ahp_id'         => $entity->data['at_home_product_queue_info']['ahp_id'],
+      ':status_shipped' => AH_QUEUE_SHIPPED,
+    ));
+  }
+}
+
+function theme_at_home_subscription_uc_cart_checkout_review($variables){
+  $output = '';
+
+  $address = $variables['account_info']['account']->address['shipping']['raw'];
+  $cc_info = $variables['account_info']['account']->cc_info;
+  $shipping_next = at_home_subscription_account_info_get_shipping_next($variables['account_info']);
+  
+  $total_calc = at_home_subscription_calculate_total_cost($variables['account_info']['account'], $shipping_next);
+
+  $ship_to = uc_address_format(
+    $address['first_name'],
+    $address['last_name'],
+    $address['company'],
+    $address['street1'],
+    $address['street2'],
+    $address['city'],
+    $address['zone'],
+    $address['postal_code'],
+    $address['country']
+  );
+
+  $header = array(
+    'Products',
+    'Unit Price',
+    'Qty',
+    'Price',
+  );
+  
+  $rows = array();
+  foreach($shipping_next as $product){
+    $price_display = theme('uc_product_price',array('element' => array('#value' => $product->price)));
+    $rows[] = array(
+      $product->title,
+      $price_display,
+      1,
+      $price_display,
+    );
+  }
+
+  $output .= '<div class="shipping"><h3>Ship to:</h3>';
+  $output .= $ship_to;
+  $output .= '</div>';
+
+  $output .= '<div class="billing"><h3>Bill to:</h3>';
+  $output .= $ship_to;
+  $output .= '</div>';
+
+  $output .= '<div class="payment"><h3>Payment:</h3>';
+  $output .= 'Paying by Credit card<br />';
+  $output .= 'Saved card: '.$cc_info['profile']['cc_type'].' - ending in '.$cc_info['profile']['cc_last_four'].' (default)<br />';
+  $output .= '</div>';
+
+  $output .= '<div class="cart-info"><h3>Cart Information:</h3>';
+  $output .= theme('table',array('header' => $header, 'rows' => $rows));
+  $output .= '</div>';
+
+  if(!empty($total_calc['tax']) || !empty($total_calc['shipping_title'])){
+    $output .= '<div class="review-line">';
+    $output .= '<strong>Subtotal:</strong> '.$total_calc['subtotal'];
+    $output .= '</div>';
+  }
+
+  if(!empty($total_calc['tax'])){
+    $output .= '<div class="review-line">';
+    $output .= '<strong>Tax:</strong> '.$total_calc['tax'];
+    $output .= '</div>';
+  }
+
+  if(!empty($total_calc['shipping_title'])){
+    $output .= '<div class="review-line">';
+    $output .= '<strong>'.$total_calc['shipping_title'].':</strong> '.$total_calc['shipping_price'];
+    $output .= '</div>';
+  }
+
+  $output .= '<div class="review-line">';
+  $output .= '<strong>Total:</strong> '.$total_calc['total'];
+  $output .= '</div>';
+
+  $output .= drupal_render($variables['form']);
+
+  return $output;
+}

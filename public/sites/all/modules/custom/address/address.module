@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function address_menu() {
+  $items['address/city/autocomplete'] = array(
+    'title' => 'City Autocomplete',
+    'page callback' => '_address_city_autocomplete',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function address_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['field_address'])) {
+    $form['field_address'][LANGUAGE_NONE][0]['locality_block']['locality']['#autocomplete_path'] = 'address/city/autocomplete';
+  }
+  if($form['#action'] == '/wholesale-application'){
+    global $user;
+    $account = user_load($user->uid);
+
+    $billing_address = address_user_get_address($account);
+
+    if(!empty($billing_address)){
+      $country = db_query("SELECT country_iso_code_2 FROM {uc_countries} WHERE country_id = :id", array(':id' => $billing_address['billing']['raw']['country']))->fetchField();
+      $state = db_query("SELECT zone_code FROM {uc_zones} WHERE zone_id = :id", array(':id' => $billing_address['billing']['raw']['zone']))->fetchField();
+
+      $form['submitted']['billing_address']['#address']['country'] = $country;
+      $form['submitted']['billing_address']['#address']['thoroughfare'] = $billing_address['billing']['raw']['street1'];
+      $form['submitted']['billing_address']['#address']['premise'] = $billing_address['billing']['raw']['street2'];
+      $form['submitted']['billing_address']['#address']['locality'] = $billing_address['billing']['raw']['city'];
+      $form['submitted']['billing_address']['#address']['administrative_area'] = $state;
+      $form['submitted']['billing_address']['#address']['postal_code'] = $billing_address['billing']['raw']['postal_code'];
+    }
+
+  }
+}
+
+function address_user_get_address($account, $type = 'billing'){
+  $addresses = array();
+  $address = UcAddressesAddressBook::get($account->uid)->getDefaultAddress($type);
+
+  if($address){
+    $addresses[$type]['formatted'] = $address->getFieldData();
+    $addresses[$type]['raw'] = $address->getRawFieldData();
+  }
+
+  return $addresses;
+}
+
+function _address_city_autocomplete($string){
+  $matches = array();
+
+  $result = db_select('field_data_field_address','a')
+    ->fields('a',array('field_address_locality'))
+    ->condition('field_address_locality','%'.db_like($string).'%','LIKE')
+    ->orderBy('field_address_locality','ASC')
+    ->execute();
+
+  foreach($result as $row){
+    $matches[$row->field_address_locality] = $row->field_address_locality;
+  }
+
+  drupal_json_output($matches);
+}

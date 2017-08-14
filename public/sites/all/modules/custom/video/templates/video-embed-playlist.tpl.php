@@ -1,0 +1,1 @@
+<div id="mediaplayer-<?= $playlist_id ?>" class="media-player"></div>

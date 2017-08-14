@@ -1,0 +1,5 @@
+name = Messages
+description = Custom messages specified in the CMS
+package = "Avatar New York"
+core = 7.x
+version = 7.x-1.0

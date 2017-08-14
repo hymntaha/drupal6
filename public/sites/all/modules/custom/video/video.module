@@ -1,0 +1,1280 @@
+<?php
+
+define('QUICKFIX_VIDEO_LANDING_PAGE', 46);
+define('QUICKFIX_VIDEO_TID', 35);
+
+define('VIDEO_DISCOUNT_BREAKPOINTS', 6);
+
+define('AMAZON_PUBLIC_KEY', variable_get('ytu_amazon_public_key', ''));
+define('AMAZON_SECRET_KEY', variable_get('ytu_amazon_secrect_key', ''));
+define('AMAZON_KEY_PAIR_ID', variable_get('ytu_amazon_key_pair_id', ''));
+define('AMAZON_PRIVATE_KEY_FILENAME', variable_get('ytu_amazon_private_key_filename', ''));
+define('AMAZON_PRIVATE_STREAM_URL', variable_get('ytu_amazon_private_stream_url', ''));
+define('AMAZON_PRIVATE_DOWNLOAD_URL', variable_get('ytu_amazon_private_download_url', ''));
+define('AMAZON_PUBLIC_STREAM_URL', variable_get('ytu_amazon_public_stream_url', ''));
+define('AMAZON_PUBLIC_DOWNLOAD_URL', variable_get('ytu_amazon_public_download_url', ''));
+
+/*
+require('lib/aws.phar');
+
+use Aws\CloudFront\CloudFrontClient;
+*/
+require_once('lib/aws-sdk-1.6.2/sdk.class.php');
+
+/**
+ * Implements hook_menu().
+ */
+function video_menu() {
+  $items['admin/ytu-settings/video'] = array(
+    'title' => 'Video Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_admin_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'video.admin.inc',
+  );
+  /*
+  $items['admin/ytu-settings/video/migrate'] = array(
+    'title' => 'User Video Migration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_admin_migrate_data_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'video.admin.inc',
+  );
+
+  $items['admin/ytu-settings/video/cleanup'] = array(
+    'title' => 'User Video Clean Up',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_admin_clean_up_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'video.admin.inc',
+  );
+  */
+  $items['admin/ytu-settings/video/discount'] = array(
+    'title' => 'Video Discount Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_discount_admin_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'video.admin.inc',
+  );
+  $items['admin/ytu-settings/video/import'] = array(
+    'title' => 'Video Import',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_import_admin_form'),
+    'access arguments' => array('access ytu settings'),
+    'file' => 'video.admin.inc',
+  );
+  $items['user/%user/video'] = array(
+    'title' => 'Edit Videos',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_user_settings_form', 1),
+    'access arguments' => array('access ytu settings'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'video.admin.inc',
+  );
+  $items['user/%user/playlist'] = array(
+    'title' => 'Edit Playlists',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('video_user_playlist_settings_form', 1),
+    'access arguments' => array('access ytu settings'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'video.admin.inc',
+  );
+  $items['your-videos'] = array(
+    'title' => 'Your Videos',
+    'page callback' => 'video_watch_all_videos_page_callback',
+    'access arguments' => array('access content'),
+    'file' => 'video.pages.inc',
+  );
+  $items['watch-video/%video_segment'] = array(
+    'title' => 'Watch Video',
+    'page callback' => 'video_watch_video_page_callback',
+    'page arguments' => array(1),
+    'access callback' => 'video_user_has_access_to_video',
+    'access arguments' => array(1),
+    'file' => 'video.pages.inc',
+  );
+  $items['watch/%video_playlist'] = array(
+    'title' => 'Watch Videos',
+    'page callback' => 'video_watch_page_callback',
+    'page arguments' => array(1),
+    'access callback' => 'video_user_has_access',
+    'access arguments' => array(1),
+    'file' => 'video.pages.inc',
+  );
+  $items['playlist/%user/add'] = array(
+    'title' => 'Create Playlist',
+    'page callback' => 'video_create_playlist',
+    'page arguments' => array(1),
+    'access callback' => 'user_view_access',
+    'access arguments' => array(1),
+    'file' => 'video.pages.inc',
+  );
+  $items['playlist/%video_playlist/edit'] = array(
+    'title' => 'Manage Playlist',
+    'page callback' => 'video_edit_playlist',
+    'page arguments' => array(1),
+    'access callback' => 'video_user_has_access',
+    'access arguments' => array(1),
+    'file' => 'video.pages.inc',
+  );
+  $items['ajax/video/favorite/%user/%video_segment'] = array(
+    'title' => 'Favorite Video',
+    'page callback' => 'video_favorite_video_ajax_callback',
+    'page arguments' => array(3,4),
+    'access callback' => 'video_user_has_access_to_video',
+    'access arguments' => array(4),
+    'file' => 'video.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['create-video-packages'] = array(
+    'title' => 'Create Your Own Video Packages',
+    'page callback' => 'video_create_video_package_callback',
+    'access arguments' => array('access content'),
+    'file' => 'video.pages.inc',
+  );
+  $items['ajax/video/term-description/%taxonomy_term'] = array(
+    'title' => 'Video Taxonomy Term Description',
+    'page callback' => 'video_ajax_taxonomy_term_description_callback',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+    'file' => 'video.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function video_node_view($node, $view_mode, $langcode) {
+  if ($node->type == 'playlist') {
+    if ($view_mode == 'full') {
+      $playlist_segment_products = array();
+
+      $playlist_videos = field_get_items('node', $node, 'field_playlist_videos');
+      foreach ($playlist_videos as $playlist_video) {
+        if ($playlist_video_product = video_get_video_segment_product_from_video_segment($playlist_video['target_id'])) {
+          $playlist_segment_products[] = $playlist_video_product->nid;
+        }
+      }
+
+      $node->content['video_segments'] = node_view_multiple(node_load_multiple($playlist_segment_products), 'teaser');
+      unset($node->content['video_segments']['nodes']['#sorted']);
+
+      $unpurchased_segments = video_get_playlist_unpurchased_segments($node);
+      if(count($unpurchased_segments) && count($unpurchased_segments) != count($node->field_playlist_videos[LANGUAGE_NONE])){
+        $node->content['add_to_cart'] = drupal_get_form('video_playlist_add_unpurchased_segments_to_cart_form', $node, $unpurchased_segments);
+      }
+    }
+  }
+  if($node->type == 'video'){
+    global $user;
+
+    $node->content['favorite'] = 0;
+    if($userVideo = UserVideo::load($user->uid, $node->nid)){
+      $node->content['favorite'] = $userVideo->getFavorite();
+    }
+
+    drupal_add_js(drupal_get_path('module', 'video').'/js/video_favorite.js');
+    drupal_add_js(array('video_favorite' => array('uid' => $user->uid)), 'setting');
+  }
+
+  if($node->type == 'video_segment_product'){
+    global $user;
+
+    $userVideoManager = new UserVideoManager($user->uid);
+    $video_segment = node_load($node->field_video_segment[LANGUAGE_NONE][0]['target_id']);
+    $video_segment_view = node_view($video_segment, 'teaser');
+
+    $fields_to_copy = array(
+      'field_video_thumbnail',
+      'field_video_category',
+      'field_video_body_focus',
+      'field_video_activity',
+      'field_video_series',
+      'field_run_time',
+    );
+
+    foreach($fields_to_copy as $field){
+      if(isset($video_segment_view[$field])){
+        $node->content[$field] = $video_segment_view[$field];
+      }
+    }
+
+    $node->content['sell_price']['#title'] = '';
+    $node->content['has_video'] = $userVideoManager->hasVideo($video_segment->nid);
+    $node->content['in_cart'] = FALSE;
+
+    $items = uc_cart_get_contents();
+    foreach($items as $item){
+      if($node->nid == $item->nid){
+        $node->content['in_cart'] = TRUE;
+        break;
+      }
+    }
+  }
+}
+
+function video_playlist_add_unpurchased_segments_to_cart_form($form, &$form_state, $playlist, $unpurchased_segments){
+  $form['#prefix'] = '<div class="add-to-cart">';
+  $form['#suffix'] = '</div>';
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add to cart'),
+  );
+
+  return $form;
+}
+
+function video_playlist_add_unpurchased_segments_to_cart_form_submit($form, &$form_state){
+  foreach($form_state['build_info']['args'][1] as $unpurchased_segment){
+    $video_segment_product = video_get_video_segment_product_from_video_segment($unpurchased_segment);
+    $form_state['redirect'] = uc_cart_add_item($video_segment_product->nid, 1,  NULL, NULL, variable_get('uc_cart_add_item_msg', TRUE));
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function video_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['video'] = array(
+    'label' => t('Video'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['node']['view modes']['free_video'] = array(
+    'label' => t('Free Video'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['node']['view modes']['playlist_segment'] = array(
+    'label' => t('Playlist Segment'),
+    'custom settings' => TRUE,
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function video_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'product_node_form') {
+    $form['#validate'][] = 'video_product_node_form_validate';
+  }
+  else if($form_id == 'video_segment_product_node_form'){
+    $form['base']['default_qty']['#default_value'] = 0;
+  }
+}
+
+function video_product_node_form_validate($form, &$form_state) {
+  if (isset($form_state['values']['taxonomy_catalog'][LANGUAGE_NONE][0]['tid'])) {
+    if ($form_state['values']['taxonomy_catalog'][LANGUAGE_NONE][0]['tid'] == QUICKFIX_VIDEO_TID) {
+      if (empty($form_state['values']['field_video_file_name'][LANGUAGE_NONE][0]['value'])) {
+        form_set_error('field_video_file_name', t('A video file name must be set for online video products.'));
+      }
+    }
+  }
+}
+
+function video_messages_info() {
+  return array(
+    'video_playlist_watch_extra_content' => array(
+      'title' => "Playlist Watch Content",
+      'description' => "Text copy that appears in the Watch Playlist content area",
+      'type' => "richtext",
+      'group' => "videos",
+    ),
+    'video_create_package_body' => array(
+      'title' => 'Create Package Content',
+      'description' => 'Body text copy for Create Package page',
+      'type' => 'richtext',
+      'group' => "videos",
+    ),
+    'video_create_package_no_selections' => array(
+      'title' => 'No Selections Alert',
+      'description' => 'Text alert to show when no video filters are selected',
+      'type' => 'richtext',
+      'group' => 'videos',
+    )
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function video_theme($existing, $type, $theme, $path) {
+  return array(
+    'video_embed' => array(
+      'template' => 'templates/video-embed',
+      'variables' => array(
+        'nid' => '',
+        'json_array' => array(),
+      ),
+    ),
+    'video_embed_playlist' => array(
+      'template' => 'templates/video-embed-playlist',
+      'variables' => array(
+        'playlist_id' => '',
+      ),
+    ),
+    'video_link' => array(
+      'template' => 'templates/video-link',
+      'variables' => array(
+        'alias' => '',
+        'title' => '',
+        'image' => '',
+        'embed' => array()
+      ),
+    ),
+    'video_playlist_link' => array(
+      'template' => 'templates/video-playlist-link',
+      'variables' => array(
+        'alias' => '',
+        'title' => '',
+        'image' => '',
+        'embed' => array(),
+        'uid' => NULL,
+        'playlist' => NULL,
+      ),
+    ),
+    'video_watch_playlist' => array(
+      'template' => 'templates/video-watch-playlist',
+      'variables' => array(
+        'embed' => array(),
+        'videos' => array(),
+        'extra_content' => array(),
+        'other_videos' => array(),
+        'playlist' => NULL,
+      ),
+    ),
+    'video_account_section' => array(
+      'template' => 'templates/video-account-section',
+      'variables' => array(
+        'at_home_playlists_image' => '',
+        'at_home_playlists' => array(),
+        'other_playlists' => array(),
+        'user_video_manager' => NULL,
+      ),
+    ),
+    'video_playlist_manage' => array(
+      'template' => 'templates/video-playlist-manage',
+      'variables' => array(
+        'filter_form' => array(),
+        'videos' => array(),
+        'form' => array(),
+      ),
+    ),
+    'video_custom_playlist_form' => array(
+      'render element' => 'form',
+    ),
+    'video_segment_filter_form' => array(
+      'render element' => 'form',
+      'template' => 'templates/video-segment-filter-form',
+    ),
+    'video_create_video_package_form' => array(
+      'render element' => 'form',
+    ),
+    'video_create_package' => array(
+      'template' => 'templates/video-create-package',
+      'variables' => array(
+        'body' => array(),
+        'extra_info' => array(),
+        'filter_form' => array(),
+        'videos' => array(),
+        'form' => array(),
+        'video_count' => 0,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function video_admin_paths() {
+  $paths = array(
+    'user/*/video' => TRUE,
+    'user/*/playlist' => TRUE,
+  );
+  return $paths;
+}
+
+/**
+ * Implements hook_init().
+ */
+function video_init() {
+  if (arg(0) == 'view' && arg(1) == 'video') {
+    module_invoke('admin_menu', 'suppress');
+  }
+  if (arg(0) == 'view' && arg(1) == 'playlist') {
+    module_invoke('admin_menu', 'suppress');
+  }
+}
+
+/**
+ * Implements hook_uc_checkout_complete()
+ */
+function video_uc_checkout_complete($order, $account) {
+  $userVideoManager = new UserVideoManager($account->uid);
+
+  foreach ($order->products as $product) {
+    $node = node_load($product->nid);
+    if ($node->type == 'playlist') {
+      $userVideoManager->addPlaylistFromNode($node, $order);
+    }
+    else {
+      if ($node->type == 'video_segment_product') {
+        $userVideo = new UserVideo($account->uid, $node->field_video_segment[LANGUAGE_NONE][0]['target_id'], $order->order_id, 0);
+        $userVideo->save();
+      }
+    }
+  }
+}
+
+function video_get_embed($nid, $type = 'public') {
+
+  drupal_add_js(drupal_get_path('module', 'video') . '/jwplayer/jwplayer.js', array(
+    'type' => 'file',
+    'weight' => 1,
+    'preprocess' => FALSE
+  ));
+  drupal_add_js(drupal_get_path('module', 'video') . '/jwplayer/jwplayer.settings.js', array(
+    'type' => 'file',
+    'weight' => 2,
+    'preprocess' => FALSE
+  ));
+
+  $download = AMAZON_PUBLIC_DOWNLOAD_URL;
+  $sources = array();
+
+  if($file_name = video_get_sd_file_name($nid)){
+    $download_url = 'http' . ($_SERVER['HTTPS'] == 'on' ? 's' : '') . '://' . $download . '/' . $file_name;
+
+    if ($type == 'private') {
+      $download_url = video_get_signed_url($file_name, 'download');
+    }
+
+    $sources[] = array(
+      'file' => $download_url,
+    );
+  }
+
+  $file_name = video_get_file_name($nid);
+  $download_url = 'http' . ($_SERVER['HTTPS'] == 'on' ? 's' : '') . '://' . $download . '/' . $file_name;
+
+  if ($type == 'private') {
+    $download_url = video_get_signed_url($file_name, 'download');
+  }
+
+  $sources[] = array(
+    'file' => $download_url,
+    'default' => 'true',
+  );
+
+  $image = video_get_thumbnail($nid);
+
+  $json_array = array(
+    'playlist' => array(
+      'sources' => $sources,
+    ),
+    'width' => '100%',
+    'aspectratio' => '16:9',
+  );
+
+  if($image){
+    $json_array['playlist']['image'] = $image;
+  }
+
+  return array(
+    '#markup' => theme('video_embed', array(
+      'nid' => $nid,
+      'json_array' => $json_array,
+    ))
+  );
+}
+
+/**
+ * @param UserPlaylist $playlist
+ * @return array
+ */
+function video_get_playlist_embed($playlist) {
+  drupal_add_js(drupal_get_path('module', 'video') . '/jwplayer/jwplayer.js', array(
+    'type' => 'file',
+    'weight' => 1,
+    'preprocess' => FALSE
+  ));
+  drupal_add_js(drupal_get_path('module', 'video') . '/jwplayer/jwplayer.settings.js', array(
+    'type' => 'file',
+    'weight' => 2,
+    'preprocess' => FALSE
+  ));
+
+  $playlist_titles = array();
+  $playlist_json = array();
+
+  foreach ($playlist->getVideos() as $playlistVideo) {
+    $sources = array();
+    $video = node_load($playlistVideo->getVideoNid());
+    if($video->title == 'About YTU' || $video->title == 'About Yoga Tune Up'){
+      if($about_ytu = video_get_latest_about_ytu_video_segment()){
+        $video = $about_ytu;
+      }
+      else{
+        continue;
+      }
+    }
+
+    if($file_name = video_get_sd_file_name($video->nid)){
+      $download_url = video_get_signed_url($file_name, 'download');
+      $sources[] = array(
+        'file' => $download_url,
+        'label' => 'SD',
+      );
+    }
+
+    $file_name = video_get_file_name($video->nid);
+    $download_url = video_get_signed_url($file_name, 'download');
+    $sources[] = array(
+      'file' => $download_url,
+      'label' => 'HD',
+      'default' => 'true',
+    );
+
+    $image = video_get_thumbnail($video->nid);
+
+    $playlist_json[] = array(
+      'title' => $video->title,
+      'description' => isset($video->body[LANGUAGE_NONE][0]['value']) ? trim($video->body[LANGUAGE_NONE][0]['value']) : '',
+      'image' => $image,
+      'sources' => $sources,
+    );
+    $playlist_titles[] = $video->title;
+  }
+
+  return array(
+    'playlist_json' => $playlist_json,
+    'markup' => theme('video_embed_playlist',
+      array(
+        'playlist_id' => $playlist->getId(),
+      )
+    )
+  );
+}
+
+function video_get_link($nid, $type = 'public') {
+  $node = node_load($nid);
+  $title = $node->title;
+  $image = theme_image_style(array(
+    'path' => $node->uc_product_image[LANGUAGE_NONE][0]['uri'],
+    'style_name' => 'uc_cart',
+    'width' => '50',
+    'height' => '28',
+    'alt' => '',
+    'attributes' => array(),
+  ));
+  return theme('video_link', array(
+    'alias' => drupal_lookup_path('alias', 'node/' . $nid),
+    'title' => $title,
+    'image' => $image
+  ));
+}
+
+/**
+ * @param UserPlaylist $playlist
+ * @return string
+ */
+function video_playlist_get_link($playlist) {
+
+  $image = theme_image_style(array(
+    'path' => 'public://logo.png',
+    'style_name' => 'uc_cart',
+    'width' => '50',
+    'height' => '28',
+    'alt' => '',
+    'attributes' => array(),
+  ));
+
+  if ($playlist->getPlaylistNid()) {
+    $node = node_load($playlist->getPlaylistNid());
+
+    if (isset($node->uc_product_image[LANGUAGE_NONE][0]['uri'])) {
+      $image = theme_image_style(array(
+        'path' => $node->uc_product_image[LANGUAGE_NONE][0]['uri'],
+        'style_name' => 'uc_cart',
+        'width' => '50',
+        'height' => '28',
+        'alt' => '',
+        'attributes' => array(),
+      ));
+    }
+  }
+
+  if($playlist->getEditable()){
+    $image = '<img src="https://placeholdit.imgix.net/~text?txtsize=16&bg=5c87d9&txtclr=ffffff&txt='.strtoupper(substr($playlist->getName(),0, 3)).'&w=50&h=50" />';
+  }
+
+  return theme('video_playlist_link', array(
+    'alias' => $playlist->getId(),
+    'title' => $playlist->getName(),
+    'image' => $image,
+    'playlist' => $playlist,
+  ));
+}
+
+function video_get_signed_url($resource, $type = 'stream') {
+
+  $options = array();
+  $private_key_filename = realpath('../cf_keys') . '/' . AMAZON_PRIVATE_KEY_FILENAME;
+
+  /*
+      //AWS-PHP API V2 Code -- DOES NOT WORK ---
+      $client = CloudFrontClient::factory(array(
+          'key' => AMAZON_PUBLIC_KEY,
+          'secret' => AMAZON_SECRET_KEY,
+          'key_pair_id'    => AMAZON_KEY_PAIR_ID,
+          'private_key' => $private_key_filename,
+      ));
+
+      $expires = strtotime('+30 minutes');
+
+      $options = array(
+          'url' => 'rtmp://'.AMAZON_PRIVATE_STREAM_URL.'/'.$resource,
+          'expires' => $expires,
+      );
+
+      $file_name = $client->getSignedUrl($options);
+
+      return $file_name;
+
+  */
+
+  //AWS-PHP API V1 Code -- THIS WORKS --
+
+  $fp = fopen($private_key_filename, "r");
+  $priv_key = fread($fp, 8192);
+  fclose($fp);
+
+  $pkeyid = openssl_get_privatekey($priv_key);
+
+  $client = new AmazonCloudFront();
+  $client->set_keypair_id(AMAZON_KEY_PAIR_ID);
+  $client->set_private_key($pkeyid);
+
+  $options['Secure'] = $_SERVER['HTTPS'] == 'on' ? TRUE : FALSE;
+
+  if ($type == 'stream') {
+    $file_name = $client->get_private_object_url(AMAZON_PRIVATE_STREAM_URL, $resource, strtotime('+30 minutes'), $options);
+  }
+  else {
+    if ($type == 'download') {
+      $file_name = $client->get_private_object_url(AMAZON_PRIVATE_DOWNLOAD_URL, $resource, strtotime('+30 minutes'), $options);
+
+    }
+  }
+
+  return $file_name;
+}
+
+function video_get_file_name($nid) {
+  return db_select('field_data_field_video_file_name', 'fn')
+    ->fields('fn', array('field_video_file_name_value'))
+    ->condition('fn.entity_id', $nid)
+    ->execute()->fetchField();
+}
+
+function video_get_sd_file_name($nid) {
+  return db_select('field_data_field_video_sd_file_name', 'fn')
+    ->fields('fn', array('field_video_sd_file_name_value'))
+    ->condition('fn.entity_id', $nid)
+    ->execute()->fetchField();
+}
+
+function video_get_thumbnail($nid) {
+  $image_fid = db_select('field_data_field_video_thumbnail', 'ft')
+    ->fields('ft', array('field_video_thumbnail_fid'))
+    ->condition('ft.entity_id', $nid)
+    ->execute()->fetchField();
+
+  $image = '';
+  if (!empty($image_fid)) {
+    $image = file_load($image_fid);
+    $image = image_style_url('video_thumbnail', $image->uri);
+  }
+
+  return $image;
+}
+
+function video_get_user_video_links($account) {
+  $user_videos = array();
+  $userVideoManager = new UserVideoManager($account->uid);
+
+  foreach ($userVideoManager->getPlaylists() as $playlist) {
+    $user_videos[$playlist->getId()] = array('#markup' => video_playlist_get_link($playlist));
+  }
+
+  return $user_videos;
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function video_uc_add_to_cart($nid, $qty, $data) {
+  global $user;
+
+  $result = array();
+  $node = node_load($nid);
+  $cart = uc_cart_get_contents();
+
+  if ($node->type == 'playlist') {
+    $message = $node->title . ' is already in your cart';
+    $userVideoManager = new UserVideoManager($user->uid);
+
+    if ($userVideoManager->hasPlaylist($node->nid)) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t('You already own ' . $node->title),
+      );
+    }
+    else {
+      if ($qty > 1) {
+        $result[] = array(
+          'success' => FALSE,
+          'message' => t($message),
+        );
+      }
+      else {
+        foreach ($cart as $item) {
+          if ($item->nid == $node->nid) {
+            $result[] = array(
+              'success' => FALSE,
+              'message' => t($message),
+            );
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if ($node->type == 'video_segment_product') {
+    $message = 'The video ' . $node->title . ' is already in your cart';
+    $userVideoManager = new UserVideoManager($user->uid);
+
+    $video_segment = node_load($node->field_video_segment[LANGUAGE_NONE][0]['target_id']);
+
+    if ($userVideoManager->hasVideo($video_segment->nid)) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t('You already own ' . $node->title),
+      );
+    }
+    else {
+      if ($qty > 1) {
+        $result[] = array(
+          'success' => FALSE,
+          'message' => t($message),
+        );
+      }
+      else {
+        foreach ($cart as $item) {
+          if ($item->nid == $node->nid) {
+            $result[] = array(
+              'success' => FALSE,
+              'message' => t($message),
+            );
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return $result;
+}
+
+function video_playlist_load($id) {
+  return UserPlaylist::load($id);
+}
+
+function video_segment_load($nid){
+  return node_load($nid);
+}
+
+/**
+ * @param UserPlaylist $playlist
+ * @return bool
+ */
+function video_user_has_access($playlist) {
+  if (account_is_admin()) {
+    return TRUE;
+  }
+
+  global $user;
+  $account = user_load($user->uid);
+
+  return $playlist->getUid() == $account->uid;
+}
+
+function video_user_has_access_to_video($video_segment){
+  if (account_is_admin()) {
+    return TRUE;
+  }
+
+  global $user;
+
+  $userVideoManager = new UserVideoManager($user->uid);
+
+  return $userVideoManager->hasVideo($video_segment->nid);
+}
+
+function video_get_video_segment_product_from_video_segment($video_segment_nid) {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'video_segment_product')
+    ->propertyCondition('status', NODE_PUBLISHED)
+    ->fieldCondition('field_video_segment', 'target_id', $video_segment_nid);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $result_nids = array_keys($result['node']);
+    $results = entity_load('node', $result_nids);
+
+    return reset($results);
+  }
+
+  return FALSE;
+}
+
+function video_get_playlist_for_video_segment_product($video_segment_product_nid) {
+  $video_segment_product = node_load($video_segment_product_nid);
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'playlist')
+    ->propertyCondition('status', NODE_PUBLISHED)
+    ->fieldCondition('field_playlist_videos', 'target_id', $video_segment_product->field_video_segment[LANGUAGE_NONE][0]['target_id']);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $result_nids = array_keys($result['node']);
+    $results = entity_load('node', $result_nids);
+
+    return reset($results);
+  }
+
+  return FALSE;
+}
+
+function video_get_playlist_unpurchased_segments($playlist) {
+  global $user;
+
+  $userVideoManager = new UserVideoManager($user->uid);
+  $unpurchased_segments = array();
+
+  foreach (field_get_items('node', $playlist, 'field_playlist_videos') as $playlist_video) {
+    if($userVideoManager->hasVideo($playlist_video['target_id'])){
+      $unpurchased_segments[] = $playlist_video['target_id'];
+    }
+  }
+
+  return $unpurchased_segments;
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ * @param UserVideoManager|null $userVideoManager
+ * @param bool $favorite
+ * @return mixed
+ */
+function video_segment_filter_form($form, &$form_state, $userVideoManager = NULL, $favorite = TRUE){
+  $video_map = array(
+    'video_categories' => array(),
+    'video_body_focus' => array(),
+    'video_activity' => array(),
+    'video_series' => array(),
+  );
+
+  $vocabs = array(
+    'video_categories' => array('' => 'Category','99999' => '- All -'),
+    'video_body_focus' => array('' => 'Body Focus'),
+    'video_activity' => array('' => 'Activity'),
+    'video_series' => array('' => 'Series','99999' => '- All -'),
+  );
+
+  $vocab_any_tid = array(
+    'video_categories' => 99999,
+    'video_body_focus' => 0,
+    'video_activity' => 0,
+    'video_series' => 99999,
+  );
+
+  $is_create_video_packages = current_path() == 'create-video-packages';
+
+  foreach($vocabs as $vocab_machine_name => $vocab){
+    $vocabulary = taxonomy_vocabulary_machine_name_load($vocab_machine_name);
+    foreach(taxonomy_get_tree($vocabulary->vid) as $term){
+      if($is_create_video_packages && $term->name == 'YTU At Home Program'){
+        continue;
+      }
+
+      $video_map[$vocab_machine_name][$term->tid] = array();
+      $vocabs[$vocab_machine_name][$term->tid] = $term->name;
+
+      if($term->name == 'Any Body Part' || $term->name == 'Any Activity'){
+        $vocab_any_tid[$vocab_machine_name] = $term->tid;
+        $vocabs[$vocab_machine_name][$term->tid] = '- All -';
+      }
+    }
+  }
+
+  $form['video_categories'] = array(
+    '#title' => 'Category',
+    '#type' => 'select',
+    '#options' => $vocabs['video_categories'],
+    '#title_display' => 'invisible',
+  );
+
+  $form['video_body_focus'] = array(
+    '#title' => 'Body Focus',
+    '#type' => 'select',
+    '#options' => $vocabs['video_body_focus'],
+    '#title_display' => 'invisible',
+  );
+
+  $form['video_activity'] = array(
+    '#title' => 'Activity',
+    '#type' => 'select',
+    '#options' => $vocabs['video_activity'],
+    '#title_display' => 'invisible',
+  );
+
+  $form['video_series'] = array(
+    '#title' => 'Series',
+    '#type' => 'select',
+    '#options' => $vocabs['video_series'],
+    '#title_display' => 'invisible',
+  );
+
+  if($favorite){
+    $form['favorite'] = array(
+      '#title' => 'Show favorites',
+      '#type' => 'checkbox',
+    );
+  }
+  else{
+    $form['reset_filters'] = array(
+      '#markup' => '<button id="playlist-reset-filters">Reset Filters</button>',
+    );
+  }
+
+  $videos = array();
+
+  if($userVideoManager){
+    foreach($userVideoManager->getVideos() as $userVideo){
+      $videos[] = node_load($userVideo->getVideoNid());
+    }
+  }
+  else{
+    $videos = video_get_video_segments_products();
+  }
+
+  foreach($videos as $video_segment){
+
+    if(isset($video_segment->field_video_category[LANGUAGE_NONE])){
+      foreach($video_segment->field_video_category[LANGUAGE_NONE] as $item){
+        $video_map['video_categories'][$item['tid']][] = $video_segment->nid;
+      }
+    }
+
+    if(isset($video_segment->field_video_body_focus[LANGUAGE_NONE])){
+      foreach($video_segment->field_video_body_focus[LANGUAGE_NONE] as $item){
+        $video_map['video_body_focus'][$item['tid']][] = $video_segment->nid;
+      }
+    }
+
+    if(isset($video_segment->field_video_activity[LANGUAGE_NONE])){
+      foreach($video_segment->field_video_activity[LANGUAGE_NONE] as $item){
+        $video_map['video_activity'][$item['tid']][] = $video_segment->nid;
+      }
+    }
+
+    if(isset($video_segment->field_video_series[LANGUAGE_NONE])){
+      foreach($video_segment->field_video_series[LANGUAGE_NONE] as $item){
+        $video_map['video_series'][$item['tid']][] = $video_segment->nid;
+      }
+    }
+  }
+
+  foreach(array('video_body_focus', 'video_activity') as $machine_name){
+    foreach($video_map[$machine_name] as $tid => $nids){
+      if($tid == $vocab_any_tid[$machine_name]){
+        continue;
+      }
+
+      $video_map[$machine_name][$tid] = array_merge($nids, $video_map[$machine_name][$vocab_any_tid[$machine_name]]);
+    }
+  }
+
+  foreach($vocab_any_tid as $machine_name => $any_tid){
+    $all_nids = array();
+    foreach($video_map[$machine_name] as $tid => $nids){
+      $all_nids = array_merge($all_nids, $nids);
+    }
+    $video_map[$machine_name][$any_tid] = $all_nids;
+  };
+
+  $form['#attached']['js'][] = array(
+    'data' => drupal_get_path('module', 'video') . '/js/video_segment_filter.js',
+    'type' => 'file',
+  );
+
+  $form['#attached']['js'][] = array(
+    'data' => array('video' => array('video_map' => $video_map)),
+    'type' => 'setting',
+  );
+
+  return $form;
+}
+
+function video_get_video_segments_products(){
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid'))
+    ->condition('type', 'video_segment_product')
+    ->condition('status', NODE_PUBLISHED)
+    ->orderBy('title', 'ASC');
+
+  $nids = $query->execute()->fetchAllKeyed(0,0);
+
+  if($nids){
+    return node_load_multiple($nids);
+  }
+
+  return array();
+}
+
+function theme_video_custom_playlist_form($variables){
+  $output = '';
+  $form = $variables['form'];
+  $rows = array();
+  $table_id = 'playlist-sort';
+
+  foreach(element_children($form['playlist_sort']) as $id){
+    $rows[] = array(
+      'data' => array(
+        drupal_render($form['playlist_sort'][$id]['name']),
+        drupal_render($form['playlist_sort'][$id]['weight']),
+        '<button class="playlist-remove">x</button>',
+      ),
+      'class' => array('draggable'),
+      'id' => 'playlist-sort-'.$id,
+    );
+  }
+
+  $output .= theme('table', array(
+    'rows' => $rows,
+    'attributes' => array('id' => $table_id),
+  ));
+
+  drupal_add_tabledrag($table_id, 'order', 'sibling', 'weight');
+
+  $output .= drupal_render_children($form);
+
+  return $output;
+}
+
+function theme_video_video_create_video_package_form($variables){
+  $output = '';
+  $form = $variables['form'];
+  $rows = array();
+  $table_id = 'create-video-package-table';
+
+  foreach(element_children($form['create_package_videos']) as $id){
+    $rows[] = array(
+      'data' => array(
+        drupal_render($form['create_package_videos'][$id]['name']),
+        drupal_render($form['create_package_videos'][$id]['price']),
+        '<button class="create-package-remove">x</button>',
+      ),
+      'id' => 'create-package-'.$id,
+    );
+  }
+
+  $output .= theme('table', array(
+    'rows' => $rows,
+    'attributes' => array('id' => $table_id),
+  ));
+
+  $output .= drupal_render_children($form);
+
+  return $output;
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function video_node_load($nodes, $types) {
+  if(in_array('video_segment_product', $types)){
+    foreach($nodes as $nid => $node){
+      if($node->type == 'video_segment_product'){
+        $video_segment = node_load($node->field_video_segment[LANGUAGE_NONE][0]['target_id']);
+        $nodes[$nid]->field_video_thumbnail = $video_segment->field_video_thumbnail;
+        $nodes[$nid]->field_video_category = $video_segment->field_video_category;
+        $nodes[$nid]->field_video_body_focus = $video_segment->field_video_body_focus;
+        $nodes[$nid]->field_video_activity = $video_segment->field_video_activity;
+        $nodes[$nid]->field_video_series = $video_segment->field_video_series;
+        $nodes[$nid]->field_run_time = $video_segment->field_run_time;
+      }
+    }
+  }
+}
+
+function video_get_video_discounts(){
+  static $video_discount = array();
+
+  if(!empty($video_discount)){
+    return $video_discount;
+  }
+
+  for($i=1;$i<=VIDEO_DISCOUNT_BREAKPOINTS;$i++){
+    $breakpoint = variable_get('video_discount_breakpoint_'.$i);
+    $amount = variable_get('video_discount_amount_'.$i);
+    if(!empty($breakpoint) && !empty($amount)){
+      $video_discount[] = array(
+        'breakpoint' => $breakpoint,
+        'amount' => $amount,
+      );
+    }
+  }
+
+  return $video_discount;
+}
+
+function video_get_video_discount_level($num_items){
+  $video_discounts = video_get_video_discounts();
+  $max_video_breakpoint = 0;
+  $discount = array();
+
+  if($num_items > 0){
+    foreach($video_discounts as $video_discount){
+      if($num_items >= $video_discount['breakpoint'] && $video_discount['breakpoint'] > $max_video_breakpoint){
+        $discount = $video_discount;
+        $max_video_breakpoint = $video_discount['breakpoint'];
+      }
+    }
+  }
+
+  return $discount;
+}
+
+/**
+ * Implements hook_uc_cart_alter().
+ */
+function video_uc_cart_alter(&$items) {
+  foreach($items as $item){
+    if(isset($item->data['video_discount'])){
+      $video_discount = reset($item->data['video_discount']);
+      $item->price = $video_discount['price'];
+    }
+  }
+}
+
+function video_update_existing_video_from_csv_columns($node, $terms, $cols){
+  $ewrapper = entity_metadata_wrapper('node', $node);
+
+  if (!empty($cols['11'])) {
+    $ewrapper->field_video_sd_file_name->set($cols['11']);
+  }
+
+  $image_file = file_save_data(file_get_contents('http://' . AMAZON_PUBLIC_DOWNLOAD_URL . '/' . $cols[3]), 'public://' . $cols['3'], FILE_EXISTS_RENAME);
+  $ewrapper->field_video_thumbnail->set(array('fid' => $image_file->fid));
+
+  $taxonomy_map = array(
+    4 => 'category',
+    5 => 'body_focus',
+    6 => 'activity',
+    7 => 'series',
+  );
+
+  foreach ($taxonomy_map as $delta => $term_machine_name) {
+    if (!empty($cols[$delta])) {
+      $names = explode('|', $cols[$delta]);
+      $to_add = array();
+      foreach ($terms[$term_machine_name] as $term) {
+        foreach ($names as $name) {
+          $name = trim($name);
+          if ($term->name == $name) {
+            $to_add[] = intval($term->tid);
+          }
+        }
+      }
+
+      if (!empty($to_add)) {
+        $ewrapper->{'field_video_' . $term_machine_name}->set($to_add);
+      }
+    }
+  }
+
+  $ewrapper->field_run_time->set($cols['8']);
+
+  $ewrapper->save();
+}
+
+function video_get_latest_about_ytu_video_segment(){
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid'))
+    ->condition('status', NODE_PUBLISHED)
+    ->condition('type', 'video')
+    ->condition('title', 'About Yoga Tune Up')
+    ->orderBy('nid', 'DESC')->range(0,1);
+
+  if($nid = $query->execute()->fetchField()){
+    return node_load($nid);
+  }
+
+  return FALSE;
+}
+
+function video_clean_up_duplicates(){
+  set_time_limit(0);
+
+  $query = db_select('field_data_field_video_file_name', 'f')
+    ->fields('f', array('entity_id'));
+
+  $query->innerJoin('field_data_field_video_file_name', 'f2', 'f2.field_video_file_name_value = f.field_video_file_name_value AND f2.entity_id > f.entity_id');
+  $query->fields('f2', array('entity_id'));
+
+  $query->innerJoin('node', 'n', 'n.nid = f.entity_id');
+  $query->condition('n.type', 'video');
+  $query->condition('n.title', 'About Yoga Tune Up', '<>');
+
+  $results = $query->execute();
+
+  foreach($results as $row){
+    $old = $row->entity_id;
+    $new = $row->f2_entity_id;
+
+    watchdog('video_cleanup', 'Updating video :video_old with :video_new', array(':video_old' => $old, ':video_new' => $new));
+
+    db_update('field_data_field_playlist_videos')
+      ->fields(array('field_playlist_videos_target_id' => $new))
+      ->condition('field_playlist_videos_target_id', $old)
+      ->execute();
+
+    db_update('field_revision_field_playlist_videos')
+      ->fields(array('field_playlist_videos_target_id' => $new))
+      ->condition('field_playlist_videos_target_id', $old)
+      ->execute();
+
+    $query = db_select('users_video_segments', 'u')
+      ->fields('u', array('uid'))
+      ->condition('video_nid', $old);
+
+    foreach($query->execute() as $uvs_row){
+      $userVideoManager = new UserVideoManager($uvs_row->uid);
+      $userVideoManager->replaceVideo($old, $new);
+    }
+
+    node_delete($old);
+  }
+}

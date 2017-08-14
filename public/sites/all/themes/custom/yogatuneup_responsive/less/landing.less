@@ -1,0 +1,520 @@
+// Landing pages
+#block-block-10 {
+  border-top: @border;
+}
+
+.region-sidebar-second {
+  ul, ol {
+    padding-left: 20px;
+  }
+}
+
+//Newsletter Sign Up
+#node-90 .content, #node-3 .content, #node-2 .content, #node-1795 .content {
+  .make-sm-column(9);
+  padding-left: 0;
+  #infusion-form {
+    height: 100%;
+  }
+}
+
+// Weekly Pose
+.social.clearfix {
+  .message, #pose-email-form {
+    .make-md-column(5);
+    padding-left: 0;
+    margin-bottom: 20px;
+  }
+  .addthis_toolbox {
+    .make-md-column(2);
+    padding-left: 0;
+    margin-bottom: 20px;
+  }
+  .form-item-pose-email {
+    .make-sm-column(9);
+    .make-md-column(7);
+    padding-left: 0;
+  }
+  .form-submit {
+    .make-md-column(3);
+    padding-left: 0;
+    margin-top: -8px;
+  }
+}
+
+// Shop Yoga Tune Up Landing
+.node-product-landing {
+  .field-name-body {
+    margin-bottom: 15px;
+    .body-text-l {
+      font-size: 16px;
+    }
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    a {
+color: @yoga-gray;
+      &:hover {
+        color: lighten(@yoga-red, 10%);
+      }
+    }
+  }
+}
+
+.node-type-section-landing {
+  .node-product-landing.node-teaser {
+    border-bottom: none;
+  }
+}
+
+.field-name-field-product-landing-pages {
+  .make-row();
+  margin-bottom: 20px;
+  & > .field-items {
+    & > .field-item {
+      margin-top: 20px;
+      .make-md-column(6);
+      &:nth-child(2n+1) {
+        clear: left;
+      }
+      h2 {
+        .title;
+        padding-bottom: 5px;
+        a {
+          color: @yoga-green;
+        }
+      }
+      .field-name-field-teaser-title {
+        .field-item {
+          width: 100%;
+          margin-top: 10px;
+          padding-left: 0;
+        }
+      }
+      .field-name-field-teaser-image {
+        margin-bottom:10px;
+        img {
+          max-width: 100%;
+        }
+      }
+    }
+  }
+}
+
+.field-name-field-ad-space {
+  display: none;
+}
+
+// Sample Yoga Tune Up
+.grey-content-block {
+  .make-sm-column(12);
+  border-top: @border;
+  padding-top: 30px;
+}
+
+.page-quickfix-yoga-videos {
+  #block-system-main header {
+    font-weight: 600;
+    font-size: 18px;
+    .blue-title {
+      font-weight: 600;
+    }
+    p:nth-child(2) {
+      margin-bottom: 5px;
+    }
+    p:last-child {
+      margin-bottom: 40px;
+    }
+  }
+  .message-admin {
+    p:nth-child(3) {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    p:last-child {
+      margin-bottom: 20px;
+    }
+  }
+  .node-quickfix-video {
+    .make-sm-column(6);
+    padding-left: 0;
+    margin-bottom: 40px;
+    .field-type-image {
+      .make-sm-column(3);
+      padding-left: 0;
+    }
+    .quick-video {
+      .make-sm-column(9);
+      .make-md-column(8);
+      padding-left: 0;
+      a {
+        margin-right: 10px;
+        &:first-child {
+//          &:after {
+//            content: '|';
+//            color: @yoga-red;
+//            padding-left: 20px;
+//          }
+        }
+      }
+      .field-name-body {
+        margin-top: 15px;
+      }
+    }
+
+    &:nth-child(2n) {
+      clear: left;
+    }
+    header {
+      .make-sm-column(9);
+      .pull-right;
+      padding-left: 0;
+      h2 {
+        .title;
+      }
+    }
+  }
+}
+
+// Free Video
+.node-pose {
+  margin-top: 30px;
+  h2, .content {
+    .make-sm-column(6);
+    .pull-right;
+  }
+  h2 {
+    .title;
+  }
+  .right-content {
+    .make-sm-column(6);
+    padding-left: 0;
+  }
+  .right-content {
+    padding-left: 10px;
+    .field-label, .field-items {
+      float: left;
+    }
+    .field-label-inline {
+      margin-bottom: 10px;
+    }
+    .video-warning {
+      border-top: @border;
+      padding-top: 10px;
+    }
+    @media @tablet {
+      div[id*="mediaplayer-"] {
+        .make-sm-column(6);
+        padding-left: 0;
+      }
+    }
+  }
+
+  &.node-teaser {
+    .spacing-reset;
+
+    .field {
+      margin-bottom: 8px;
+    }
+  }
+}
+
+#block-product-landing-product-landing-sidebar{
+  .grid-switch{
+    display: none;
+  }
+}
+
+// FAQ
+.page-faqs {
+  .field-name-field-question {
+    .field-item {
+      .title;
+      font-size: 16px;
+    }
+  }
+  .field-name-body {
+    margin-bottom: 30px;
+  }
+}
+
+// At Home Program Finder
+.page-node-54 {
+  .main-container.container {
+    max-width: 750px;
+  }
+  .field-name-body {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .program-finder-progress {
+    .clearfix;
+    text-align: center;
+    margin-bottom: 30px;
+    div[class*="part-"] {
+      display: inline-block;
+      .make-sm-column(4);
+      .title;
+      font-size: 16px;
+      &.active {
+        .inner {
+          background-color: lighten(@yoga-green, 20%);
+          border: 1px solid lighten(@yoga-green, 20%);
+        }
+      }
+      .inner {
+        width: 80%;
+        border: @border;
+        .border-radius(3px);
+        padding: 10px;
+      }
+    }
+  }
+  .webform-component-checkboxes, .webform-component-radios {
+    margin-left: 20px;
+    margin-bottom: 30px;
+  }
+  .webform-component-webform_grid {
+    .table-responsive;
+    table {
+      .table;
+    }
+
+    .webform-grid-option{
+      text-align:center;
+    }
+    .radio{
+      min-height:22px;
+
+      input[type="radio"]{
+        position: static;
+      }
+    }
+
+    .select-one-row{
+      td,th{
+        border:0;
+        text-align: center;
+      }
+    }
+  }
+  .panel-body {
+    label {
+      float: left;
+    }
+    input[type="radio"] {
+      margin-left: 25px;
+    }
+    input[type="checkbox"] {
+      margin-right: 15px;
+    }
+  }
+  .next {
+    span {
+      .title;
+      margin-right: 50px;
+      &:after {
+        content: "\f101";
+        display: inline-block;
+        font-family: @font-fontAwesome;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 44px;
+        color: @yoga-green;
+        margin-left: 10px;
+        position: absolute;
+        margin-top: -10px;
+      }
+    }
+  }
+  button#edit-previous {
+    float: left;
+  }
+  #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-1 {
+    .make-xs-column(8);
+    padding-right: 0;
+    clear: left;
+  }
+  #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-2 {
+    .make-xs-column(4);
+    padding-left: 0;
+    border-left: @border;
+    .webform-grid-question {
+      display: none;
+    }
+  }
+  #webform-client-form-54 {
+    label.red-label {
+      display: block;
+      margin: 30px 0;
+    }
+    button.green-button {
+      clear: left;
+    }
+    select#edit-submitted-weight {
+      margin-bottom: 30px;
+    }
+    .webform-component-textfield, .webform-component-email, .webform-component-select, #webform-component-are-you-pregnant, #webform-component-check-with-doctor-confirm {
+      .make-sm-column(6);
+      padding-left: 0;
+      margin-bottom: 20px;
+      clear:none;
+    }
+  }
+  #webform-component-what-is-your-yoga-experience {
+    .make-sm-column(8);
+    clear: both;
+    padding-left: 0;
+  }
+  #edit-submitted-what-are-your-fitness-goals, #edit-submitted-what-exercise-do-you-do-regularly {
+    .form-type-checkbox {
+      .make-sm-column(6);
+      padding-left: 0;
+      margin-top: 5px;
+      &:nth-child(2n+1) {
+        clear: left;
+      }
+      &:last-child {
+        margin-bottom: 30px;
+      }
+    }
+  }
+}
+
+#edit-submitted-what-exercise-do-you-do-regularly{
+  overflow: auto;
+}
+
+#edit-previous{
+  float:left;
+  clear:left;
+}
+
+#at-home-customized-confirm-form {
+  .make-sm-column(8);
+  padding-left: 0;
+  .form-checkbox {
+    margin-left: 0;
+    margin-right: 20px;
+  }
+  label {
+    padding-left: 25px;
+  }
+}
+
+@media @tablet{
+  .webform-component-select {
+    &:nth-child(3n) {
+      clear: left;
+    }
+    &#webform-component-age {
+      clear: none;
+    }
+  }
+}
+
+.page-customized-program {
+  #block-system-main {
+    & > .left-column {
+      .make-sm-column(8);
+      .cp-additional.left-column {
+        .make-sm-column(4);
+      }
+      .column.right-column {
+        .make-sm-column(8);
+      }
+    }
+    & > .right-column {
+      .hidden-xs;
+      .make-sm-column(4);
+    }
+  }
+  .node-uc-recurring-subscription {
+    border-bottom: none;
+    margin-bottom: 0;
+    header {
+      width: 100%;
+      margin-left: 0;
+      h2 {
+        font-size: 16px;
+      }
+    }
+
+  }
+  .get-me-started-footer {
+    .small {
+      margin-top: 20px;
+    }
+    .details {
+      margin-bottom: 0;
+    }
+  }
+  .get-me-started-wrapper {
+    background-color: @gray-lighter;
+    text-align: center;
+    padding: 20px;
+    .border-radius(3px);
+    h2 {
+      .title;
+    }
+  }
+  #at-home-customized-info{
+    text-align:left;
+  }
+}
+
+.page-yoga-workshops-classes {
+  #edit-submit {
+    margin-top: 0;
+  }
+}
+
+// Press Page
+.page-node-1972 {
+     .field-name-field-image-link {
+          & > .field-items > .field-item {
+
+               height: 200px;
+               text-align: center;
+          }
+     }
+
+     .field-name-field-print-media, .field-name-field-international-print, .field-name-field-trade-print, .field-name-field-image-link {
+          & > .field-items > .field-item {
+               .make-xs-column(6);
+               .make-sm-column(3);
+    }
+
+  }
+  .node-pr .field-name-field-pm-image .field-item {
+    display: none;
+    &:first-child {
+      display: block;
+    }
+  }
+  .field-name-field-electronic-media {
+    & > .field-items > .field-item {
+      .make-sm-column(6);
+      &:nth-child(2n+1) {
+        clear: left;
+      }
+    }
+  }
+}
+
+.node-uc-recurring-subscription{
+  .make-row();
+
+  .left-column{
+    .make-sm-column(8);
+  }
+
+  .right-column{
+    .make-sm-column(4);
+  }
+}
+
+.node-type-at-home-level{
+
+}

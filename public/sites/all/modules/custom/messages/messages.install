@@ -1,0 +1,32 @@
+<?php
+/**
+ * @file messages.install
+ * By ben
+ * Date: 1/23/12 3:34 PM
+ */
+
+
+function messages_schema(){
+
+  $schema['messages'] = array(
+    'fields' => array(
+      'key_name'=>array(
+        'description'=>"the key",
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+        'default' => '',
+      ),
+      'key_value'=>array(
+        'description'=>'the data',
+        'type' => 'text',
+        'size'=>'big',
+        'not null' => true,
+        'serialize'=>true,
+      ),
+    ),
+    'primary key' => array('key_name'),
+  );
+
+  return $schema;
+}

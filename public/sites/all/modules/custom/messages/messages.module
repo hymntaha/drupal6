@@ -1,0 +1,318 @@
+<?php
+/**
+ * @file messages.module
+ * By ben
+ * Date: 1/23/12 3:33 PM
+ */
+
+
+function messages_menu(){
+  $items['admin/content/messages'] = array(
+    'title' => 'Messages',
+    'description' => '',
+    'page callback' => 'messages_admin',
+    'access arguments' => array('manage messages'),
+    'weight' => -10,
+    'file' => 'messages.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+
+
+
+	$items['message/%'] = array(
+		'title' => 'Message',
+		'description' => '',
+		'page callback' => 'messages_popup',
+		'access arguments' => array('access content'),
+		'page arguments'=>array(1),
+		'type' => MENU_CALLBACK,
+	);
+
+
+  $groups = messages_get_groups();
+
+  foreach($groups as $group){
+    if(!empty($group)){
+    $items['admin/content/messages/'.$group] = array(
+      'title' => $group,
+      'description' => '',
+      'page callback' => 'messages_admin',
+      'page arguments'=>array($group),
+      'access arguments' => array('manage messages'),
+      'file' => 'messages.admin.inc',
+      'type' => MENU_LOCAL_ACTION,
+    );
+			$items['admin/content/messages/'.$group.'/%'] = array(
+				'title' => $group." Edit",
+				'description' => '',
+				'page callback' => 'messages_key_edit',
+				'page arguments'=>array(3,4),
+				'access arguments' => array('manage messages'),
+				'weight' => -10,
+				'file' => 'messages.admin.inc',
+				'type' => MENU_NORMAL_ITEM,
+			);
+		}
+
+  }
+
+
+  return $items;
+}
+
+
+
+
+function messages_permission(){
+  return array('manage messages'=>array('title'=>'Manage Messages', 'description'=>'Change and review the custom messages'));
+}
+
+function messages_popup($key){
+	echo "<div class=\"message-popup-body\">";
+	echo _mm($key);
+	echo "</div>";
+	exit;
+
+}
+
+function _mm($key, $default = "", $force_no_admin_links = false){
+	global $user;
+	$val = messages_get($key, $default);
+	$key_info = messages_get_key_info($key);
+
+  $image_style = '';
+  if(isset($key_info['image_style']) && !empty($key_info['image_style'])){
+    $image_style = $key_info['image_style'];
+  }
+
+	if(is_array($val)){
+		if($key_info['type'] == "image_link"){
+			$val = messages_render_image_link($val,$image_style);
+		}else 	if(!empty($val['value'])){
+			$val = $val['value'];
+		} else {
+			$val = $default;
+		}
+	}
+
+
+	if($key_info['tokens'] == true){
+		$val = token_replace($val, array('user'=>$user));
+
+	}
+
+
+
+	if(!$force_no_admin_links && user_access("manage messages") && $key_info['contextual_links'] != false && $key_info['type'] != 'file'){
+		$contextual_links = '<div class="message-admin contextual-links-region">
+		<div class="contextual-links-wrapper">
+			<ul class="contextual-links">
+				<li class="first last"><a href="'.url("admin/content/messages/".strtolower($key_info['group'])."/".$key).'">Edit</a></li>
+			</ul>
+		</div>
+		%%REPLACE%%
+		</div>';
+		$val =  str_replace("%%REPLACE%%", $val, $contextual_links);
+	}
+
+	drupal_alter('messages', $val, $key);
+
+
+	return $val;
+
+
+
+}
+
+
+function messages_get($key, $default = null){
+  $data = &drupal_static("message", array());
+
+  if(!isset($data[$key])){
+
+    $data[$key] = messages_load($key, $default);
+
+  }
+
+  $value = $data[$key];
+  
+  if (empty($value)) {
+    $value = $default;
+  }
+  
+  return $value;
+}
+
+
+function messages_set($key, $value){
+
+  drupal_static_reset("messages");
+
+  	$row = array("key_name"=>$key, "key_value"=>$value);
+   if( db_select("messages")->fields("messages")->condition("key_name", $key)->execute()->rowCount() ){
+
+     drupal_write_record("messages", $row, array("key_name"));
+   }else{
+     drupal_write_record("messages", $row);
+   }
+}
+
+function messages_load($key, $default = null){
+
+  $res = db_select("messages")->fields("messages", array("key_value"))->condition("key_name",$key)->execute();
+  if($val = $res->fetchField()){
+    return unserialize($val);
+  }else{
+    return $default;
+  }
+
+}
+
+function messages_preload_group($group){
+
+
+    $group = strtolower($group);
+
+  $infos = messages_config();
+
+
+  $keys = array();
+
+  foreach($infos as $key => $config){
+    if(!empty($config['group']) && $config['group'] == $group){
+      $keys[] = $key;
+    }
+  }
+
+  if(!empty($keys)){
+
+    $data = &drupal_static("messages", array());
+    $res = db_select("messages")->fields("messages")->condition("key_name", $keys, "IN")->execute();
+    while($row = $res->fetchObject()){
+      $data[$row->key_name] = unserialize($row->key_value);
+    }
+  }
+
+
+}
+
+function messages_config_get_default(){
+	$defaults = array(
+		'group'=>"generic",
+		'contextual_links'=>TRUE,
+		'tokens'=>FALSE,
+	);
+
+	return $defaults;
+}
+
+function messages_config(){
+
+  $hook = "messages_info";
+
+
+	$defaults = messages_config_get_default();
+
+
+  $args = func_get_args();
+  // Remove $hook from the arguments.
+  unset($args[0]);
+  $return = array();
+  foreach (module_implements($hook) as $module) {
+    $function = $module . '_' . $hook;
+    if (function_exists($function)) {
+      $result = call_user_func_array($function, $args);
+      if (isset($result) && is_array($result)) {
+				$new_result = array();
+        foreach($result as $key => $info){
+					$info = array_merge($defaults, $info);
+					$info['module']= $module;
+					$new_result[$key] = $info;
+				}
+        $return = array_merge_recursive($return, $new_result);
+      }
+      elseif (isset($result)) {
+        $return[] = array_merge($defaults, $result);
+      }
+    }
+  }
+
+    $return = array_change_key_case($return, CASE_LOWER);
+
+  return $return;
+
+}
+
+function messages_get_groups(){
+  $config = messages_config();
+
+  $groups = array();
+  foreach($config as $conf){
+    $groups[] = strtolower($conf['group']);
+  }
+  return array_unique($groups);
+
+
+}
+
+function messages_get_by_group($group){
+  $ret = array();
+
+  $group = strtolower($group);
+
+  $configs = messages_config();
+
+  foreach($configs as $key => $config ){
+    if(strtolower($config['group']) == strtolower($group)){
+      $ret[$key] = $config;
+    }
+  }
+
+  return $ret;
+
+
+}
+
+function messages_get_key_info($lookup_key){
+	$configs = messages_config();
+	foreach($configs as $key => $config ){
+		if($lookup_key == $key){
+			return $config;
+		}
+	}
+	return null;
+}
+
+/*
+function messages_messages_info() {
+  $items['generic_invalid_email'] = array(
+    'title' => 'Invalid Email',
+    'type' => 'textfield',
+    'group' => 'generic',
+    'fieldset' => 'Generic Messages',
+  );
+
+  return $items;
+ 
+}
+*/
+
+function messages_render_image_link($value,$image_style = ''){
+
+	$file = file_load($value['image']);
+
+  if(empty($image_style)){
+    $image_output = '<img src="'.file_create_url($file->uri).'" alt="" />';
+  }
+  else{
+    $image_output = theme('image_style',array('style_name' => $image_style,'path' => $file->uri));
+  }
+
+	$output = $image_output;
+  if(isset($value['link']) && !empty($value['link'])){
+    $output = '<a href="'.check_url($value['link']).'">'.$output.'</a>';
+  }
+
+	return $output;
+}

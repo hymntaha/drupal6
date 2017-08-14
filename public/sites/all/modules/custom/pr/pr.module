@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * Implements hook_node_view().
+ */
+function pr_node_view($node, $view_mode, $langcode) {
+     if($node->type == 'pr'){
+          $node->content['pm_active'] = '';
+          $node->content['on_active'] = '';
+          $node->content['em_active'] = '';
+
+          if ($view_mode == 'full') {
+               if(account_is_admin()){
+
+                    if(strpos($_SERVER['HTTP_REFERER'], 'field-image-link') !== FALSE){
+                         $_SESSION['pr_active'] = 'on';
+                    }
+                    else if(strpos($_SERVER['HTTP_REFERER'], 'field-electronic-media') !== FALSE){
+                         $_SESSION['pr_active'] = 'em';
+                    }
+                    else if(strpos($_SERVER['HTTP_REFERER'], 'field-print-media') !== FALSE){
+                         $_SESSION['pr_active'] = 'pm';
+                    }
+
+                    if(isset($_SESSION['pr_active'])){
+                         $node->content[$_SESSION['pr_active'].'_active'] = ' active';
+                    }
+                    else{
+                         $node->content['pm_active'] = ' active';
+                    }
+               }
+               else{
+                    $node->content['pm_active'] = ' active';
+               }
+          }
+     }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function pr_form_pr_node_form_alter(&$form, &$form_state) {
+
+}

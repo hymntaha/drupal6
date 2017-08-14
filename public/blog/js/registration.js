@@ -1,0 +1,262 @@
+function validatefrm()
+{
+	var emailRegEx = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+	var username = document.getElementById('username').value;
+	var Password = document.getElementById('Password').value;
+	var CPassword = document.getElementById('CPassword').value;
+	var Email = document.getElementById('Email').value;
+	var cemail = document.getElementById('cemail').value;
+	var fname = document.getElementById('fname').value;
+	var country = document.getElementById('country').value;
+	var state = document.getElementById('state').value;  
+
+	var flag = 'g';
+	document.getElementById('errusername').style.display = 'none';
+	document.getElementById('errPassword').style.display = 'none';
+	document.getElementById('errCPassword').style.display = 'none';
+	document.getElementById('errEmail').style.display = 'none';
+	document.getElementById('errcEmail').style.display = 'none';
+	document.getElementById('errfname').style.display = 'none';
+	document.getElementById('errlname').style.display = 'none';
+	document.getElementById('errcountry').style.display = 'none';
+	document.getElementById('errstate').style.display = 'none';
+	document.getElementById('errattendytu').style.display = 'none';
+	/* document.getElementById('errytuseries').style.display = 'none'; */
+	document.getElementById('errattendcls').style.display = 'none'; 
+	
+if (username == "" )
+	{
+		document.getElementById('errusername').innerHTML = "Please enter username.";
+		document.getElementById('errusername').style.display = 'block';
+		document.getElementById('errusername').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (Password == "" )
+	{
+		document.getElementById('errPassword').innerHTML = "Please enter password.";
+		document.getElementById('errPassword').style.display = 'block';
+		document.getElementById('errPassword').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (CPassword == "" )
+	{
+		document.getElementById('errCPassword').innerHTML = "Please enter confirm password.";
+		document.getElementById('errCPassword').style.display = 'block';
+		document.getElementById('errCPassword').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (Password != "" && CPassword != "" && Password != CPassword)
+	{
+		document.getElementById('errCPassword').innerHTML = "Password and confirm password do not match.";
+		document.getElementById('errCPassword').style.display = 'block';
+		document.getElementById('errCPassword').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (!Email.match(emailRegEx) )
+	{
+		document.getElementById('errEmail').innerHTML = "Please enter valid email address.";
+		document.getElementById('errEmail').style.display = 'block';
+		document.getElementById('errEmail').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	if (!cemail.match(emailRegEx) )
+	{
+		document.getElementById('errcEmail').innerHTML = "Please enter valid confirm email address.";
+		document.getElementById('errcEmail').style.display = 'block';
+		document.getElementById('errcEmail').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	if (cemail.match(emailRegEx) && Email.match(emailRegEx) &&  Email != cemail )
+	{
+		document.getElementById('errcEmail').innerHTML = "Email and confirm email do not match.";
+		document.getElementById('errcEmail').style.display = 'block';
+		document.getElementById('errcEmail').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	
+	if (fname == "" )
+	{
+		document.getElementById('errfname').innerHTML = "Please enter first name.";
+		document.getElementById('errfname').style.display = 'block';
+		document.getElementById('errfname').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (country == "" )
+	{
+		document.getElementById('errcountry').innerHTML = "Please select country.";
+		document.getElementById('errcountry').style.display = 'block';
+		document.getElementById('errcountry').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (state == "" )
+	{
+		document.getElementById('errstate').innerHTML = "Please select state.";
+		document.getElementById('errstate').style.display = 'block';
+		document.getElementById('errstate').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (document.getElementById('attendytu').checked == false &&  document.getElementById('attendytu1').checked == false)
+	{
+		document.getElementById('errattendytu').innerHTML = "Please select have you attended any YTU Workshops or Retreats.";
+		document.getElementById('errattendytu').style.display = 'block';
+		document.getElementById('errattendytu').style.color = '#FF0000';
+		flag = 'f';
+	}
+	 if (document.getElementById('chkprivacy').checked == false )
+	{
+		document.getElementById('errregisteras').innerHTML = "Please accept Terms of Service and Privacy Policy..";
+		document.getElementById('errregisteras').style.display = 'block';
+		document.getElementById('errregisteras').style.color = '#3776C0';
+		flag = 'f';
+	} 
+	if (document.getElementById('attendcls1').checked == false &&  document.getElementById('attendcls2').checked == false && document.getElementById('attendcls3').checked == false)
+	{
+		document.getElementById('errattendcls').innerHTML = "Please select attended YTU Classes.";
+		document.getElementById('errattendcls').style.display = 'block';
+		document.getElementById('errattendcls').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	
+	
+	if (flag == 'f')
+	{
+		return false;
+	} 
+	else
+	{
+		return true;
+	}
+	
+
+}
+
+
+function validatefrmquick()
+{
+	var emailRegEx = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+	var Email = document.getElementById('qemail').value;
+	var cemail = document.getElementById('qcemail').value;
+	var fname = document.getElementById('qfname').value;
+	var pwd = document.getElementById('qpwd').value;
+	var cpwd = document.getElementById('qcpwd').value;
+	//var TimeZone = document.getElementById('TimeZone').value;
+
+	var flag = 'g';
+	document.getElementById('errqemail').style.display = 'none';
+	document.getElementById('errqcemail').style.display = 'none';
+	document.getElementById('errqfname').style.display = 'none';
+	document.getElementById('errregisteras').style.display = 'none';
+	//document.getElementById('errTimeZone').style.display = 'none';
+	
+	if (document.getElementById('chkprivacy').checked == false )
+	{
+		document.getElementById('errregisteras').innerHTML = "Please accept Terms of Service and Privacy Policy.";
+		document.getElementById('errregisteras').style.display = 'block';
+		document.getElementById('errregisteras').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	if (fname == "" )
+	{
+		document.getElementById('errqfname').innerHTML = "Please enter first name.";
+		document.getElementById('errqfname').style.display = 'block';
+		document.getElementById('errqfname').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (!Email.match(emailRegEx) )
+	{
+		document.getElementById('errqemail').innerHTML = "Please enter valid email address.";
+		document.getElementById('errqemail').style.display = 'block';
+		document.getElementById('errqemail').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	if (!cemail.match(emailRegEx) )
+	{
+		document.getElementById('errqcemail').innerHTML = "Please enter valid confirm email address.";
+		document.getElementById('errqcemail').style.display = 'block';
+		document.getElementById('errqcemail').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	if (cemail.match(emailRegEx) && Email.match(emailRegEx) &&  Email != cemail )
+	{
+		document.getElementById('errqcemail').innerHTML = "Email and confirm email do not match.";
+		document.getElementById('errqcemail').style.display = 'block';
+		document.getElementById('errqcemail').style.color = '#FF0000';
+		flag = 'f';
+	} 
+	if (pwd == "")
+	{
+		document.getElementById('errqpwd').innerHTML = "Please enter password.";
+		document.getElementById('errqpwd').style.display = 'block';
+		document.getElementById('errqpwd').style.color = '#FF0000';
+		flag = 'f';
+	}
+	if (cpwd == "")
+	{
+		document.getElementById('errqcpwd').innerHTML = "Please enter confirm password.";
+		document.getElementById('errqcpwd').style.display = 'block';
+		document.getElementById('errqcpwd').style.color = '#FF0000';
+		flag = 'f';
+	}
+	/* if (TimeZone == "")
+	{
+		document.getElementById('errTimeZone').innerHTML = "Please select time zone.";
+		document.getElementById('errTimeZone').style.display = 'block';
+		document.getElementById('errTimeZone').style.color = '#FF0000';
+		flag = 'f';
+	} */
+	if (pwd != "" && cpwd !="" && pwd != cpwd)
+	{
+		document.getElementById('errqcpwd').innerHTML = "Password and confirm password do not match.";
+		document.getElementById('errqcpwd').style.display = 'block';
+		document.getElementById('errqcpwd').style.color = '#FF0000';
+		flag = 'f';
+	}
+	
+	if ($.trim($("input[@name=verificationCode]").val()) == '') {
+
+		document.getElementById('errvarify').innerHTML = "Please enter the verification code. ";
+		document.getElementById('errvarify').style.display = 'block';
+		document.getElementById('errvarify').style.color = '#FF0000';
+		flag = 'f';
+
+	}else{
+		var thecode =$("input[@name=verificationCode]").val();
+		
+		$.ajax({
+		url: "gateway/captchaCheck.php",
+		data: "code="+thecode,
+		//beforeSend: function(){$("#profile_html_joining_reason").show("slow");}, //show loading just when link is clicked
+		//complete: function(){ $("#profile_html_joining_reason").hide("slow");}, 
+		async: false,
+		success: function(html){
+			
+			if(html == "0"){
+			//errStr += '* Please enter correct verification code.\n';
+			document.getElementById('errvarify').innerHTML = "Please enter correct verification code. ";
+			document.getElementById('errvarify').style.display = 'block';
+			document.getElementById('errvarify').style.color = '#FF0000';
+			flag = 'f';
+			
+			}else{
+			//document.getElementById('errvarify').innerHTML = "Please enter correct verification code. ";
+			document.getElementById('errvarify').style.display = 'none';
+			//document.getElementById('errvarify').style.color = '#FF0000';
+				//flag = '';
+			}
+		}
+		
+		});
+		
+		
+	}
+	if (flag == 'f')
+	{
+		return false;
+	} 
+	else
+	{
+		return true;
+	}
+
+
+}

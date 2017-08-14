@@ -1,0 +1,8 @@
+name = Cart Conditions
+description = Checks for specific conditions in cart for products
+dependencies[] = uc_cart
+package = "Ubercart - extra"
+core = 7.x
+version = "7.x-1.0"
+
+files[] = classes/UcCartConditions.inc

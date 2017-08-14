@@ -1,0 +1,529 @@
+<?php
+
+define('AT_HOME_PROGRAM_FINDER_FORM','webform_client_form_54');
+define('AT_HOME_PROGRAM_FINDER_FORM_NID',54);
+
+define('WEBFORM_YOGA_EXPERIENCE',6);
+define('WEBFORM_CURRENT_EXERCISES',7);
+define('WEBFORM_MOD_SEV',1);
+define('WEBFORM_OCC_CHR',2);
+define('WEBFORM_FIRST_NAME',9);
+
+define('CATALOG_AT_HOME_PROGRAM',40);
+define('CATALOG_QUICKFIX_DVDS',41);
+define('CATALOG_QUICKFIX_ONLINE_VIDEOS',35);
+define('CATALOG_THERAPY_BALL_PROGRAMS',34);
+
+define('PRODUCT_LANDING_AT_HOME_PROGRAM',25);
+define('PRODUCT_LANDING_QUICKFIX_ONLINE_VIDEOS',46);
+define('PRODUCT_LANDING_QUICKFIX_DVDS',58);
+define('PRODUCT_LANDING_THERAPY_BALL_PROGRAMS',37);
+
+define('AT_HOME_LEVEL_1_PAGE',56);
+define('AT_HOME_LEVEL_2_PAGE',61);
+define('AT_HOME_LEVEL_3_PAGE',64);
+
+/**
+ * Implements hook_menu().
+ */
+function at_home_menu() {
+  $items['customized-program'] = array(
+    'title' => 'Customized At Home Program',
+    'page callback' => 'at_home_customized_program_page_callback',
+    'access arguments' => array('access content'),
+  );
+
+  $items['customized-program-confirm'] = array(
+    'title' => 'Customized At Home Program Confirmation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('at_home_customized_confirm_form'),
+    'access arguments' => array('access content'),
+  );
+
+  $items['user/%user/program-finder-submissions'] = array(
+  	'title' => 'View Program Finder Submissions',
+  	'page callback' => 'at_home_view_user_submissions',
+  	'page arguments' => array(1),
+  	'access arguments' => array('access ytu settings'),
+  	'type' => MENU_LOCAL_TASK,
+  	'file' => 'at_home.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_init().
+ */
+function at_home_init() {
+	if(arg(0) == 'node' && arg(1) == AT_HOME_PROGRAM_FINDER_FORM_NID){
+		if(account_is_at_home()){
+			global $user;
+			drupal_goto('user/'.$user->uid.'/program-manager');
+		}
+	}
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function at_home_admin_paths() {
+  $paths = array(
+    'user/*/program-finder-submissions' => TRUE,
+  );
+  return $paths;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function at_home_form_alter(&$form, &$form_state, $form_id) {
+	if($form_id == AT_HOME_PROGRAM_FINDER_FORM){
+        if(at_home_user_filled_out_form()){
+          drupal_goto('customized-program');
+        }
+
+		$page_num = $form['details']['page_num']['#value'];
+
+		$form['#prefix'] = theme('at_home_program_finder_progress',array('page_num' => $page_num));
+
+		$form['#validate'][] = 'at_home_program_finder_form_validate';
+
+		$form['#submit'][] = 'at_home_program_finder_form_submit';
+
+		$form['actions']['#attributes']['class'][] = 'clearfix';
+
+		if(isset($form['submitted']['do_you_have_any_physical_ailments_or_pains'])){
+			drupal_add_js(drupal_get_path('module', 'at_home').'/at_home.js');
+			drupal_add_js(array('at_home' => array('paop_options' => $form['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_1']['#grid_questions'])), 'setting');
+			$form['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_1']['#prefix'] = '<label for="edit-submitted-do-you-have-any-physical-ailments-or-pains-paop-grid-1">'.$form['submitted']['do_you_have_any_physical_ailments_or_pains']['#title'].'</label>';
+		}
+
+		if(isset($form['submitted']['are_you_pregnant'])){
+			$form['submitted']['are_you_pregnant']['#states'] = array(
+				'visible' => array(
+					':input[name="submitted[gender]"]' => array('value' => 'female'),
+				),
+			);
+
+			if(isset($form['submitted']['check_with_doctor_confirm'])){
+				$form['submitted']['check_with_doctor_confirm']['#states'] = array(
+					'visible' => array(
+						':input[name="submitted[gender]"]' => array('value' => 'female'),
+						':input[name="submitted[are_you_pregnant]"]' => array('value' => 'yes'),
+					),
+				);
+			}
+		}
+
+		if($page_num == 3 && isset($form['submitted']['first_name'])){
+			$form['submitted']['first_name']['#prefix'] = '<label class="red-label">Finally, tell us a little about yourself.</label>';
+		}
+
+		if(isset($form['actions']['previous'])){
+			$form['actions']['previous']['#attributes']['class'] = array('green-button','large');
+		}
+
+		if(isset($form['actions']['next'])){
+			$form['actions']['next']['#attributes']['class'] = array('green-button','large');
+			$form['actions']['next']['#prefix'] = '<div class="next"><span>Next Step</span>';
+			$form['actions']['next']['#suffix'] = '</div>';
+		}
+
+		if(isset($form['actions']['submit'])){
+			$form['actions']['#attributes']['class'][] = 'last-page';
+			$form['actions']['submit']['#attributes']['class'] = array('green-button','large');
+			$form['actions']['submit']['#prefix'] = '<div class="next"><span>Next Step</span>';
+			$form['actions']['submit']['#suffix'] = '</div>';
+		}
+		
+	}
+}
+
+function at_home_program_finder_form_validate($form,&$form_state){
+	if(isset($form_state['values']['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_1'])){
+		$to_validate = array();
+		foreach($form_state['values']['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_1'] as $delta => $value){
+			if(!empty($value)){
+				$to_validate[$delta] = $delta;
+			}
+		}
+		foreach($form_state['values']['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_2'] as $delta => $value){
+			if(!empty($value)){
+				$to_validate[$delta] = $delta;
+			}
+		}
+		$missing_option = false;
+		if(!empty($to_validate)){
+			foreach($to_validate as $name){
+				if(empty($form_state['values']['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_1'][$name]) || 
+					empty($form_state['values']['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_2'][$name])){
+					$missing_option = true;
+				}
+			}
+		}
+		if($missing_option){
+			drupal_add_js(drupal_get_path('module', 'at_home').'/at_home.js');
+			drupal_add_js(array('at_home' => array('paop_options' => $form['submitted']['do_you_have_any_physical_ailments_or_pains']['paop_grid_1']['#grid_questions'])), 'setting');
+			form_set_error('','Please select both options for any checked body parts.');
+		}
+	}
+	if(isset($form_state['values']['submitted']['gender'])){
+		if($form_state['values']['submitted']['gender'] == 'female'){
+			if(empty($form_state['values']['submitted']['are_you_pregnant'])){
+				form_set_error('are_you_pregnant','Please let us know if you are pregnant.');
+			}
+			else{
+				if($form_state['values']['submitted']['are_you_pregnant'] == 'yes' && $form_state['values']['submitted']['check_with_doctor_confirm']['yes'] !== 'yes'){
+					form_set_error('check_with_doctor_confirm','Please confirm that your doctor has approved you for a Yoga based At Home fitness program.');
+				}
+			}
+		}
+	}
+}
+
+function at_home_program_finder_form_submit($form,&$form_state){
+	
+	if($form_state['webform_completed']){
+
+		if(at_home_user_filled_out_form()){
+			unset($_SESSION['at_home_program_finder']);
+		}
+
+		$_SESSION['at_home_program_finder']['first_name'] = $form_state['values']['submitted'][WEBFORM_FIRST_NAME];
+
+		if(in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) && in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])){
+			$form_state['redirect'] = array('customized-program-confirm');
+		}
+
+		$none_or_walking = in_array('none',$form_state['values']['submitted'][WEBFORM_CURRENT_EXERCISES]) || 
+						   in_array('walking',$form_state['values']['submitted'][WEBFORM_CURRENT_EXERCISES]);
+
+		foreach($form_state['values']['submitted'][WEBFORM_CURRENT_EXERCISES] as $value){
+			if($value != 'none' && $value != 'walking'){
+				$none_or_walking = false;
+				break;
+			}
+		}
+
+		/**
+		 * Determine paragraph 1 based on business rules
+		 */
+		
+		if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'n' &&
+			$none_or_walking &&
+			!in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) &&
+			!in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_1';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_1_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'n' &&
+			$none_or_walking &&
+			!in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) &&
+			in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_2';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_1_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'n' &&
+			!$none_or_walking &&
+			empty($form_state['values']['submitted'][WEBFORM_MOD_SEV]) &&
+			empty($form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_3';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_2_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'n' &&
+			!$none_or_walking &&
+			!in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) &&
+			!in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_4';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_2_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'b' &&
+			!in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) &&
+			!in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_5';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_2_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'b' &&
+			in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) ||
+			in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_6';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_1_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'i' &&
+			!in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) &&
+			!in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_7';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_3_PAGE;
+		}
+		else if(
+			$form_state['values']['submitted'][WEBFORM_YOGA_EXPERIENCE] == 'i' &&
+			in_array('severe', $form_state['values']['submitted'][WEBFORM_MOD_SEV]) ||
+			in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p1'] = 'option_8';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_2_PAGE;
+		}
+		else{
+			$_SESSION['at_home_program_finder']['p1'] = 'option_1';
+			$_SESSION['at_home_program_finder']['level_page'] = AT_HOME_LEVEL_1_PAGE;
+		}
+
+		/**
+		 * Determine paragraph 2 based on business rules
+		 */
+		if(
+			in_array('chronic', $form_state['values']['submitted'][WEBFORM_OCC_CHR])
+		){
+			$_SESSION['at_home_program_finder']['p2'] = 'option_1';
+		}
+		else{
+			$_SESSION['at_home_program_finder']['p2'] = 'option_2';
+		}
+	}
+}
+
+/**
+ * Implements hook_theme().
+ */
+function at_home_theme($existing, $type, $theme, $path) {
+  return array(
+    'at_home_program_finder_progress' => array(
+      'template' => 'program-finder-progress',
+      'variables' => array('page_num' => ''),
+    ),
+    'at_home_customized_program' => array(
+    	'template' => 'customized-program',
+    	'variables' => array(
+    		'atcp_header' => '',
+    		'atcp_p1' => '',
+    		'atcp_p2' => '',
+    		'atcp_p3' => '',
+    		'atcp_left' => '',
+    		'atcp_right' => '',
+    		'atcp_box_header' => '',
+    		'atcp_box_footer' => '',
+    		'atcp_box_popup' => '',
+    		'subscription_teaser' => array(),
+    	),
+    ),
+  );
+}
+
+function at_home_messages_info(){
+	return array(
+    'ahpf_p1_option_1'=>array(
+      'title'=>"Paragraph 1 Option 1",
+      'description'=>"Basic L1",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_2'=>array(
+      'title'=>"Paragraph 1 Option 2",
+      'description'=>"L1, Chronic",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_3'=>array(
+      'title'=>"Paragraph 1 Option 3",
+      'description'=>"L1 upped to L2 due to regular exercise (a)",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_4'=>array(
+      'title'=>"Paragraph 1 Option 4",
+      'description'=>"L1 upped to L2 due to regular exercise (b)",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_5'=>array(
+      'title'=>"Paragraph 1 Option 5",
+      'description'=>"Basic L2",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_6'=>array(
+      'title'=>"Paragraph 1 Option 6",
+      'description'=>"L2 dropped to L1 due to Severe or Chronic",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_7'=>array(
+      'title'=>"Paragraph 1 Option 7",
+      'description'=>"Basic L3",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p1_option_8'=>array(
+      'title'=>"Paragraph 1 Option 8",
+      'description'=>"L3 dropped to L2 due to Severe or Chronic",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_1",
+      ),
+    'ahpf_p2_option_1'=>array(
+      'title'=>"Paragraph 2 Option 1",
+      'description'=>"chronic ailments checked",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_2",
+      ),
+    'ahpf_p2_option_2'=>array(
+      'title'=>"Paragraph 2 Option 2",
+      'description'=>"no chronic ailments checked",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_2",
+      ),
+    'ahpf_p3'=>array(
+      'title'=>"Paragraph 3",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_paragraph_3",
+      ),
+    'ahpf_too_many_issues'=>array(
+      'title'=>"Too Many Issues Paragraph",
+      'description'=>"Any Severe/Chronic Ailment checked",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"program_finder_too_many_issues",
+      ),
+    'atcp_header'=>array(
+      'title'=>"Customized Program Header",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"customized_program",
+      ),
+    'atcp_footer'=>array(
+      'title'=>"Customized Program Footer",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"customized_program",
+      ),
+    'atcp_right'=>array(
+      'title'=>"Customized Program Right",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"customized_program",
+      ),
+    'atcp_box_header'=>array(
+      'title'=>"Customized Program Blue Box Header",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"customized_program",
+      ),
+    'atcp_box_footer'=>array(
+      'title'=>"Customized Program Blue Box Footer",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"customized_program",
+      ),
+    'atcp_box_popup'=>array(
+      'title'=>"Customized Program Blue Box Pop Up",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"at_home",
+      'fieldset'=>"customized_program",
+      ),
+    'ahpl_sub_header'=>array(
+      'title'=>"Subscription Header",
+      'description'=>"Appears above subscription products on At Home Level page",
+      'type'=>'richtext',
+      'group'=>'at_home',
+      'fieldset'=>'At Home Level',
+    ),
+    'ahpl_sub_cancel'=>array(
+      'title'=>"Subscription Cancel Copy",
+      'description'=>"Appears below subscription products on At Home Level page",
+      'type'=>'richtext',
+      'group'=>'at_home',
+      'fieldset'=>'At Home Level',
+    ),
+  );
+}
+
+function at_home_customized_program_page_callback(){
+
+	if(!at_home_user_filled_out_form()){
+		drupal_goto('ytu-home-program-finder');
+	}
+
+	$subscription = array(
+		'teaser' => node_view(node_load($_SESSION['at_home_program_finder']['level_page']),'teaser'),
+		'#suffix' => l('Choose Your Program','node/'.$_SESSION['at_home_program_finder']['level_page'],array('attributes' => array('class' => array('red-button')))),
+	);
+
+	$render = array(
+		'#theme' => 'at_home_customized_program',
+		'#atcp_header' => str_replace('%name',$_SESSION['at_home_program_finder']['first_name'],_mm('atcp_header')),
+		'#atcp_p1' => _mm('ahpf_p1_'.$_SESSION['at_home_program_finder']['p1']),
+		'#atcp_p2' => _mm('ahpf_p2_'.$_SESSION['at_home_program_finder']['p2']),
+		'#atcp_p3' => _mm('ahpf_p3'),
+		'#atcp_left' => _mm('atcp_footer'),
+		'#atcp_right' => _mm('atcp_right'),
+		'#atcp_box_header' => _mm('atcp_box_header'),
+		'#atcp_box_footer' => _mm('atcp_box_footer'),
+		'#atcp_box_popup' => _mm('atcp_box_popup'),
+		'#subscription_teaser' => $subscription,
+	);
+
+	return $render;
+}
+
+function at_home_customized_confirm_form($form,&$form_state){
+	$form['confirm'] = array(
+		'#type' => 'checkbox',
+		'#required' => true,
+		'#title' => t('I Agree'),
+		'#prefix' => _mm('ahpf_too_many_issues'),
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('I Agree'),
+		'#attributes' => array(
+			'class' => array('blue-button'),
+		),
+	);
+
+	return $form;
+}
+
+function at_home_customized_confirm_form_submit($form,&$form_state){
+	drupal_goto('customized-program');
+}
+
+function at_home_user_filled_out_form(){
+  return isset($_SESSION['at_home_program_finder']);
+}
+
+function at_home_display_cart_link_to_program_finder(){
+  return !account_is_at_home() && at_home_user_filled_out_form() && !at_home_subscription_cart_has_at_home_program_product();
+}

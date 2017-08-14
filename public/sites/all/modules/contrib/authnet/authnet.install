@@ -1,0 +1,47 @@
+<?php
+/**
+ * @file
+ * Authorize.Net API
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function authnet_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+
+    // Check to see if the Authorize.net SDK is available.
+    $library = authnet_sdk_path(TRUE);
+    if (file_exists($library)) {
+      $requirements['authnet_sdk'] = array(
+        'title' => $t('Authorize.net SDK'),
+        'severity' => REQUIREMENT_OK,
+        'value' => $t('Installed: %path', array('%path' => $library)),
+      );
+    }
+    else {
+      $requirements['authnet_sdk'] = array(
+        'title' => $t('Authorize.net SDK'),
+        'severity' => REQUIREMENT_ERROR,
+        'value' => $t('Authorize.net SDK not installed. You need to download the !authorizenet and put it in your %path directory.', array('!authorizenet' => l(t('Authorize.net SDK Library'), 'http://developer.authorize.net/downloads/'), '%path' => authnet_sdk_path())),
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function authnet_uninstall() {
+
+  // Delete module variables.
+  variable_del('authnet_login_id');
+  variable_del('authnet_transaction_key');
+  variable_del('authnet_sandbox');
+  variable_del('authnet_cim_validation_mode');
+}

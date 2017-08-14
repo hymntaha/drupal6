@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * Implements hook_form_alter().
+ */
+function contact_us_form_alter(&$form, &$form_state, $form_id) {
+	if($form_id == 'webform_client_form_65'){
+		$form['submitted']['address']['street_block']['thoroughfare']['#required'] = false;
+		$form['submitted']['address']['locality_block']['postal_code']['#required'] = false;
+	}
+}

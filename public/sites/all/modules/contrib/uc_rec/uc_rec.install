@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file Install file for uc_rec module
+ */
+
+/**
+ * Implements hook_install().
+ */
+function uc_rec_install() {
+  $sql = "SELECT o.uid, p.nid, o.modified FROM {uc_order_products} p INNER JOIN {uc_orders} o
+          ON p.order_id=o.order_id GROUP BY o.uid, p.nid";
+  // hack: this is to solve the all-1 cases. [#510222]
+  //$hack_sql = "SELECT 0, nid, 0 FROM {uc_products}";
+  //$sql = "$sql UNION ALL $hack_sql";
+
+  $apps['uc_rec_i2i'] = array(
+    'title' => st('Ubercart Products Recommender (item2item)'),
+    'params' => array(
+      'algorithm' => 'item2item',
+      'sql' => $sql,
+      'fields' => array('uid', 'nid', NULL, 'modified'),
+      'entity_type' => array(
+          'similarity' => array('node', 'node'),
+          'prediction' => array('users', 'node')
+      ),
+      'performance' => 'auto',
+      'preference' => 'boolean',
+    ),
+  );
+  recommender_app_register($apps);
+}
+
+/**
+ * Implements hook_disable().
+ */
+function uc_rec_disable() {
+  recommender_app_unregister('uc_rec_i2i');
+}

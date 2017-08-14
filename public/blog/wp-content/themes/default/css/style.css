@@ -1,0 +1,133 @@
+.page-blogs h2.pagetitle {
+  font-size: 26px;
+  font-weight: 400;
+}
+.page-blogs .post {
+  margin-top: 30px;
+}
+.page-blogs .post:first-of-type {
+  margin-top: 10px;
+}
+.page-blogs .post > h2 {
+  margin-bottom: 0;
+}
+.page-blogs .post > h2 a {
+  font-size: 22px;
+  font-weight: 600;
+  color: #5f0e09;
+}
+.page-blogs .post > h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  margin-top: 30px;
+}
+.page-blogs .post > h3 a {
+  color: #5f0e09;
+}
+.page-blogs #page-header {
+  display: none;
+}
+.page-blogs .alignright {
+  float: right;
+}
+.page-blogs .page-header {
+  margin-top: 30px;
+}
+.page-blogs .navigation {
+  margin-bottom: 30px;
+}
+.page-blogs .entry_author_image {
+  margin-right: 15px;
+  width: 60px;
+}
+.page-blogs .entry p:first-of-type {
+  margin-top: 15px;
+}
+.page-blogs .entry > .addthis_toolbox {
+  margin-top: 10px;
+}
+.page-blogs input {
+  height: 40px;
+  border: 1px solid #e0e0e0;
+  padding-left: 10px;
+}
+.page-blogs textarea {
+  border: 1px solid #e0e0e0;
+}
+.page-blogs #sidebar {
+  margin-top: 70px !important;
+}
+.page-blogs #sidebar ul {
+  list-style: none;
+  padding-left: 0;
+}
+@media screen and (min-width: 768px) {
+  .page-blogs #sidebar > ul {
+    padding-left: 20px;
+  }
+}
+.page-blogs #searchform .search-field {
+  width: 77%;
+}
+@media screen and (min-width: 768px) {
+  .page-blogs #searchform .search-field {
+    width: 70%;
+  }
+}
+@media screen and (min-width: 1200px) {
+  .page-blogs #searchform .search-field {
+    width: 80%;
+  }
+}
+.page-blogs #searchform button {
+  float: right;
+}
+.page-blogs h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #5f0e09;
+  margin-bottom: 10px;
+}
+.page-blogs .widget {
+  margin-top: 30px;
+}
+.page-blogs #respond h3 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #5f0e09;
+  margin-bottom: 10px;
+  margin-top: 30px;
+}
+.page-blogs #respond label {
+  display: block;
+  clear: left;
+}
+.page-blogs #respond input {
+  min-width: 250px;
+}
+.page-blogs #respond #submit {
+  margin-top: 30px;
+}
+.page-blogs .about-author {
+  margin-top: 20px;
+}
+.page-blogs #comments {
+  font-size: 22px;
+  font-weight: 600;
+  color: #5f0e09;
+  margin-bottom: 10px;
+  margin-top: 30px;
+}
+.page-blogs ol {
+  padding-left: 20px;
+}
+.page-blogs ol li {
+  margin-top: 15px;
+}
+.page-blogs ol li:first-child {
+  margin-top: 0;
+}
+.page-blogs .textwidget form h2 {
+  margin-bottom: 0;
+}

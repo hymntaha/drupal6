@@ -1,0 +1,5 @@
+name = Zoho
+description = Zoho Integration
+package = "Yoga Tune Up"
+core = 7.x
+version = 7.x-1.1

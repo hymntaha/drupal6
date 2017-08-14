@@ -1,0 +1,1687 @@
+/**
+ * @file
+ * Form Styling
+ */
+
+@import "base";
+
+div.modal-forms-modal-content{
+  .popups-container{
+  }
+
+  .modal-content{
+    overflow:hidden;
+  }
+
+  .messages{
+    position:static;
+    font-size:10px;
+    padding-top:5px;
+    padding-bottom:5px;
+  }
+} 
+
+.form-item { /* Wrapper for a form element (or group of form elements) and its label */
+  margin: 1.5em 0;
+
+  input.error,
+  textarea.error,
+  select.error { /* Highlight the form elements that caused a form submission error */
+    border: 1px solid #c00;
+  }
+
+  label { /* The label for a form element */
+    display: block;
+    font-weight: bold;
+  }
+
+  &.webform-container-inline label{
+    @include inline-block;
+    margin-right:0;
+  }
+
+  label.option { /* The label for a radio button or checkbox */
+    display: inline;
+    font-weight: normal;
+  }
+
+  label > p{
+    display:inline;
+  }
+
+  .form-required { /* The part of the label that indicates a required field */
+    color: #c00;
+  }
+
+  .description { /* The descriptive help text (separate from the label) */
+    font-size: 0.85em;
+  }
+
+  .form-checkboxes & ,
+  .form-radios & { /* Pack groups of checkboxes and radio buttons closer together */
+    margin: 0; /* Drupal core uses "0.4em 0" */
+  }
+}
+
+.form-submit { /* The submit button */
+  display:block;
+}
+
+.container-inline {
+  div,
+  label { /* Inline labels and form divs */
+    display: inline;
+  }
+}
+
+.tips { /* Tips for Drupal's input formats */
+}
+
+a.button { /* Buttons used by contrib modules like Media */
+  @include appearance(button);
+}
+
+/*
+ * Password confirmation
+ */
+
+.password-parent,
+.confirm-parent {
+  margin: 0;
+}
+
+/*
+ * Search (search-block-form.tpl.php)
+ */
+
+#block-search-form { /* Wrapper for the search form */
+}
+
+/*
+ * Drupal's default login form block
+ */
+
+#user-login-form {
+  text-align: left; /* LTR */
+
+  /*
+   * OpenID
+   *
+   * The default styling for the OpenID login link seems to assume Garland's
+   * styling of list items.
+   */
+
+  ul { /* OpenID creates a new ul above the login form's links. */
+    margin-bottom: 0; /* Position OpenID's ul next to the rest of the links. */
+  }
+
+  html.js & li.openid-link,
+  li.openid-link { /* The "Log in using OpenID" link. */
+    margin-top: 1.5em;
+    margin-left: -20px; /* LTR */ /* Un-do some of the padding on the ul list. */
+  }
+
+  li.user-link { /* The "Cancel OpenID login" link. */
+    margin-top: 1.5em;
+  }
+}
+
+form[id^="user-login"]{
+  width:252px;
+  font-size:11px;
+
+  ul {
+    margin: 1.5em 0;
+  }
+
+  .form-item{
+    color:#666;
+    margin: 2px;
+    label{
+      width: 80px;
+      text-align: right;
+      padding-right: 4px;
+      font-weight: bold;
+      @include inline-block;
+    }
+    .form-text{
+      font-family: 'Trebuchet MS', Verdana, Arial;
+      @include inline-block;
+      padding: 2px;
+      background: #eee;
+      border: 1px solid #fff;
+      width: 153px;
+      font-size:14px;
+    }
+  }
+
+  .form-actions{
+    margin-left:86px;
+
+    .form-submit{
+      @include spacing-reset;
+      background-repeat:no-repeat;
+      background-color:transparent;
+      margin:4px 0 0 4px;
+      color:#fff;
+      font-size:11px;
+      font-weight:bold;
+    }
+
+    input[value="Log in"]{
+      background-image:url('../images/send.png');
+      width:50px;
+      height:24px;
+    }
+
+    input[value="Cancel"]{
+      background-image:url('../images/cancel.png');
+      width:65px;
+      height:24px;
+    }
+  }
+
+  .forgot-password{
+    margin-left:90px;
+  }
+
+  .fb-signin{
+    margin-top: 31px;
+    border-top: 3px solid #ebecf0;
+    position: relative;
+    text-align:center;
+    h2{
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      padding: 0 10px; 
+      margin-left: -38px;
+      background: white;
+    }
+    img{
+      margin: 30px auto 0;
+    }
+  }
+}
+
+#user-pass{
+  font-size:11px;
+
+  .form-item{
+    padding-top:8px;
+    padding-bottom:5px;
+    margin-bottom:0;
+
+    label{
+      @include inline-block;
+      margin-right:8px;
+      text-align:right;
+      width:200px;
+    }
+    .form-text{
+      width:287px;
+      font-size: 14px;
+      @include inline-block;
+    }
+  }
+
+  #recaptcha_area{
+    margin-left:207px;
+  }
+
+  .form-actions{
+    padding:5px 0;
+    margin:0;
+    
+    #edit-submit{
+      @include spacing-reset;
+      background-image:url('../images/submit-button.gif');
+      background-repeat:no-repeat;
+      width:62px;
+      height:21px;
+      @include text-indent;
+      margin-left:211px;
+    }
+  }
+}
+
+#user-register-form{
+
+  .field-name-field-last-name{
+    display:none;
+  }
+
+  .form-item{
+    padding-top:8px;
+    padding-bottom:5px;
+    margin:0;
+    font-size:11px;
+
+    &.form-item-name{
+    }
+
+    & > label{
+      @include inline-block;
+      margin-right:8px;
+      text-align:right;
+      width:$label-width;
+    }
+    & > .form-text{
+      width:287px;
+      @include inline-block;
+    }
+    & > .description{
+      margin-left:$margin-offset;
+    }
+
+    &.form-type-checkbox{
+      padding-left:$margin-offset;
+
+      label{
+        width:auto;
+        p{
+          display:inline;
+        }
+      }
+    }
+
+    &.form-type-password-confirm{
+      .form-type-password{
+        label{
+          @include inline-block;
+          margin-right:8px;
+          text-align:right;
+          width:$label-width;
+        }
+      }
+      .form-text{
+        width:auto;
+      }
+      .form-item,
+      div.password-strength,
+      div.password-confirm{
+        margin:0;
+      }
+      .form-item-pass-pass1,
+      .form-item-pass-pass2{
+        width:585px;
+      }
+      .password-suggestions{
+        display:none !important;
+      }
+    }
+  }
+
+  .form-actions{
+    padding:5px 0;
+    margin:0;
+    
+    #edit-submit{
+      @include spacing-reset;
+      background-image:url('../images/submit-button.gif');
+      background-repeat:no-repeat;
+      width:62px;
+      height:21px;
+      @include text-indent;
+      margin-left:$margin-offset;
+    }
+  }
+}
+
+.captcha{
+  margin-left:$margin-offset;
+}
+
+#teacher-search-form{
+  font-size:11px;
+
+  .form-type-select{
+    margin:0;
+    margin-bottom:10px;
+
+    #edit-teacher{
+      width:100%;
+    }
+  }
+
+  .form-submit,
+  .meet-all-teachers{
+    @include link-image-background;
+    height:21px;
+  }
+
+  .form-submit{
+    width:91px;
+    background-image:url('../images/search-button.gif');
+    margin-right:3px;
+    display:none;
+  }
+
+  .meet-all-teachers{
+    width:119px;
+    background-image:url('../images/meet-all-teachers.gif');
+  }
+}
+
+#teacher-search-zip-radius-form{
+  font-size:11px;
+  margin-top:10px;
+  border-top:1px solid #E8E8E8;
+  padding-top:10px;
+
+  .form-item{
+    @include spacing-reset;
+    @include inline-block;
+    margin-bottom:10px;
+
+    &.form-item-zip-code{
+      margin-right:10px;
+    }
+
+    &.form-item-country {
+      width:100%;
+      select{
+        width:100%;
+      }
+    }
+  }
+
+  .form-submit{
+    @include link-image-background;
+    height:21px;
+    width:91px;
+    background-image:url('../images/search-button.gif');
+  }
+}
+
+.sep{
+  border-top:1px solid #E8E8E8;
+  text-align: center;
+  span{
+    display:block;
+    margin:-8px auto 0 auto;
+    background-color: #FFF;
+    width:40px;
+  }
+}
+
+#workshop-ajax-wrapper,
+#class-ajax-wrapper{
+  form{
+    margin-left:137px;
+    .form-item{
+      margin:5px 8px 5px 0;
+      @include inline-block;
+      label{
+        @include inline-block;
+        width:60px;
+
+        &[for^="edit-zip"],
+        &[for^="edit-radius"]{
+          display:block;
+          width:auto;
+        }
+      }
+      select{
+        width:155px;
+      }
+    }
+    .submit-wrapper{
+      margin-top:8px;
+      
+      .form-submit{
+        @include link-image-background;
+        height:18px;
+        width:103px;
+        background-image:url('../images/find-workshops-retreats.gif');
+        margin-right:10px;
+      }
+      .find-all{
+        @include link-image-background;
+        height:18px;
+        width:103px;
+        background-image:url('../images/find-all.gif');
+      }
+    }
+
+    .sep{
+      margin-top:15px;
+    }
+  }
+}
+
+form[id^="webform-client-form-12"]{
+  .webform-component-checkboxes{
+    label{
+      vertical-align:top;
+      
+      &[for="edit-submitted-send-me-monthly-newsletters"]{
+        visibility:hidden;
+      }
+    }
+    .form-checkboxes{
+      @include inline-block;
+      vertical-align:top;
+
+      & > .form-item{
+        display:block;
+        margin:5px 0 !important;
+        label{
+          font-size:1.2em;
+        }
+      }
+    }
+  }
+  
+  .street-block,
+  .form-item-submitted-address-postal-code{
+    display:none;
+  }
+}
+
+//Bring YTU classes to your area form
+#webform-client-form-11,
+form[id^="webform-client-form-12"],
+#webform-client-form-65{
+  label{
+    width:200px;
+    text-align:right;
+    padding-right:5px;
+    vertical-align:middle;
+    font-size:11px;
+
+    .block-webform &{
+      width:88px;
+      text-align:left;
+    }
+
+    .page-cart-checkout-complete .block-webform &{
+      width:200px;
+      text-align:right;
+    }
+  }
+  div[id^="addressfield-wrapper"]{
+    .addressfield-container-inline > div.form-item{
+      float:none;
+      margin:1.5em 0;
+    }
+
+    .form-item{
+      label{
+        @include inline-block;
+      }
+    }
+  }
+
+  .block-webform &{
+    .form-item{
+      margin:5px 0;
+    }
+  }
+
+  .page-cart-checkout-complete .block-webform &{
+    .form-item{
+      margin:1.5em 0;
+    }
+  }
+
+  .form-text{
+    width:280px;
+
+    .block-webform &{
+      width:126px;
+    }
+    .page-cart-checkout-complete .block-webform &{
+      width:280px;
+    }
+  }
+
+  .webform-component-textarea{
+    .form-textarea-wrapper{
+      width:280px;
+    }
+    .form-textarea-wrapper,
+    label{
+      @include inline-block;
+    }
+  }
+
+  .captcha{
+    .form-item label{
+      @include inline-block;
+
+    }
+
+    .form-text{
+      width:auto;
+    }
+
+    img{
+      margin-left:205px;
+
+      .block-webform &{
+        margin-left:93px;
+        width:132px;
+        height:35px;
+      }
+    }
+  }
+
+  .form-submit{
+    @include link-image-background;
+    background-image:url('../images/submit-button.gif');
+    width:62px;
+    height:21px;
+    margin-left:205px;
+
+    .block-webform &{
+      margin-left:0;
+    }
+    .page-cart-checkout-complete .block-webform &{
+      margin-left:205px;
+    }
+  }
+}
+
+#webform-client-form-65{
+  .street-block,
+  .form-item-submitted-address-postal-code{
+    display:none;
+  }
+}
+
+.training-search-form-wrapper{
+
+  fieldset{
+    @include spacing-reset;
+  }
+
+  .form-item{
+    margin:0;
+    margin-bottom:15px;
+
+    select{
+      width:100%;
+    }
+  }
+
+  .form-submit,
+  .search-all-trainings{
+    @include link-image-background;
+    height:21px;
+    margin-right:10px;
+  }
+
+  .form-item-state,
+  .form-item-city{
+    @include inline-block;
+
+    select{
+      width:auto;
+    }
+  }
+
+  .form-item-state{
+    margin-right:20px;
+  }
+
+  .form-submit{
+    background-image:url('../images/submit-button.gif');
+    width:62px;
+  }
+  .search-all-trainings{
+    background-image:url('../images/all-trainings.gif');
+    width:131px;
+  }
+}
+
+#video-get-free-video-form{
+  text-align:center;
+  .form-submit{
+    margin:20px auto 0 auto;
+  }
+  .form-actions{
+    a{
+      line-height:24px;
+      margin:0 10px;
+    }
+  }
+}
+
+#group-coaching-call-archives-form{
+  #edit-archives{
+    width:300px;
+  }
+  #edit-submit{
+    display:none;
+  }
+}
+
+//YTU At Home Program Finder
+@mixin at-home-form-label{
+  @include blue-title;
+  font-size:18px;
+  color:#993300;
+  font-weight:normal;
+}
+#webform-client-form-54{
+  margin:0 auto;
+  border:2px solid #eee;
+  padding:10px 40px;
+  font-size:14px;
+
+  .red-label{
+    @include at-home-form-label;
+  }
+
+  .form-item{
+    @include spacing-reset;
+  }
+
+   & > div > .webform-component,
+   & > div > .webform-component-fieldset{
+    padding-bottom:10px;
+    border-bottom:1px solid #E8E8E8;
+    margin-bottom:10px;
+
+    & > label{
+      @include at-home-form-label;
+    }
+  }
+
+  fieldset{
+    @include spacing-reset;
+
+    .fieldset-wrapper label{
+      @include at-home-form-label;
+    }
+  }
+
+  .form-type-checkbox{
+    input{
+      margin:5px 1px;
+    }
+  }
+
+  .form-type-radio{
+    margin-bottom:10px;
+
+    label{
+      @include inline-block;
+      vertical-align:top;
+      max-width:282px;
+    }
+    input{
+      @include inline-block;
+      vertical-align:top;
+    }
+    strong{
+      display:block;
+    }
+  }
+
+  .webform-grid{
+    .form-type-radio{
+      margin:3px 0;
+    }
+    th{
+      font-size:14px;
+    }
+    tr.odd{
+      background-color:transparent;
+    }
+    td{
+      padding:5px 0;
+    }
+  }
+
+  & > div > .webform-component-textfield,
+  & > div > .webform-component-email{
+    @include inline-block;
+    width:180px;
+
+    label{
+      font-size:14px;
+      font-weight:bold;
+      color:#000;
+      margin-bottom:5px;
+    }
+    
+    input{
+      font-size: 11px;
+      border: 1px solid #CCCFD3;
+      padding-left: 5px;
+      padding-top: 3px;
+      padding-bottom: 3px;
+      background-image: url('../images/input-bg.gif');
+      background-position: left top;
+      background-repeat: repeat-x;
+      width:180px;
+      &.error{
+        border:1px solid #c00;
+      }
+    }
+  }
+
+  & > div .webform-component-textfield{
+    @include spacing-reset;
+    margin-right:50px;
+    margin-bottom:10px;
+  }
+
+  & > div .webform-component-email{
+    width:100%;
+    margin-right:0;
+  }
+
+  #webform-component-gender,
+  #webform-component-are-you-pregnant,
+  #webform-component-check-with-doctor-confirm,
+  #webform-component-age,
+  #webform-component-height,
+  #webform-component-weight{
+    @include spacing-reset;
+
+    & > label{
+      font-size:14px;
+      font-weight:bold;
+      color:#333;
+      margin-bottom:5px;    
+    }
+  }
+
+  #webform-component-gender,
+  #webform-component-are-you-pregnant,
+  #webform-component-check-with-doctor-confirm,
+  #webform-component-age,
+  #webform-component-height,
+  #webform-component-weight{
+    @include inline-block;
+    vertical-align:top;
+    width:169px;
+    margin-bottom:10px;
+  }
+
+  #webform-component-check-with-doctor-confirm{
+    font-size:11px;
+    input{
+      @include inline-block;
+      vertical-align:top;
+      margin:0 1px;
+    }
+    label{
+      @include inline-block;
+      vertical-align:top;
+      width:120px;
+    }
+  }
+
+  .last-page{
+    border-top:1px solid #E8E8E8;
+    padding-top:10px;
+  }
+
+  #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-2{
+    tr{
+      border-left:1px solid #ccc;
+    }
+
+    thead tr{
+      border-left:0;
+    }
+  }
+
+  #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-1,
+  .form-checkboxes{
+    padding-left:20px;
+  }
+
+  #edit-previous{
+    float:left;
+  }
+
+  .next{
+    float:right;
+    span{
+      display:block;
+      float:left;
+      background-image:url('../images/arrows-green-25.png');
+      background-position:center right;
+      background-repeat:no-repeat;
+      padding-right:30px;
+      font-size:16px;
+      line-height:45px;
+      margin-right:10px;
+    }
+    #edit-next,
+    #edit-submit{
+      float:left;
+      margin-top:8px;
+    }
+  }
+
+  #edit-previous{
+    float:left;
+    margin-top:8px;
+  }
+
+  #webform-component-do-you-have-any-physical-ailments-or-pains{
+    .webform-component-webform_grid{
+      float:left;
+
+      .grid-row-checkbox{
+        float:left;
+        margin-right:5px;
+      }
+    }
+    #webform-component-do-you-have-any-physical-ailments-or-pains--paop-grid-2{
+      .webform-grid-question{
+        display:none;
+      }
+    }
+  }
+}
+
+@mixin price{
+  color:#FF7E00;
+  font-size:15px;
+  font-weight:bold;  
+}
+
+form[id^="uc-cart-view-form"]{
+  $cell-padding:3px 5px;
+
+  table{
+    width: 100%;
+    thead{
+      background-color:#FDFAE8;
+      font-size:11px;
+      font-weight:bold;
+      line-height:26px;
+      tr{
+        th{
+          padding:$cell-padding;
+        }
+      }
+    }
+    tbody{
+      tr{
+        &.odd,
+        &.even{
+          background-color:transparent;   
+        }
+        td{
+          vertical-align:middle;
+          padding:$cell-padding;
+          text-align: left;
+          &.remove{
+            padding-left:23px;
+            input{
+              @include spacing-reset;
+              font-size:11px;
+              line-height:16px;
+              background-color:transparent;
+              color:#3776C0;
+            }
+          }
+          &.price{
+            text-align: right;
+            @include price;
+          }
+          &.desc{
+            > a{
+              margin-right:20px;
+            }
+          }
+          &.subtotal,
+          &.coupon{
+            background-color:#FDFAE8;
+            line-height:26px;
+            text-align:right;
+            #subtotal-title,
+            #coupon-title{
+              margin-right:5px;
+              font-weight:bold;
+            }
+            .uc-price{
+              @include price;
+            }
+          }
+        }
+      }
+    }
+  }
+  .cart-top{
+    text-align:left;
+    padding:8px 0;
+    border-top:1px solid #ccc;
+    border-bottom:1px solid #ccc;
+    a{
+      float:left;
+      &.continue-shopping{
+        display:block;
+        background-image:url('../images/continue-shopping.gif');
+        background-repeat:no-repeat;
+        padding-left:19px;
+        font-size:11px;
+        line-height:16px;
+      }
+    }
+    .form-submit{
+      float:left;
+      @include spacing-reset;
+      background-repeat:no-repeat;
+      padding-left:19px;
+      font-size:11px;
+      line-height:16px;
+      background-color:transparent;
+      text-decoration:underline;
+      color:#3776C0;
+      border-right:1px solid #e7a757;
+      padding-right:6px;
+      margin-right:6px;
+
+      &[name="update-cart"]{
+        background-image:url('../images/update-cart.gif');
+      }
+    }
+    #edit-empty, #edit-empty--2{
+      background-image:url('../images/empty-cart.gif');
+      padding-left:24px;
+    }
+  }
+  .form-actions{
+    display: inline-block;
+    width: 100%;
+    padding-top:10px;
+
+    input[type="submit"]{
+      background: #7CC106;
+      margin: 0;
+      padding: 10px 25px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: normal;
+      border: 1px solid #7cc106;
+      color: white;
+      float: right;
+      font-size: 18px;
+    }
+  }
+}
+
+#uc-cart-pane-quotes{
+  #quote{
+    padding:10px;
+    ul{
+      @include list-reset;
+
+      li{
+        margin:10px 0;
+      }
+    }
+  }
+}
+
+#uc-cart-empty-confirm{
+  .form-submit{
+    display:inline;
+    margin-right:10px;
+  }
+}
+
+.uc-cart-checkout-form{
+  fieldset.form-wrapper{
+    border:0;
+
+    legend{
+      display:none;
+    }
+  }
+
+  tbody{
+    border-top:0;
+  }
+
+  #cart-pane{
+
+    .cart-review{
+      thead{
+        background-color:#EBF4FC;
+        line-height:23px;
+        border-top:1px solid #E8E8E8;
+        border-bottom:1px solid #E8E8E8;
+        th{
+          color:#3776C0;
+          padding:0 5px;
+        }
+      }
+      tbody{
+        tr{
+          line-height:30px;
+          background-color:#fff;
+          &.subtotal{
+            background-color:#EBF4FC;
+          }
+          &.coupon{
+            background-color:#FDFAE8;
+          }
+          td{
+            padding:0 5px;
+
+            &.coupon{
+              text-align:right;
+
+              .coupon-title{
+                font-weight:bold;
+              }
+            }
+            &.subtotal,
+            &.coupon{
+              #subtotal-title,
+              .coupon-title{
+                font-size:14px;
+                margin-right:10px;
+                color:#3776C0;
+              }
+              .uc-price{
+                @include price;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  #coupon-pane,
+  #customer-pane{
+    display:block;
+    padding-bottom:20px;
+    border-bottom:1px solid #E8E8E8;
+    margin-bottom:20px;
+  }
+
+  #coupon-pane{
+    input[type="text"]{
+      margin-bottom:10px;
+    }
+  }
+
+  #delivery-pane,
+  #billing-pane{
+    vertical-align:top;
+
+    .field-wrapper{
+      display: inline-block;
+      width: 100%;
+      margin-bottom:10px;
+    }
+    select{
+      width:199px;
+      height:19px;
+    }
+
+    label.field-label{
+      float: left;
+      width: 31%;
+      margin-right: 20px;
+    }
+
+    .form-type-uc-addresses-address-select{
+      overflow:hidden;
+      padding-bottom:10px;
+      border-bottom:1px solid #E8E8E8;
+      margin-bottom:10px;
+
+      label{
+        float:left;
+        margin-right:4px;
+        margin-left:19px;
+      }
+    }
+
+    .form-item-panes-billing-copy-address{
+      margin-bottom:10px;
+    }
+  }
+
+
+
+  #quotes-pane{
+    padding-top:20px;
+    border-top:1px solid #E8E8E8;
+    margin-top:20px; 
+    clear: both;   
+
+    .progress{
+      margin-top:10px;
+      margin-left:-1px;
+    }
+
+    #quote{
+      border:0;
+    }
+
+    .form-item{
+      margin:10px 0;
+
+      label{
+        @include inline-block;
+        vertical-align:middle;
+
+        img{
+          display:block;
+        }
+      }
+    }
+  }
+
+  #payment-pane{
+    padding-top:20px;
+    border-top:1px solid #E8E8E8;
+
+    .form-item-panes-payment-payment-method{
+      margin:10px 0;
+    }
+
+    .update-credit-card{
+      margin-top:5px;
+      @include inline-block;
+    }
+
+    #payment-details{
+      @include spacing-reset;
+
+      &.payment-details-credit input,
+      &.payment-details-credit select{
+        float:none;
+      }
+
+      .form-item-panes-payment-details-cc-cvv{
+        input{
+          float:left;
+        }
+      }
+
+      .form-item-panes-payment-details-cc-save{
+        display:none;
+      }
+    }
+  }
+ 
+  #uc_user_credit-pane{
+    padding-top:20px;
+    border-top:1px solid #E8E8E8;
+  }
+
+  #order_summary-pane{
+
+    div[id^="edit-panes-order-summary-coupons"]{
+      display:none;
+    }
+
+    table{
+      border:1px solid #E8E8E8;
+      border-bottom:0;
+      width:100%;
+    }
+
+    tr{
+      line-height:30px;
+      background-color:#EBF4FC;
+      border:1px solid #E8E8E8;
+
+      .title{
+          font-size:14px;
+          margin-right:10px;
+          color:#3776C0;
+          font-weight:bold;
+
+          .order-summary-remove{
+            font-size: 12px;
+            margin:0 20px;
+            background: none !important;
+            border: medium none;
+            border-radius: 0;
+            color: #3776c0 !important;
+            font-size: 14px;
+            font-weight: normal;
+            text-decoration: underline;
+          }
+
+          .ajax-progress{
+            display:none;
+            vertical-align:text-top;
+          }
+      }
+
+      &.line-item-total{
+        .uc-price{
+          @include price;
+        }
+      }
+
+    }
+
+    td{
+      padding:0 5px;
+    }
+  }
+
+  #subscription_confirm-pane{
+    .form-item-panes-subscription-confirm-sub-confirm{
+      float:right;
+
+      input[type="checkbox"]{
+        @include inline-block;
+        vertical-align:top;
+        margin-right:5px;
+      }
+      label{
+        @include inline-block;
+        vertical-align:top;
+        width:240px;
+      }
+    }
+  }
+
+  .form-actions{
+    padding:0 10px;
+    .form-submit{
+      display:inline;
+    }
+    #edit-cancel{
+      float:left;
+      background: none !important;
+      border: medium none;
+      border-radius: 0;
+      color: #3776c0 !important;
+      float: left;
+      font-size: 14px;
+      font-weight: normal;
+      text-decoration: underline;
+    }
+  }
+}
+
+.order-review-table{
+    font-size:1.2em;
+    width:100%;
+    margin-top:20px;
+    .data-col{
+      padding: 0 10px;
+    }
+    td{
+      padding-left: 10px;
+    }
+    .cart-review{
+      width:100%;
+      thead{
+        background-color:#EBF4FC;
+        line-height:23px;
+        border-top:1px solid #E8E8E8;
+        border-bottom:1px solid #E8E8E8;
+        th{
+          color:#3776C0;
+          padding:0 5px;
+        }
+      }
+      tbody{
+        tr{
+          line-height:30px;
+          background-color:#fff;
+          &.subtotal{
+            background-color:#EBF4FC;
+          }
+          &.coupon{
+            background-color:#FDFAE8;
+          }
+          td{
+            padding:0 5px;
+            .uc-price{
+              @include price;
+            }
+            &.coupon{
+              text-align:right;
+
+              .coupon-title{
+                font-weight:bold;
+              }
+            }
+            &.subtotal,
+            &.coupon{
+              #subtotal-title,
+              .coupon-title{
+                font-size:14px;
+                margin-right:10px;
+                color:#3776C0;
+              }
+            }
+          }
+        }
+      }
+    }
+    .pane-title-row{
+      @include blue-title;
+      background-color:#FDFAE8;
+      line-height:36px;
+      text-align: left;
+      padding-left: 20px;
+    }
+    .title-col{
+      padding-left:5px;
+      padding-right:5px;
+    }
+
+    .review-button-row{
+      td{
+        padding-bottom:1em;
+      }
+      #edit-back{
+        float:left;
+      }
+      .form-submit{
+        display:inline;
+        margin:0 10px;
+      }
+    }
+}
+
+#authnet-user-payment-profiles-list-form{
+  .authnet-add-payment-profile{
+    margin-bottom:10px;
+    display:block;
+  }
+
+  table{
+    border:1px solid #E8E8E8;
+    border-bottom:0;
+    width:100%;
+  }
+
+  tr{
+    line-height:30px;
+    background-color:#EBF4FC;
+    border:1px solid #E8E8E8;
+
+    .title{
+        font-size:14px;
+        margin-right:10px;
+        color:#3776C0;
+        font-weight:bold;   
+    }
+
+    &.line-item-total{
+      .uc-price{
+        @include price;
+      }
+    }
+
+  }
+
+  td,th{
+    padding:0 5px;
+  }
+
+  tbody{
+    tr{
+      background-color:transparent;
+    }
+  }
+
+  #edit-submit{
+    margin-top:10px;
+  }
+}
+
+#pose-email-form{
+  float:right;
+  margin-top: -7px;
+  margin-right: 10px;
+  padding:5px;
+  border:2px solid #EBECF0;
+
+  .form-item-pose-email,
+  #edit-submit{
+    display:inline;
+  }
+
+  .form-item-pose-email{
+    margin-right:10px;
+    
+    label.option{
+      color:#3776C0;
+      font-weight:bold;
+    }
+  }
+}
+
+#at-home-subscription-shipping-options-form{
+  .form-item{
+    line-height:23px;
+    margin:0;
+  }
+
+  .form-item-hold-options{
+    float:right;
+    margin-top:-34px;
+    margin-right:50px;
+  }
+
+  label[for="edit-shipping-options"]{
+    font-size:14px;
+    margin-bottom:11px;
+  }
+
+  #edit-shipping-options{
+    margin-bottom:12px;
+  }
+
+  .shipping-options-description{
+    font-size: 12px;
+    line-height: 23px;
+    font-weight: normal;
+    margin-bottom:10px;
+  }
+}
+
+#at-home-subscription-queue-form{
+  .form-actions{
+    margin:0;
+    margin-top:11px;
+    margin-bottom:11px;
+    
+    input[type="submit"]{
+      display:inline;
+      margin:0 10px;
+
+      &:first-child{
+        margin-left:0;
+      }
+    }
+  }
+
+  .level{
+    width:185px;
+    @include inline-block;
+    vertical-align:top;
+    margin-right:24px;
+
+    h3{
+      border-bottom:1px solid #ebecf0;
+    }
+  }
+
+  fieldset{
+    @include spacing-reset;
+  }
+
+  .form-type-checkbox{
+    padding-right:10px;
+    border-bottom:1px solid #ebecf0;
+    line-height:35px;
+    margin:0;
+
+    label{
+      span{
+        &.title{
+          &.skipped{
+            color:#999;
+          }
+        }
+        &.status{
+          float:right;
+          &.shipping-next{
+            color:#ff7c13;
+            font-style:italic;
+          }
+        }
+      }
+    }
+
+    &.form-disabled{
+      label{
+        color:#999;
+      }
+    }
+  }
+}
+
+#uc-addresses-get-address-form{
+  .form-submit{
+    margin-top:10px;
+    margin-right:20px;
+    display:inline;
+  }
+}
+
+#authnet-user-payment-profile-form{
+  .form-item label{
+    float:left;
+    width:120px;
+  }
+  .form-submit{
+    margin-top:10px;
+  }
+}
+
+#at-home-subscription-cancel-form{
+  .form-submit{
+    display:inline;
+    margin-right:10px;
+  }
+}
+
+#user-profile-form{
+  #edit-overlay-control{
+    display:none;
+  }
+  
+  .account-column{
+    @include inline-block;
+    vertical-align:top;
+    width:30%;
+  }
+
+  .field-name-field-location{
+    fieldset{
+      @include spacing-reset;
+      legend{
+        display:none;
+      }
+      .form-item{
+        margin:0;
+        margin-right:1em;
+        margin-bottom:1.5em;
+        float:none;
+      }
+      .street-block{
+        display:none;
+      }
+    }
+  }
+}
+
+#teacher-cec-tracking-form{
+  table{
+    th{
+      text-transform:uppercase;
+    }
+    td{
+      padding:2px;
+      border:1px solid #ccc;
+    }
+  }
+  input[type="text"]{
+    width:100%;
+    padding:0;
+    border:0;
+  }
+  input[type="submit"]{
+    margin:0 auto;
+  }
+
+  .item-list .pager{
+    margin-top:1em;
+  }
+
+  .cec-remove{
+    color:red;
+    font-weight:bold;
+    text-decoration:none;
+    vertical-align:middle;
+    display:block;
+    padding:2px;
+  }
+}
+
+
+#cart-custom-text{
+  margin-bottom:20px;
+}
+
+/*
+ * Drupal admin tables
+ *
+ * We overrode these styles in normalize.css, but restore them for the admin
+ * section of the site.
+ */
+
+form {
+  th {
+    text-align: left; /* LTR */
+    padding-right: 1em; /* LTR */
+    border-bottom: 3px solid #ccc;
+  }
+
+  tbody {
+    border-top: 1px solid #ccc;
+  }
+
+  tr.even {
+    background-color: #fff;
+  }
+
+  table .item-list ul {
+    margin: 0;
+  }
+}
+
+@if $legacy-support-for-ie6 or $legacy-support-for-ie7 {
+  .lt-ie8 tr.even,
+  .lt-ie8 tr.odd {
+    th,
+    td {
+      border-bottom: 1px solid #ccc; /* IE doesn't display borders on table rows */
+    }
+  }
+}
+
+/*
+ * Drupal core wrongly puts this in system.menus.css. Since we override that, add it back.
+ */
+
+td.menu-disabled {
+  background: #ccc;
+}

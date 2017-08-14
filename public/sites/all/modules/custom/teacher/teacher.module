@@ -1,0 +1,1457 @@
+<?php
+
+define('TEACHER_PAGINATION',10);
+define('TRAINER_TID',2);
+define('YTU_CERT_LEVEL_VID',3);
+
+/**
+ * Implements hook_menu().
+ */
+function teacher_menu() {
+
+  $items['request/teacher-renewal'] = array(
+  	'title' => 'Teacher Renewal Cron',
+  	'page callback' => 'teacher_renewal_cron_callback',
+  	'access arguments' => array('access content'),
+  	'file' => 'teacher.cron.inc',
+  );
+
+  $items['photo-gallery'] = array(
+    'title' => 'Photo Gallery',
+    'page callback' => 'teacher_photo_gallery_page_callback',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+  );
+
+  $items['meet-all-teachers'] = array(
+  	'title' => 'Meet All Teachers',
+  	'page callback' => 'teacher_meet_all_teachers_page_callback',
+  	'access arguments' => array('access content'),
+  );
+
+  $items['admin/ytu-settings/teacher-renewal-settings'] = array(
+  	'title' => 'Teacher Renewal Settings',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('teacher_admin_renewal_settings_form'),
+  	'access arguments' => array('access ytu settings'),
+  	'file' => 'teacher.admin.inc',
+  );
+
+  $items['admin/ytu-settings/teacher-renewal-import'] = array(
+  	'title' => 'Teacher Renewal Import',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('teacher_renewal_info_import_form'),
+  	'access arguments' => array('access teacher renewal import'),
+  	'file' => 'teacher.admin.inc',
+  );
+
+  $items['admin/ytu-settings/teacher-rebuild'] = array(
+  	'title' => 'Teacher Data Rebuild',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('teacher_admin_rebuild'),
+  	'access arguments' => array('access teacher rebuild'),
+  	'file' => 'teacher.admin.inc',
+  );
+
+  $items['admin/ytu-settings/rmm-rebuild'] = array(
+    'title' => 'RMM Data Rebuild',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_rmm_admin_rebuild'),
+    'access arguments' => array('access teacher rebuild'),
+    'file' => 'teacher.admin.inc',
+  );
+
+  $items['roll-model-method-practitioners'] = array(
+    'title' => 'Roll Model® Method Practitioners',
+    'page callback' => 'teacher_roll_model_practitioners_page_callback',
+    'access arguments' => array('access content'),
+    'file' => 'teacher.pages.inc',
+  );
+
+  $items['roll-model-method-practitioners/%'] = array(
+    'title' => 'Roll Model® Method Practitioners',
+    'page callback' => 'teacher_roll_model_practitioners_page_callback',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    'file' => 'teacher.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function teacher_permission() {
+  return array(
+    'access teacher renewal import' =>  array(
+      'title' => t('Run Teacher Renewal Import'),
+      'description' => t('Run import for teacher renewal fields'),
+    ),
+    'access teacher rebuild' =>  array(
+      'title' => t('Run Teacher Rebuild'),
+      'description' => t('Run rebuild for teacher fields'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function teacher_block_info() {
+  $blocks['instructor-search'] = array(
+    'info' => t('Instructor Search'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  $blocks['teacher_dashboard_links'] = array(
+    'info' => t('Teacher Dashboard Links'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function teacher_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'instructor-search':
+      $block['subject'] = t('Instructor Search');
+      $block['content'] = array(
+      	drupal_get_form('teacher_search_form'),
+      	drupal_get_form('teacher_search_zip_radius_form'),
+      );
+      break;
+    case 'teacher_dashboard_links':
+      $account = null;
+      if(account_is_admin() && arg(0) == 'user'){
+        $account = user_load(arg(1));
+      }
+      if(account_is_teacher($account)){
+	      $links = teacher_get_dashboard_links($account);
+	      $block['subject'] = t('Teacher Links');
+	      $block['content'] = theme('dashboard_links', array('links' => $links));
+  	  }
+      break;
+  }
+  return $block;
+}
+
+
+function teacher_get_dashboard_links($account = null){
+	if(!$account){
+		global $user;
+		$account = $user;
+	}
+
+	$teacher_page_nid = teacher_get_teacher_page_nid($account);
+	$teacher_student_group_nid = teacher_get_student_group_nid($account);
+
+	if(empty($teacher_page_nid)){
+		$links[] = l('Create My Teacher Page','node/add/teacher',array('attributes' => array('class' => array('teacher-profile'))));
+	}
+	else{
+		 $links[] = l('Edit My Teacher Page','node/'.$teacher_page_nid.'/edit',array('attributes' => array('class' => array('teacher-profile'))));
+		 $links[] = l('My Classes/Workshops/Trainings','class-list',array('query' => array('teacher' => $teacher_page_nid),'attributes' => array('class' => array('teacher-my-classes'))));
+		 $links[] = l('Add Classes/Workshops/Trainings','node/add/class',array('attributes' => array('class' => array('teacher-add-class'))));
+		 if(empty($teacher_student_group_nid)){
+		 	$links[] = l('Create My Student Group','node/add/student-group',array('attributes' => array('class' => array('student-group'))));
+		 }
+		 else{
+		 	$links[] = l('Edit My Student Group','node/'.$teacher_student_group_nid.'/group',array('attributes' => array('class' => array('student-group'))));
+		 }
+		 $links[] = l('Manage My Content','admin/content',array('attributes' => array('class' => array('teacher-manage-pages'))));
+		 $links[] = l('Enter My CEC Data','user/'.$account->uid.'/cec',array('attributes' => array('class' => array('teacher-cec'))));
+	}
+	return $links;
+}
+
+/**
+ * Implements hook_mail()
+ */
+function teacher_mail($key, &$message, $params){
+  switch($key){
+    case 'teacher_cert_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%teacher_name', '%date'),
+        array($params['teacher_name'],$params['date']),
+        _mm('teacher_cert_email_body','',true)
+      );
+      break;
+    case 'teacher_cert_email_7':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%teacher_name', '%date'),
+        array($params['teacher_name'],$params['date']),
+        _mm('teacher_cert_email_7_body','',true)
+      );
+      break;
+    case 'teacher_cert_email_0t':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%teacher_name', '%date'),
+        array($params['teacher_name'],$params['date']),
+        _mm('teacher_cert_email_0t_body','',true)
+      );
+      break;
+    case 'teacher_cert_email_0a':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%teacher_name', '%date', '%teacher_email'),
+        array($params['teacher_name'],$params['date'], $params['teacher_email']),
+        _mm('teacher_cert_email_0a_body','',true)
+      );
+      break;
+    case 'teacher_cert_email_p23':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%teacher_name', '%date'),
+        array($params['teacher_name'],$params['date']),
+        _mm('teacher_cert_email_p23_body','',true)
+      );
+      break;
+    case 'teacher_cert_email_p30a':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%teacher_name','%teacher_email','%date'),
+        array($params['teacher_name'],$params['teacher_email'],$params['date']),
+        _mm('teacher_cert_email_p30a_body','',true)
+      );
+      break;
+  }
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function teacher_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  if ($root_path == 'admin/content') {
+  	if(account_is_teacher()){
+    	foreach($data['actions']['output'] as $delta => $item){
+    		if($item['#link']['path'] == 'node/add'){
+    			unset($data['actions']['output'][$delta]);
+    			break;
+    		}
+    	}
+	}
+  }
+}
+
+/**
+ * Implements hook_user_update().
+ */
+function teacher_user_update(&$edit, $account, $category) {
+	if(isset($account->original)){
+	  //If a teacher role is removed, unpublish their teacher profile, classes, and student group
+	  if(account_is_teacher($account->original) && !isset($account->roles[TEACHER_RID])){
+	  	teacher_change_content_status($account,0);
+	  }
+	  //If a teacher role is given, publish their teacher profile, classes, and student group
+	  else if(!account_is_teacher($account->original) && isset($account->roles[TEACHER_RID])){
+	  	teacher_change_content_status($account,1);
+	  }
+	}
+
+	if(account_is_teacher($account)){
+		//teacher_update_teacher_profile($account);
+	}
+}
+
+function teacher_search_form($form, &$form_state){
+    $params = array();
+    if(teacher_is_roll_model_practitioner_section()){
+      $teachers = teacher_get_roll_model_practitioners(false, $params);
+      $meet_all_path = 'roll-model-method-practitioners';
+    }
+    else{
+      $teachers = teacher_get_teachers(false, $params);
+      $meet_all_path = 'meet-all-teachers';
+    }
+
+	$teacher_list[] = '- Select Teacher -';
+
+	$form['teacher'] = array(
+		'#title' => t('Instructor Search'),
+		'#title_display' => 'invisible',
+		'#type' => 'select',
+		'#options' => $teacher_list + $teachers,
+		'#prefix' => '<div class="instructor-search-text">'._mm('instructor_search').'</div>',
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Search Now',
+		'#suffix' => l('Meet All Teachers',$meet_all_path,array(
+			'attributes' => array('class' => array('meet-all-teachers')),
+		)),
+	);
+
+	return $form;
+}
+
+function teacher_search_form_validate($form, &$form_state){
+	if($form_state['values']['teacher'] == '0'){
+		form_set_error('teacher','Please select a teacher.');
+	}
+}
+
+function teacher_search_form_submit($form, &$form_state){
+  if(teacher_is_roll_model_practitioner_section()){
+    $form_state['redirect'] = url('roll-model-method-practitioners/'.$form_state['values']['teacher']);
+  }
+  else{
+    $form_state['redirect'] = 'node/'.$form_state['values']['teacher'];
+  }
+}
+
+function teacher_search_zip_radius_form($form, &$form_state){
+	$form['zip_code'] = array(
+		'#title' => 'Zip / Postal Code',
+		'#type' => 'textfield',
+		'#size' => 15,
+		'#maxlength' => 15,
+		'#default_value' => isset($_GET['zip']) ? $_GET['zip'] : '',
+		'#prefix' => '<h2 class="block-title">Instructor Location Search</h2><div class="instructor-search-text">'._mm('instructor_zip_search').'</div>',
+	);
+
+	$form['radius'] = array(
+		'#title' => 'Radius',
+		'#type' => 'select',
+		'#default_value' => isset($_GET['radius']) ? $_GET['radius'] : '',
+		'#options' => array(
+                '' => 'Select',
+				'5' => '5',
+				'10' => '10',
+				'15' => '15',
+				'20' => '20',
+				'50' => '50',
+				'100' => '100',
+			)
+	);
+
+	$options = array('' => '- Select Country -') + teacher_get_countries();
+	if(teacher_is_roll_model_practitioner_section()){
+      $options = array('' => '- Select Country -') + teacher_roll_model_practitioners_get_countries();
+    }
+
+    $form['country'] = array(
+      '#type' => 'select',
+      '#title' => 'Country',
+      '#options' => $options,
+      '#default_value' => isset($_GET['country']) ? $_GET['country'] : '',
+      '#prefix' => '<div class="sep"><span>OR</span></div>',
+    );
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Search Now',
+	);
+
+	return $form;
+}
+
+function teacher_search_zip_radius_form_validate($form, &$form_state){
+  if(empty($form_state['values']['zip_code']) && empty($form_state['values']['radius']) && empty($form_state['values']['country'])){
+    form_set_error('','Please provide either a zip code/radius or country.');
+  }
+  if(empty($form_state['values']['country'])){
+    if(!empty($form_state['values']['zip_code']) && empty($form_state['values']['radius'])){
+      form_set_error('radius','Please provide a radius to use the zip radius search.');
+    }
+    if(empty($form_state['values']['zip_code']) && !empty($form_state['values']['radius'])){
+      form_set_error('zip_code','Please provide a zip code to use the zip radius search.');
+    }
+  }
+}
+
+function teacher_search_zip_radius_form_submit($form, &$form_state){
+  $query = array();
+
+  if(!empty($form_state['values']['zip_code']) && !empty($form_state['values']['radius'])){
+    $query['zip'] = $form_state['values']['zip_code'];
+    $query['radius'] = $form_state['values']['radius'];
+  }
+  else{
+    $query['country'] = $form_state['values']['country'];
+  }
+
+  if(teacher_is_roll_model_practitioner_section()){
+    $query['role'] = 'Roll Model Practitioner';
+    drupal_goto('roll-model-method-practitioners', array('query' => $query));
+  }
+  else{
+    drupal_goto('meet-all-teachers', array('query' => $query));
+  }
+}
+
+function teacher_is_roll_model_practitioner_section(){
+  return strpos(request_path(), 'roll-model-method-practitioners') === 0 || (isset($_GET['role']) && $_GET['role'] == 'Roll Model Practitioner');
+}
+
+function teacher_get_countries(){
+  $query = db_select('field_data_field_address','a')
+    ->fields('a',array('field_address_country'))
+    ->condition('a.bundle','teacher');
+  $query->innerJoin('node','n','a.entity_id = n.nid');
+  $query->condition('n.status',1);
+
+  $results = $query->distinct()->execute()->fetchAllKeyed(0,0);
+  $countries = _addressfield_country_options_list();
+
+  foreach($results as $result){
+    if(isset($countries[$result])){
+      $results[$result] = $countries[$result];
+    }
+  }
+
+  asort($results);
+  unset($results['US']);
+
+  return array('US' => 'United States') + $results;
+}
+
+function teacher_roll_model_practitioners_get_countries(){
+  $role = user_role_load_by_name('Roll Model Practitioner');
+  $query = db_select('field_data_field_location','a')
+    ->fields('a',array('field_location_country'))
+    ->condition('a.bundle','user');
+  $query->innerJoin('users_roles','ur','a.entity_id = ur.uid');
+  $query->condition('ur.rid', $role->rid);
+
+  $results = $query->distinct()->execute()->fetchAllKeyed(0,0);
+  $countries = _addressfield_country_options_list();
+
+  foreach($results as $result){
+    if(isset($countries[$result])){
+      $results[$result] = $countries[$result];
+    }
+  }
+
+  asort($results);
+  unset($results['US']);
+
+  return array('US' => 'United States') + $results;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function teacher_form_alter(&$form, &$form_state, $form_id) {
+	if($form_id == 'teacher_node_form'){
+		if(isset($form_state['node'])){
+			$account = user_load($form_state['node']->uid);
+		}
+		else{
+			global $user;
+			$account = user_load($user->uid);
+		}
+
+		$form['body'][LANGUAGE_NONE][0]['#after_build'][] = 'teacher_text_format';
+		if(isset($account->field_license_date[LANGUAGE_NONE][0]['value'])){
+			$form['field_license_date'] = array(
+				'#weight' => '98',
+				'content' => teacher_user_display_only_form_field('License Date',$account->field_license_date[LANGUAGE_NONE][0]['value']),
+			);
+		}
+		if(isset($account->field_license_renewal_date[LANGUAGE_NONE][0]['value'])){
+			$form['field_license_renewal_date'] = array(
+				'#weight' => '99',
+				'content' => teacher_user_display_only_form_field('License Renewal Date',$account->field_license_renewal_date[LANGUAGE_NONE][0]['value']),
+			);
+		}
+
+		$form['field_latitude']['#prefix'] = '<div style="display:none;">';
+		$form['field_longitude']['#prefix'] = '<div style="display:none;">';
+		$form['field_latitude']['#suffix'] = '</div>';
+		$form['field_longitude']['#suffix'] = '</div>';
+
+		if(arg(1) == 'add'){
+			$default_name = $account->field_first_name[LANGUAGE_NONE][0]['value'];
+			if(isset($account->field_last_name[LANGUAGE_NONE][0]['value'])){
+				$default_name .= ' '.$account->field_last_name[LANGUAGE_NONE][0]['value'];
+			} 
+			$form['title']['#default_value'] = $default_name;
+			$form['field_email'][LANGUAGE_NONE][0]['value']['#default_value'] = $account->mail;
+			if(isset($account->field_location[LANGUAGE_NONE][0])){
+				foreach($account->field_location[LANGUAGE_NONE][0] as $delta => $value){
+					$form['field_address'][LANGUAGE_NONE][0]['#address'][$delta] = $value;
+				}
+			}
+		}
+	}
+	else if($form_id == 'user_profile_form'){
+      $form['field_latitude']['#prefix'] = '<div style="display:none;">';
+      $form['field_longitude']['#prefix'] = '<div style="display:none;">';
+      $form['field_latitude']['#suffix'] = '</div>';
+      $form['field_longitude']['#suffix'] = '</div>';
+    }
+}
+
+function teacher_text_format(&$form){
+	if(isset($form['format']['format']['#options'])){
+		$form['format']['format']['#default_value'] = 'rich_text_teacher';
+		$form['format']['format']['#value'] = 'rich_text_teacher';
+		if(account_is_teacher()){
+			$form['format']['format']['#prefix'] = '<div style="display:none;">';
+			$form['format']['format']['#suffix'] = '</div>';
+		}
+	}
+	return $form;
+}
+
+function teacher_user_display_only_form_field($field_name,$value){
+	return array(
+		'#type' => 'fieldset',
+		'#title' => $field_name,
+		'#description' => date('m/d/Y',strtotime($value)),
+	);
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function teacher_node_view($node, $view_mode, $langcode) {
+  if($node->type == 'teacher'){
+  	if($view_mode == 'full' || $view_mode == 'teaser'){
+  		$num_photos = count($node->content['field_photos']['#items']);
+  		$has_classes = teacher_has_classes($node->nid);
+
+  		if($view_mode == 'teaser'){
+
+  			$node->content['view_full']['#markup'] = l('View Full Bio','node/'.$node->nid,array(
+  				'attributes' => array('class' => array('blue-button')),
+  			));
+
+	   		if($has_classes){
+	  			$node->content['view_schedule']['#markup'] = l('View Schedule','class-list',array(
+	  				'query' => array('teacher' => $node->nid),
+	  				'attributes' => array('class' => array('blue-button')),
+	  			));
+	  		}
+  		}
+
+  		if($view_mode == 'full'){
+	 	  	$student_group_nid = group_get_teacher_student_group($node->nid);
+	  		if(!empty($student_group_nid) && !og_is_member('node',$student_group_nid)){
+	  			$node->content['join_group'] = drupal_get_form('teacher_join_student_group_form',$student_group_nid);
+	  		}
+
+	   		if($has_classes){
+	  			$node->content['view_schedule']['#markup'] = l('View Schedule','class-list',array(
+	  				'query' => array('teacher' => $node->nid),
+	  				'attributes' => array('class' => array('view-schedule')),
+	  			));
+	  		}
+  		}
+  		
+   		if($num_photos > 1){
+	  		foreach($node->content['field_photos']['#items'] as $delta => $item){
+	  			if($delta > 0){
+	  				unset($node->content['field_photos'][$delta]);
+	  			}
+	  		}
+	  		if($view_mode == 'full'){
+		  		$node->content['view_photos']['#markup'] = l('View Image Gallery','photo-gallery/'.$node->nid,array(
+		  			'attributes' => array('class' => array('view-image-gallery')),
+		  		));
+	  		}
+  		}
+  	}
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function teacher_node_insert($node) {
+	if($node->type == 'teacher' && account_is_teacher(user_load($node->uid))){
+		teacher_update_user_profile($node);
+		teacher_update_tags($node);
+	}
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function teacher_node_update($node) {
+	if($node->type == 'teacher' && account_is_teacher(user_load($node->uid))){
+		if(!isset($node->ignore_address_update)){
+			teacher_update_user_profile($node);
+		}
+		teacher_update_tags($node);
+	}
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function teacher_node_presave($node) {
+	if($node->type == 'teacher'){
+		$lat_lng = teacher_get_lat_lng($node);
+		if($lat_lng !== FALSE){
+			$node->field_latitude[LANGUAGE_NONE][0]['value'] = $lat_lng['lat'];
+			$node->field_longitude[LANGUAGE_NONE][0]['value'] = $lat_lng['lng'];
+		}
+	}
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function teacher_user_presave(&$edit, $account, $category) {
+  $lat_lng = teacher_roll_model_practitioner_get_lat_lng($account);
+  if($lat_lng !== FALSE){
+    $edit['field_latitude'][LANGUAGE_NONE][0]['value'] = $lat_lng['lat'];
+    $edit['field_longitude'][LANGUAGE_NONE][0]['value'] = $lat_lng['lng'];
+  }
+}
+
+/**
+ * Implements hook_hide_submit_valid_forms().
+ */
+function teacher_hide_submit_valid_forms() {
+  return 'teacher_node_form';
+}
+
+function teacher_order_has_teacher_renewal($order){
+  foreach($order->products as $product){
+	if($product->nid == variable_get('teacher_renewal_product_id','')){
+	  return TRUE;
+	}
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_uc_user_credit_order_is_eligible().
+ */
+function teacher_uc_user_credit_order_is_eligible($credit, $order) {
+  if(teacher_order_has_teacher_renewal($order)){
+	return FALSE;
+  }
+}
+
+/**
+ * Implements hook_uc_checkout_complete().
+ */
+function teacher_uc_checkout_complete($order, $account){
+  if(teacher_order_has_teacher_renewal($order)){
+	if(account_is_teacher($account)){
+	  //If teacher purchased a renewal, add 1 year to their license renewal date
+	  $account_edit['field_license_renewal_date'][LANGUAGE_NONE][0]['value'] = date('Y-m-d',strtotime('+ 1 year',strtotime($account->field_license_renewal_date[LANGUAGE_NONE][0]['value'])));
+	  user_save($account,$account_edit);
+	}
+  }
+}
+
+function teacher_update_user_profile($node){
+	$account = user_load($node->uid);
+	$edit['field_location'] = $node->field_address;
+
+	$wrapper = entity_metadata_wrapper('node', $node);
+	if($wrapper->field_email->value()){
+	  $account->mail = $wrapper->field_email->value();
+    }
+
+	if(!empty($edit)){
+		user_save($account,$edit);
+	}
+}
+
+function teacher_update_teacher_profile($account){
+	$nid = teacher_get_teacher_page_nid($account);
+	if($nid){
+		$node = node_load($nid);
+		$node->field_address = $account->field_location;
+		
+		//This tells the node_save to not try loop back to try and update the user address resulting in an infinite loop. 
+		$node->ignore_address_update = TRUE;
+
+		node_save($node);
+	}
+}
+
+function teacher_join_student_group_form($form, &$form_state, $student_group_nid){
+	$form['sg'] = array(
+		'#type' => 'hidden',
+		'#value' => $student_group_nid,
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Join Group'),
+	);
+
+	return $form;
+}
+
+function teacher_join_student_group_form_validate($form, &$form_state){
+	global $user;
+	if($user->uid == 0){
+		form_set_error('');
+		drupal_set_message(t(_mm('teacher_join_group_login','You must be logged in to join a group.')), 'warning');
+	}
+}
+
+function teacher_join_student_group_form_submit($form, &$form_state){
+	global $user;
+	$account = user_load($user->uid);
+	$name = account_get_first_name($account);
+	$group = node_load($form_state['values']['sg']);
+	og_group('node',$form_state['values']['sg']);
+	
+    drupal_mail(
+      "group",
+      "group_invite_email",
+      $account->mail,
+      language_default(),
+      array(
+      	'firstname'=> $name,
+      	'subject' => _mm('group_invite_email_subject','Yoga Tune Up Group Notification',true),
+      	'group' => $group->title,
+      ),
+      _mm('group_invite_email_from','info@yogatuneup.com',true)
+    );
+	drupal_set_message(t('You have been added to this teachers student group.'));
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function teacher_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['photo_gallery'] = array(
+    'label' => t('Photo Gallery'),
+    'custom settings' => TRUE,
+  );
+}
+
+function teacher_photo_gallery_page_callback($nid = ''){
+	$render = array();
+
+	drupal_set_title('Photo Gallery');
+	if(!empty($nid)){
+		$photo_gallery = node_view(node_load($nid),'photo_gallery');
+		unset($photo_gallery['field_photos'][0]);
+		$render['gallery'] = $photo_gallery;
+	}
+
+	return $render;
+}
+
+function teacher_meet_all_teachers_page_callback(){
+	$render = array();
+
+    $params = array();
+    if(isset($_GET['role'])){
+      $params['roles'][] = $_GET['role'];
+    }
+
+	$teachers = teacher_get_teachers(true, $params);
+
+    if(empty($teachers)){
+      $render['teachers']['#markup'] = _mm('teacher_search_no_results','<p>No results found - Try expanding your search</p>');
+    }
+    else{
+      $nids = array_keys($teachers);
+      $nodes = node_load_multiple($nids);
+      $render['teachers'] = node_view_multiple($nodes,'teaser');
+
+      if(count($render['teachers']['nodes']) < 2){
+        $render['teachers']['#markup'] = _mm('teacher_search_no_results','<p>No results found - Try expanding your search</p>');
+      }
+
+      $render['pager'] = array('#theme' => 'pager');
+    }
+
+	return $render;
+}
+
+/**
+ * Implements hook_init().
+ */
+function teacher_init() {
+	global $user;
+
+	//Do not allow the teacher to create more than one teacher page and student group
+	if(account_is_teacher()){
+		if(arg(0) == 'node' && arg(1) == 'add' && arg(2) == 'teacher'){
+			$teacher_page_nid = teacher_get_teacher_page_nid();
+			if(!empty($teacher_page_nid)){
+				drupal_set_message('You have already created a teacher page.','warning');
+				drupal_goto('user');
+			}
+		}
+		if(arg(0) == 'node' && arg(1) == 'add' && arg(2) == 'student-group'){
+			$teacher_page_nid = teacher_get_teacher_page_nid();
+			$student_group_nid = group_get_teacher_student_group($teacher_page_nid);
+			if(!empty($student_group_nid)){
+				drupal_set_message('You have already created a student group.','warning');
+				drupal_goto('user');
+			}
+		}
+	}
+}
+
+function teacher_messages_info(){
+	return array(
+    'teacher_cert_email_from'=>array(
+      'title'=>"Teacher Cert Renewal 30 Days From Address",
+      'description'=>"From address for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_30_days',
+      ),
+    'teacher_cert_email_subject'=>array(
+      'title'=>"Teacher Cert Renewal 30 Days Email Subject",
+      'description'=>"Subject for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_30_days',
+      ),
+    'teacher_cert_email_body'=>array(
+      'title'=>"Teacher Cert Renewal 30 Days Email Body",
+      'description'=>"Body text for the Teacher Cert Renewal e-mail. %teacher_name = Teacher Name. %date = Renewal Date.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_30_days',
+      ),
+    'teacher_cert_email_7_from'=>array(
+      'title'=>"Teacher Cert Renewal 7 Days From Address",
+      'description'=>"From address for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_7_days',
+      ),
+    'teacher_cert_email_7_subject'=>array(
+      'title'=>"Teacher Cert Renewal 7 Days Email Subject",
+      'description'=>"Subject for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_7_days',
+      ),
+    'teacher_cert_email_7_body'=>array(
+      'title'=>"Teacher Cert Renewal 7 Days Email Body",
+      'description'=>"Body text for the Teacher Cert Renewal e-mail. %teacher_name = Teacher Name. %date = Renewal Date.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_7_days',
+      ),
+    'teacher_cert_email_0t_from'=>array(
+      'title'=>"Teacher Cert Renewal Day Of Teacher From Address",
+      'description'=>"From address for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_day_of_teacher',
+      ),
+    'teacher_cert_email_0t_subject'=>array(
+      'title'=>"Teacher Cert Renewal Day Of Teacher Email Subject",
+      'description'=>"Subject for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_day_of_teacher',
+      ),
+    'teacher_cert_email_0t_body'=>array(
+      'title'=>"Teacher Cert Renewal Day Of Teacher Email Body",
+      'description'=>"Body text for the Teacher Cert Renewal e-mail. %teacher_name = Teacher Name. %date = Renewal Date.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_day_of_teacher',
+      ),
+    'teacher_cert_email_0a_to'=>array(
+        'title'=>"Teacher Cert Renewal Day Of Admin To Address",
+        'description'=>"To address for the Teacher Cert Renewal e-mail",
+        'type'=>"textfield",
+        'group'=>"emails",
+        'fieldset'=>'teacher_cert_renewal_day_of_admin',
+      ),
+    'teacher_cert_email_0a_from'=>array(
+      'title'=>"Teacher Cert Renewal Day Of Admin From Address",
+      'description'=>"From address for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_day_of_admin',
+      ),
+    'teacher_cert_email_0a_subject'=>array(
+      'title'=>"Teacher Cert Renewal Day Of Admin Email Subject",
+      'description'=>"Subject for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_day_of_admin',
+      ),
+    'teacher_cert_email_0a_body'=>array(
+      'title'=>"Teacher Cert Renewal Day Of Admin Email Body",
+      'description'=>"Body text for the Teacher Cert Renewal e-mail. %teacher_name = Teacher Full Name. %date = Renewal Date. %teacher_email = Teacher E-mail Address.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_day_of_admin',
+      ),
+    'teacher_cert_email_p23_from'=>array(
+      'title'=>"Teacher Cert Renewal Past 23 Days From Address",
+      'description'=>"From address for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_past_23_days',
+      ),
+    'teacher_cert_email_p23_subject'=>array(
+      'title'=>"Teacher Cert Renewal Past 23 Days Email Subject",
+      'description'=>"Subject for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_past_23_days',
+      ),
+    'teacher_cert_email_p23_body'=>array(
+      'title'=>"Teacher Cert Renewal Past 23 Days Email Body",
+      'description'=>"Body text for the Teacher Cert Renewal e-mail. %teacher_name = Teacher Name. %date = Renewal Date.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_past_23_days',
+      ),
+    'teacher_cert_email_p30a_to'=>array(
+        'title'=>"Teacher Cert Renewal Past 30 Days Admin To Address",
+        'description'=>"To address for the Teacher Cert Renewal e-mail",
+        'type'=>"textfield",
+        'group'=>"emails",
+        'fieldset'=>'teacher_cert_renewal_past_30_days_admin',
+      ),
+    'teacher_cert_email_p30a_from'=>array(
+      'title'=>"Teacher Cert Renewal Past 30 Days Admin From Address",
+      'description'=>"From address for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_past_30_days_admin',
+      ),
+    'teacher_cert_email_p30a_subject'=>array(
+      'title'=>"Teacher Cert Renewal Past 30 Days Admin Email Subject",
+      'description'=>"Subject for the Teacher Cert Renewal e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_past_30_days_admin',
+      ),
+    'teacher_cert_email_p30a_body'=>array(
+      'title'=>"Teacher Cert Renewal Past 30 Days Admin Email Body",
+      'description'=>"Body text for the Teacher Cert Renewal e-mail. %teacher_name = Teacher Name. %teacher_email = Teacher Email. %date = Renewal Date.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'teacher_cert_renewal_past_30_days_admin',
+      ),
+    'instructor_search'=>array(
+      'title'=>"Instructor Search",
+      'description'=>"Text line on instructor search block",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      ),
+    'instructor_zip_search'=>array(
+      'title'=>"Instructor Zip Search",
+      'description'=>"Text line on instructor zip search block",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      ),
+    'teacher_join_group_login'=>array(
+      'title'=>"Login to join teachers group message",
+      'description'=>"Message if you are not logged in and try to join a student group",
+      'type'=>"richtext",
+      'group'=>"teacher",
+      ),
+    'teacher_infusionsoft_tag_id'=>array(
+      'title'=>"Infusionsoft Tag ID for Teacher",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      'fieldset'=>"infusionsoft",
+      ),
+    'trainer_infusionsoft_tag_id'=>array(
+      'title'=>"Infusionsoft Tag ID for Trainer",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      'fieldset'=>"infusionsoft",
+      ),
+    'non_renewal_infusionsoft_tag_id'=>array(
+      'title'=>"Infusionsoft Tag ID for Non-Renewal",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      'fieldset'=>"infusionsoft",
+      ),
+    'integrated_teacher_infusionsoft_tag_id'=>array(
+      'title'=>"Infusionsoft Tag ID for Integrated Teacher",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      'fieldset'=>"infusionsoft",
+      ),
+    'integrated_teacher_removed_infusionsoft_tag_id'=>array(
+      'title'=>"Infusionsoft Tag ID for Removed Integrated Teacher",
+      'description'=>"",
+      'type'=>"textfield",
+      'group'=>"teacher",
+      'fieldset'=>"infusionsoft",
+      ),
+    'teacher_search_no_results'=>array(
+      'title'=>"Teacher Search No Results",
+      'description'=>"",
+      'type'=>"richtext",
+      'group'=>"teacher",
+      'fieldset'=>"teacher",
+    ),
+  );
+}
+
+
+function teacher_get_teacher_page_nid($account = null){
+	global $user;
+	if(!$account){
+		global $user;
+		$account = $user;
+	}
+	return db_select('node','n')->fields('n',array('nid'))->condition('n.type','teacher')->condition('n.uid',$account->uid)->execute()->fetchField();
+}
+
+function teacher_get_student_group_nid($account = null){
+	global $user;
+	if(!$account){
+		global $user;
+		$account = $user;
+	}
+	return db_select('node','n')->fields('n',array('nid'))->condition('n.type','student_group')->condition('n.uid',$account->uid)->execute()->fetchField();
+}
+
+function teacher_get_teachers($pagination = false, $params = array()){
+	$teachers = array(); 
+
+	if($pagination){
+		$query = db_select('node','n')->extend('PagerDefault');
+	}
+	else{
+		$query = db_select('node','n');
+	}
+
+	$query->fields('n',array('nid','title'))
+		->condition('n.type','teacher')
+		->condition('n.status',1)
+		->orderBy('n.sticky','DESC')
+		->orderBy('n.title','ASC');
+
+    if(!empty($params)){
+      foreach($params as $key => $param){
+        switch($key){
+          case 'roles':
+            $rids = array();
+            foreach($param as $role_name){
+              $role = user_role_load_by_name($role_name);
+              $rids[] = $role->rid;
+            }
+            $query->innerJoin('users_roles', 'ur', 'n.uid = ur.uid');
+            $query->condition('ur.rid', $rids, 'IN');
+            break;
+        }
+      }
+    }
+
+	$found_zip = false;
+
+	if($pagination && isset($_GET['zip']) && isset($_GET['radius'])){
+		module_load_include('class', 'teacher', 'classes/GeoLocation');
+		$parsed_zip = str_replace(' ','',$_GET['zip']);
+		$result = db_select('zip_codes','z')->fields('z')->condition('z.zip',$parsed_zip)->execute();
+
+        if(!$result->rowCount()){
+          $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',substr($parsed_zip,0,-1).'%','LIKE')->range(0,1)->execute();
+        }
+
+		foreach($result as $row){
+			$found_zip = true;
+
+			$user_lat = (double) $row->lat;
+			$user_lng = (double) $row->lng;
+			$user_country = $row->country;
+
+			$location = GeoLocation::fromDegrees($user_lat, $user_lng);
+        	$coordinates = $location->boundingCoordinates($_GET['radius'], 'miles');
+
+        	$lat_min = (double) $coordinates[0]->degLat;
+        	$lng_min = (double) $coordinates[0]->degLon;
+        	$lat_max = (double) $coordinates[1]->degLat;
+        	$lng_max = (double) $coordinates[1]->degLon;
+		}
+
+		if($found_zip){
+			$query->innerJoin('field_data_field_address','a','n.nid = a.entity_id');
+			$query->condition('a.bundle','teacher')->condition('a.field_address_country',$user_country);
+			$query->innerJoin('field_data_field_latitude','lat','n.nid = lat.entity_id');
+			$query->condition('lat.bundle', 'teacher');
+			$query->innerJoin('field_data_field_longitude','lng','n.nid = lng.entity_id');
+            $query->condition('lng.bundle', 'teacher');
+			$query->where('lat.field_latitude_value >= '.$lat_min.' AND lat.field_latitude_value <= '.$lat_max);
+			$query->where('lng.field_longitude_value >= '.$lng_min.' AND lng.field_longitude_value <= '.$lng_max);
+			$query->addExpression('3956 * 2 * ASIN(SQRT( POWER(SIN((:user_lat - lat.field_latitude_value) *  pi()/180 / 2), 2) +COS(:user_lat * pi()/180) * COS(lat.field_latitude_value * pi()/180) * POWER(SIN((:user_lng -lng.field_longitude_value) * pi()/180 / 2), 2) ))','distance',array(':user_lat' => $user_lat, ':user_lng' => $user_lng));
+			$query->havingCondition('distance',$_GET['radius'],'<=');
+		}
+		else{
+		  return array();
+        }
+	}
+    else if($pagination && isset($_GET['country'])){
+      $query->innerJoin('field_data_field_address','a', 'n.nid = a.entity_id');
+      $query->condition('a.field_address_country',$_GET['country']);
+    }
+	
+	if($pagination){
+      if(!empty($params['limit'])){
+        $query->limit($params['limit']);
+      }
+      else{
+        $query->limit(TEACHER_PAGINATION);
+      }
+	}
+
+	$result = $query->execute();
+
+	foreach($result as $row){
+		$teachers[$row->nid] = $row->title;
+	}
+
+	return $teachers;
+}
+
+function teacher_get_roll_model_practitioners($pagination = false, $params = array()){
+  $teachers = array();
+
+  $role = user_role_load_by_name('Roll Model Practitioner');
+  if($pagination) {
+    $query = db_select('users', 'u')->extend('PagerDefault');
+  }
+  else{
+    $query = db_select('users', 'u');
+  }
+
+  $query->fields('u', array('uid'));
+
+  if(!empty($params['uid'])){
+    $query->condition('u.uid', $params['uid']);
+  }
+
+  $query->innerJoin('field_data_field_first_name', 'fn', 'fn.entity_id = u.uid');
+  $query->condition('fn.bundle', 'user');
+
+  $query->innerJoin('field_data_field_last_name', 'ln', 'ln.entity_id = u.uid');
+  $query->condition('ln.bundle', 'user');
+
+  $query->innerJoin('users_roles', 'ur', 'ur.uid = u.uid');
+  $query->condition('ur.rid', $role->rid);
+
+  $query->orderBy('fn.field_first_name_value', 'ASC')->orderBy('ln.field_last_name_value', 'ASC');
+
+  $found_zip = false;
+
+  if($pagination && isset($_GET['zip']) && isset($_GET['radius'])){
+    module_load_include('class', 'teacher', 'classes/GeoLocation');
+    $parsed_zip = str_replace(' ','',$_GET['zip']);
+    $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',$parsed_zip)->execute();
+
+    if(!$result->rowCount()){
+      $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',substr($parsed_zip,0,-1).'%','LIKE')->range(0,1)->execute();
+    }
+
+    foreach($result as $row){
+      $found_zip = true;
+
+      $user_lat = (double) $row->lat;
+      $user_lng = (double) $row->lng;
+      $user_country = $row->country;
+
+      $location = GeoLocation::fromDegrees($user_lat, $user_lng);
+      $coordinates = $location->boundingCoordinates($_GET['radius'], 'miles');
+
+      $lat_min = (double) $coordinates[0]->degLat;
+      $lng_min = (double) $coordinates[0]->degLon;
+      $lat_max = (double) $coordinates[1]->degLat;
+      $lng_max = (double) $coordinates[1]->degLon;
+    }
+
+    if($found_zip){
+      $query->innerJoin('field_data_field_location','a','u.uid = a.entity_id');
+      $query->condition('a.bundle','user')->condition('a.field_location_country',$user_country);
+      $query->innerJoin('field_data_field_latitude','lat','u.uid = lat.entity_id');
+      $query->condition('lat.bundle', 'user');
+      $query->innerJoin('field_data_field_longitude','lng','u.uid = lng.entity_id');
+      $query->condition('lng.bundle', 'user');
+      $query->where('lat.field_latitude_value >= '.$lat_min.' AND lat.field_latitude_value <= '.$lat_max);
+      $query->where('lng.field_longitude_value >= '.$lng_min.' AND lng.field_longitude_value <= '.$lng_max);
+      $query->addExpression('3956 * 2 * ASIN(SQRT( POWER(SIN((:user_lat - lat.field_latitude_value) *  pi()/180 / 2), 2) +COS(:user_lat * pi()/180) * COS(lat.field_latitude_value * pi()/180) * POWER(SIN((:user_lng -lng.field_longitude_value) * pi()/180 / 2), 2) ))','distance',array(':user_lat' => $user_lat, ':user_lng' => $user_lng));
+      $query->havingCondition('distance',$_GET['radius'],'<=');
+    }
+    else{
+      return array();
+    }
+  }
+  else if($pagination && isset($_GET['country'])){
+    $query->innerJoin('field_data_field_location','a', 'u.uid = a.entity_id');
+    $query->condition('a.field_location_country',$_GET['country']);
+  }
+
+  if($pagination){
+    if(!empty($params['limit'])){
+      $query->limit($params['limit']);
+    }
+    else{
+      $query->limit(TEACHER_PAGINATION);
+    }
+  }
+
+  $result = $query->execute();
+
+  foreach($result as $row){
+    $account = user_load($row->uid);
+
+    $teachers[$account->uid] = account_get_full_name($account);
+  }
+
+  return $teachers;
+}
+
+function teacher_get_classes($nid){
+	$classes = array();
+
+	$options = array('teacher' => $nid);
+
+	$query = class_get_query($options);
+	$query->fields('n',array('nid'));
+
+	$result = $query->execute();
+	foreach($result as $row){
+		$classes[$row->nid] = $row->nid;
+	}
+
+	return $classes;
+}
+
+function teacher_has_classes($nid){
+	$options = array('teacher' => $nid);
+
+	$query = class_get_query($options);
+	$query->fields('n',array('nid'));
+
+	return $query->countQuery()->execute()->fetchField();
+}
+
+function teacher_is_trainer($nid){
+	$teacher = node_load($nid);
+	$account = user_load($teacher->uid);
+	
+	return account_is_trainer($account);
+}
+
+function teacher_gather_content($account){
+    $teacher_nid = teacher_get_teacher_page_nid($account);
+    $student_group_nid = teacher_get_student_group_nid($account);
+    $classes = array();
+    $class_results = db_select('node','n')->fields('n',array('nid'))->condition('type','class')->condition('uid',$account->uid)->execute();
+    foreach($class_results as $row){
+    	$classes[] = $row->nid;
+    }
+
+    $teacher_content = $classes;
+    if($teacher_nid){
+    	$teacher_content[] = $teacher_nid;
+    }
+    if($student_group_nid){
+    	$teacher_content[] = $student_group_nid;
+    }
+
+    return $teacher_content;
+}
+
+function teacher_change_content_status($account,$status){
+	$nids = teacher_gather_content($account);
+	$nodes = node_load_multiple($nids);
+	foreach ($nodes as $node) {
+	  $node->status = $status;
+	  if($node->type == 'teacher'){
+	  	$node->ignore_address_update = true;
+	  }
+	  node_save($node);
+	}
+}
+
+function teacher_update_tags($node){
+	$account = user_load($node->uid);
+	
+	$cert_level_vocab = taxonomy_get_tree(YTU_CERT_LEVEL_VID,0,null,TRUE);
+	foreach($cert_level_vocab as $item){
+		$tag_id = teacher_cert_level_get_infusionsoft_tag_id($item);
+		if($tag_id){
+			infusionsoft_contact_remove_tag($account,$tag_id);
+		}
+	}
+
+	foreach(field_get_items('node', $node, 'field_ytu_certification_level') as $item){
+		$item = field_collection_item_load($item['value']);
+		$item = field_get_items('field_collection_item', $item, 'field_cert_level');
+		$item = taxonomy_term_load($item[0]['tid']);
+		$tag_id = teacher_cert_level_get_infusionsoft_tag_id($item);
+		if($tag_id){
+			infusionsoft_contact_apply_tag($account,$tag_id);
+		} 
+	}
+}
+
+function teacher_cert_level_get_infusionsoft_tag_id($term){
+	$tag_id = field_get_items('taxonomy_term',$term,'field_infusionsoft_tag_id');
+	if($tag_id){
+		return $tag_id[0]['value'];
+	}
+	else{
+		return '';
+	}
+}
+
+function teacher_get_teachers_by_license_renewal($date){
+	$query = db_select('field_data_field_license_renewal_date','rd')
+			->fields('rd',array('field_license_renewal_date_value'))
+			->where('DATE(field_license_renewal_date_value) = :date',array(':date' => $date));
+	$query->innerJoin('users','u','rd.entity_id = u.uid');
+	$query->fields('u',array('uid'));
+
+    $query->innerJoin('users_roles', 'r', 'u.uid = r.uid');
+    $query->condition('r.rid', TEACHER_RID);
+
+	return $query->execute();
+}
+
+function teacher_get_expired_teachers(){
+  $query = db_select('field_data_field_license_renewal_date','rd')
+    ->fields('rd',array('field_license_renewal_date_value'))
+    ->where('DATE(field_license_renewal_date_value) <= :date',array(':date' => date('Y-m-d',strtotime('- 30 days'))));
+
+  $query->innerJoin('users','u','rd.entity_id = u.uid');
+  $query->fields('u',array('uid'));
+
+  $query->innerJoin('users_roles', 'r', 'u.uid = r.uid');
+  $query->condition('r.rid', TEACHER_RID);
+
+  return $query->execute();
+}
+
+function teacher_is_expiring($uid){
+	return db_select('field_data_field_license_renewal_date','rd')
+			->fields('rd',array('field_license_renewal_date_value'))
+			->where('DATE(field_license_renewal_date_value) <= :date',array(':date' => date('Y-m-d',strtotime('+ 30 days'))))
+			->condition('entity_id',$uid)
+			->countQuery()->execute()->fetchField();
+}
+
+function teacher_zip_is_valid($zip){
+	return db_select('zip_codes','z')->fields('z',array('zip'))->condition('z.zip',str_replace(' ','',$zip))->execute()->fetchField();
+}
+
+function teacher_get_lat_lng($teacher){
+  $items = field_get_items('node', $teacher, 'field_address');
+  if(isset($items[0]['postal_code'])){
+	$parsed_zip = str_replace(' ','',$items[0]['postal_code']);
+	$result = db_select('zip_codes','z')->fields('z')->condition('z.zip',$parsed_zip)->execute();
+    if(!$result->rowCount()){
+      $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',substr($parsed_zip,0,-1).'%','LIKE')->range(0,1)->execute();
+    }
+	foreach($result as $row){
+		return array(
+			'lat' => (double) $row->lat,
+			'lng' => (double) $row->lng,
+		);
+	}
+  }
+
+  return FALSE;
+}
+
+function teacher_roll_model_practitioner_get_lat_lng($account){
+  $items = field_get_items('user', $account, 'field_location');
+  if(isset($items[0]['postal_code'])){
+    $parsed_zip = str_replace(' ','',$items[0]['postal_code']);
+    $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',$parsed_zip)->execute();
+    if(!$result->rowCount()){
+      $result = db_select('zip_codes','z')->fields('z')->condition('z.zip',substr($parsed_zip,0,-1).'%','LIKE')->range(0,1)->execute();
+    }
+    foreach($result as $row){
+      return array(
+        'lat' => (double) $row->lat,
+        'lng' => (double) $row->lng,
+      );
+    }
+  }
+
+  return FALSE;
+}
+
+function teacher_get_cert_levels($node){
+	$cert_levels = array();
+	foreach(field_get_items('node', $node, 'field_ytu_certification_level') as $item){
+		$item = field_collection_item_load($item['value']);
+		$item = field_get_items('field_collection_item', $item, 'field_cert_level');
+		$item = taxonomy_term_load($item[0]['tid']);
+		$cert_levels[$item->tid] = $item->name;
+	}
+
+	return $cert_levels;
+}
+
+function teacher_get_teacher_users(){
+	$query = db_select('users','u')->fields('u',array('uid','mail'))->condition('status',1);
+	$query->innerJoin('users_roles', 'ur', 'u.uid = ur.uid');
+	return $query->condition('rid',TEACHER_RID)->execute()->fetchAllKeyed();
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function teacher_uc_add_to_cart($nid, $qty, $data) {
+  $result = array();
+  $node = node_load($nid);
+  $cart = uc_cart_get_contents();
+
+  if($node->type == 'renewal'){
+    $message = 'This renewal is already in your cart.';
+    if(!account_is_teacher() && $node->nid == variable_get('teacher_renewal_product_id','')){
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t('Only teachers can purchase this renewal.'),
+      );
+    }
+    else if($qty > 1){
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t($message),
+      );
+    }
+    else{
+      foreach($cart as $item){
+        if($item->nid == $node->nid){
+          $result[] = array(
+            'success' => FALSE,
+            'message' => t($message),
+          );
+          break;
+        }
+      }
+    }
+  }
+
+  return $result;
+}

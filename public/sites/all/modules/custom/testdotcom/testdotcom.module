@@ -1,0 +1,334 @@
+<?php
+
+const TESTDOTCOM_URL     = 'https://www.mytestcom.net/app/myTestcomURL.cfm';
+const TESTDOTCOM_ACCOUNT = 'YogaTuneUp123';
+
+/**
+ * Implements hook_menu().
+ */
+function testdotcom_menu() {
+  $items['admin/ytu-settings/testdotcom'] = array(
+    'title'            => 'Test.com Settings',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('testdotcom_admin_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file'             => 'testdotcom.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_mail()
+ */
+function testdotcom_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'testdotcom_account_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%name', '%link', '%username', '%password'),
+        array($params['name'], $params['link'], $params['username'], $params['password']),
+        _mm('testdotcom_account_email_body', '', TRUE)
+      );
+      break;
+    case 'testdotcom_test_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap']         = FALSE;
+      $message['subject']                 = $params['subject'];
+      $message['body']                    = str_replace(
+        array('%name', '%test_name', '%link'),
+        array($params['name'], $params['test_name'], $params['link']),
+        _mm('testdotcom_test_email_body', '', TRUE)
+      );
+      break;
+  }
+}
+
+function testdotcom_messages_info() {
+  return array(
+    'testdotcom_account_email_subject' => array(
+      'title'       => "Test.com Account Created Email Subject",
+      'description' => "Test.com Account Created Email Subject",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'testdotcom',
+    ),
+    'testdotcom_account_email_body'    => array(
+      'title'       => "Test.com Account Created Email",
+      'description' => "Email informing user that their Test.com account has been created. %name = Name. %link = Login link. %username = User Name. %password = Password.",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'testdotcom',
+    ),
+    'testdotcom_test_email_subject'    => array(
+      'title'       => "Test.com Test Added Email Subject",
+      'description' => "Test.com Test Added Email Subject",
+      'type'        => "textfield",
+      'group'       => "emails",
+      'fieldset'    => 'testdotcom',
+    ),
+    'testdotcom_test_email_body'       => array(
+      'title'       => "Test.com Test Added Email",
+      'description' => "Email informing user that they have a new test on Test.com. %name = Name. %test_name = Test Name. %link = Test link",
+      'type'        => "richtext",
+      'group'       => "emails",
+      'fieldset'    => 'testdotcom',
+    ),
+  );
+}
+
+function testdotcom_product_is_test($product) {
+  return testdotcom_get_product_content_code($product) && testdotcom_get_product_group_code($product);
+}
+
+function testdotcom_get_product_content_code($product) {
+  $items = field_get_items('node', $product, 'field_test_com_content_code');
+  if (isset($items[0]['value'])) {
+    return $items[0]['value'];
+  }
+
+  return FALSE;
+}
+
+function testdotcom_get_product_group_code($product) {
+  $items = field_get_items('node', $product, 'field_test_com_group_code');
+  if (isset($items[0]['value'])) {
+    return $items[0]['value'];
+  }
+
+  return FALSE;
+}
+
+function testdotcom_get_username_from_account($account) {
+  if ($username = db_select('testdotcom_users', 'u')
+    ->fields('u', array('name'))
+    ->condition('uid', $account->uid)
+    ->execute()
+    ->fetchField()
+  ) {
+    return $username;
+  }
+
+  return str_replace(array('@', '.'), '', $account->name);
+}
+
+function testdotcom_user_has_account($account) {
+  return db_select('testdotcom_users', 'u')
+    ->fields('u')
+    ->condition('uid', $account->uid)
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+}
+
+function testdotcom_user_has_test($account, $product) {
+  return db_select('testdotcom_users_tests', 't')
+    ->fields('t')
+    ->condition('uid', $account->uid)
+    ->condition('test_code', testdotcom_get_product_content_code($product))
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+}
+
+function testdotcom_get_user_tests($account) {
+  $tests = array();
+
+  $result = db_select('testdotcom_users_tests', 't')
+    ->fields('t', array('test_code'))
+    ->condition('uid', $account->uid)
+    ->execute();
+
+  foreach ($result as $row) {
+    $tests[] = testdotcom_get_test_link($row->test_code);
+  }
+
+  return $tests;
+}
+
+function testdotcom_get_test_name_from_code($test_code) {
+  static $test_codes;
+
+  if (!empty($test_codes[$test_code])) {
+    return $test_codes[$test_code];
+  }
+
+  $api   = new TestDotCom();
+  $tests = $api->getContentLookupCodeValues();
+
+  foreach ($tests as $test) {
+    if ($test[0] == $test_code) {
+      $test_codes[$test_code] = $test[1];
+
+      return $test_codes[$test_code];
+    }
+  }
+
+  return '';
+}
+
+function testdotcom_create_account($account) {
+  $testdotcom = new TestDotCom();
+  $password   = user_password();
+
+  if ($response = $testdotcom->addUser($account, $password)) {
+
+    $record       = new stdClass();
+    $record->uid  = $account->uid;
+    $record->name = testdotcom_get_username_from_account($account);
+
+    drupal_write_record('testdotcom_users', $record);
+
+    drupal_mail(
+      "testdotcom",
+      "testdotcom_account_email",
+      $account->mail,
+      language_default(),
+      array(
+        'name'     => account_get_first_name($account),
+        'link'     => testdotcom_get_login_link($account, $password),
+        'username' => testdotcom_get_username_from_account($account),
+        'password' => $password,
+        'subject'  => _mm('testdotcom_account_email_subject', 'Your Test.com Account', TRUE),
+      )
+    );
+
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+function testdotcom_add_test_to_account($account, $product, $order_id, $existing_account) {
+  $testdotcom = new TestDotCom();
+
+  if ($response = $testdotcom->updateGroupMembership($account, $product)) {
+
+    $record             = new stdClass();
+    $record->uid        = $account->uid;
+    $record->order_id   = $order_id;
+    $record->group_code = testdotcom_get_product_group_code($product);
+    $record->test_code  = testdotcom_get_product_content_code($product);
+
+    drupal_write_record('testdotcom_users_tests', $record);
+
+    $title = testdotcom_get_test_name_from_code(testdotcom_get_product_content_code($product));
+    if (empty($title)) {
+      $title = $product->title;
+    }
+
+    if ($existing_account) {
+      drupal_mail(
+        "testdotcom",
+        "testdotcom_test_email",
+        $account->mail,
+        language_default(),
+        array(
+          'name'      => account_get_first_name($account),
+          'test_name' => $title,
+          'link'      => testdotcom_get_test_link(testdotcom_get_product_content_code($product)),
+          'subject'   => _mm('testdotcom_test_email_subject', 'Test.com Test Added', TRUE),
+        )
+      );
+    }
+  }
+}
+
+function testdotcom_get_login_link($account, $password) {
+  $params = array(
+    'query'      => array(
+      'accountLogin' => TESTDOTCOM_ACCOUNT,
+      'userLogin'    => testdotcom_get_username_from_account($account),
+      'userPassword' => $password,
+    ),
+    'absolute'   => TRUE,
+    'attributes' => array(
+      'target' => '_blank',
+    ),
+  );
+
+  return l('Log In', TESTDOTCOM_URL, $params);
+}
+
+function testdotcom_get_test_link($test_code) {
+  $params = array(
+    'query'      => array(
+      'accountLogin'    => TESTDOTCOM_ACCOUNT,
+      'takeContentCode' => $test_code,
+    ),
+    'absolute'   => TRUE,
+    'attributes' => array(
+      'target' => '_blank',
+    ),
+  );
+
+  $test_name = testdotcom_get_test_name_from_code($test_code);
+  if (empty($test_name)) {
+    $test_name = 'Your Test';
+  }
+
+  return l($test_name, TESTDOTCOM_URL, $params);
+}
+
+/**
+ * Implements hook_uc_add_to_cart().
+ */
+function testdotcom_uc_add_to_cart($nid, $qty, $data) {
+  global $user;
+
+  $result  = array();
+  $node    = node_load($nid);
+  $cart    = uc_cart_get_contents();
+  $account = user_load($user->uid);
+
+  if (testdotcom_product_is_test($node)) {
+    $message = 'This test is already in your cart.';
+
+    if ($qty > 1) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t($message),
+      );
+    }
+    else {
+      foreach ($cart as $item) {
+        if ($item->nid == $node->nid) {
+          $result[] = array(
+            'success' => FALSE,
+            'message' => t($message),
+          );
+          break;
+        }
+      }
+    }
+
+    if (testdotcom_user_has_test($account, $node)) {
+      $result[] = array(
+        'success' => FALSE,
+        'message' => t('You already own this test.'),
+      );
+    }
+
+  }
+
+  return $result;
+}
+
+/**
+ * Implements hook_uc_checkout_complete().
+ */
+function testdotcom_uc_checkout_complete($order, $account) {
+  foreach ($order->products as $product) {
+    $product = node_load($product->nid);
+    if (testdotcom_product_is_test($product)) {
+      $existing_account = testdotcom_user_has_account($account);
+      if (!$existing_account) {
+        testdotcom_create_account($account);
+      }
+
+      testdotcom_add_test_to_account($account, $product, $order->order_id, $existing_account);
+    }
+  }
+}

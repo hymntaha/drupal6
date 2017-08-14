@@ -1,0 +1,92 @@
+@mixin spacing-reset{
+	padding:0;
+	margin:0;
+	border:0;
+}
+
+@mixin list-reset{
+	@include spacing-reset;
+	li{
+		list-style-type:none;
+		list-style-image:none;
+	}
+}
+
+@mixin text-indent{
+	text-indent:-9999px;
+	text-transform:capitalize;
+}
+
+@mixin inline-block{
+	display:inline-block;
+	*display:inline;
+	zoom:1;
+}
+
+@mixin image-background{
+  @include spacing-reset;
+  @include text-indent;
+  background-color:transparent;
+  background-repeat:no-repeat;
+}
+
+@mixin link-image-background{
+  @include image-background;
+  @include inline-block;
+  vertical-align:top;
+
+  .lt-ie8 &{
+    display:block;
+    float:left;
+  }
+}
+
+@mixin user-dashboard-icon{
+  display:block;
+  background-repeat:no-repeat;
+  background-position:center left;
+  padding-left:25px;
+}
+
+@mixin border-page-style{
+  #page-title{
+    display:none;
+  }
+  #main-wrapper{
+    background-color:#fff;
+    @include border-radius(10px);
+    padding:18px;
+
+    #top-content,
+    #content{
+      border:9px solid #ebecf0 !important;
+      @include border-radius(10px);
+      padding:20px;
+    }
+
+    #top-content{
+      margin-bottom:3px;
+    }
+  }
+}
+
+@mixin blue-title{
+  font-size:18px;
+  line-height:22px;
+  color:#3776C0;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+@mixin button{
+  color: #fff !important;
+  text-decoration: none;
+  cursor: pointer;
+  border-color: #c0332f;
+  padding: 3px 5px;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 3px;
+  border:2px solid #c0332f;
+  white-space:nowrap;
+}

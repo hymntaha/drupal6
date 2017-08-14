@@ -1,0 +1,125 @@
+.navbar-default {
+  background-color: transparent;
+  border: none;
+}
+#navbar{
+  margin-bottom: 0;
+}
+.navbar{
+  min-height: 75px;
+  nav{
+    font-size: 14px;
+    background-color: @white;
+    a{
+color: @yoga-gray;
+      line-height: 40px;
+      padding:0 10px;
+      &:hover {
+        background-color: lighten(@yoga-red,8%);
+      }
+    }
+    .account-links{
+      float:right;
+      color: @white;
+    }
+    .region.region-navigation{
+      .container;
+    }
+  }
+  .block-uc-ajax-cart{
+    float:left;
+    margin-top:-40px;
+    background-color: transparent;
+    width: 10em;
+  }
+}
+
+#block-system-main-menu{
+  .container;
+  font-size: @font-size-base;
+  height: 70px;
+
+  ul.menu.nav{
+    .navbar-nav;
+    .hidden-xs;
+    font-size: 18px;
+    font-weight: 600;
+color: @yoga-gray;
+    padding-top: 6px;
+    li > a, li > span {
+      position: relative;
+      display: block;
+      line-height: 1.2;
+    }
+    & > li{
+      max-width: 120px;
+      font-weight: 600;
+      text-align: center;
+      & > a, & > span {
+        padding: 10px 0;
+      }
+    }
+    .dropdown-menu{
+      padding:0 15px;
+      min-width: 200px;
+       li{
+         padding:5px 0 0 0;
+         &:first-child{
+           padding-top:15px;
+         }
+         &:last-child{
+           padding-bottom:15px;
+         }
+         a{
+             padding:3px;
+           &:hover, &:active{
+             color:@white;
+             background-color: lighten(@yoga-red,10);
+           }
+           &.active{
+             background-color: @yoga-red;
+             color:@white;
+             &:hover, &:active{
+               color:@white;
+               background-color: lighten(@yoga-red,10);
+             }
+           }
+         }
+       }
+     }
+  }
+}
+
+#navbar .navbar-nav{
+  .visible-xs;
+  .visible-sm;
+}
+
+#block-system-main-menu{
+  .hidden-xs;
+  .hidden-sm;
+}
+
+.block-system-main-menu{
+  float:left;
+  display:inline-block;
+  img{
+    width: 70px;
+  }
+}
+.container-fluid,.navbar-collapse{
+  padding:0;
+}
+body.logged-in{
+  .navbar .block-uc-ajax-cart{
+    float:right;
+    margin-top: -46px;
+  }
+  .account-links{
+    .hidden-xs;
+  }
+}
+
+
+
+

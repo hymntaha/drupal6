@@ -1,0 +1,1 @@
+<div id="mediaplayer-<?= $nid ?>" class="media-player"></div>

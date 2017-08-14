@@ -1,0 +1,256 @@
+/**
+ * @file
+ * Field Styling
+ *
+ * The Fences module allows site builders to pick the semeantic HTML5 element
+ * for each field while editing the field's settings. There's no way a theme
+ * can ever know which element to use for the fields on your site, so Zen
+ * just uses lets Drupal core or Fences decide. Since you DO NOT want 3 wrapping
+ * divs around every field (do you?), we highly recommend Fences.
+ *
+ * http://drupal.org/project/fences
+ */
+/*
+  Reset spacing on field collections
+*/
+.field-collection-container {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.field-collection-container .field-items .field-item {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.field-collection-container .field-items .field-item .field-collection-view {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.feature-image-wrapper {
+  margin-top: -27px;
+}
+.node-type-product-landing .feature-image-wrapper {
+  margin-bottom: 15px;
+}
+
+.field-name-field-feature-block > .field-items > .field-item {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  width: 220px;
+  margin: 0 10px;
+  vertical-align: top;
+}
+.field-name-field-feature-block .field-name-field-title {
+  line-height: 42px;
+  margin-top: -3px;
+  text-align: center;
+  height: 42px;
+  overflow: hidden;
+}
+.field-name-field-feature-block .field-name-field-title a {
+  text-decoration: none;
+  font-size: 18px;
+  color: #333;
+}
+.field-name-field-feature-block .field-name-field-title a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.field-name-field-feature-block .learn-more {
+  font-size: 11px;
+  color: #6CF;
+}
+.field-name-field-feature-block .learn-more:hover {
+  text-decoration: underline;
+}
+
+.node-homepage > .field-name-body {
+  background-color: #fff;
+  background-repeat: no-repeat;
+  background-position: 483px 50px;
+}
+.node-homepage > .field-name-body h1 {
+  font-weight: normal;
+  margin-top: 6px;
+  margin-bottom: 15px;
+}
+
+.field-name-field-photos .field-item {
+  line-height: 0;
+}
+.field-name-field-photos .field-item img {
+  border: 3px solid #ebecf0;
+}
+.view-mode-photo_gallery .field-name-field-photos .field-item {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  width: 104px;
+  text-align: center;
+  margin: 10px 15px;
+}
+
+.field-name-field-bottom-text {
+  font-size: 18px;
+  line-height: 30px;
+  margin-top: 28px;
+}
+
+.btn-back {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  text-indent: -9999px;
+  text-transform: capitalize;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: top;
+  width: 43px;
+  height: 18px;
+  background-image: url("../images/back-btn.gif");
+}
+.lt-ie8 .btn-back {
+  display: block;
+  float: left;
+}
+
+.field-name-field-teaser-image img,
+.field-name-uc-product-image img,
+.node-quickfix-video .field-name-field-image img {
+  border: 3px solid #EBECF0;
+}
+
+.field-name-field-price-ranges {
+  font-size: 11px;
+}
+
+.field-name-field-question {
+  font-size: 18px;
+  line-height: 22px;
+  color: #3776C0;
+  font-weight: bold;
+  margin-bottom: 10px;
+  margin-bottom: 0;
+  font-size: 11px;
+}
+
+.user-dashboard-row {
+  padding: 10px 0;
+  border-top: 1px solid #e8e8e8;
+}
+.user-dashboard-row .my-videos {
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center left;
+  padding-left: 25px;
+  background-image: url("../images/ico-my-videos.png");
+}
+.user-dashboard-row .my-groups {
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center left;
+  padding-left: 25px;
+  background-image: url("../images/ico-my-groups.png");
+}
+.user-dashboard-row .coaching-call-archive {
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center left;
+  padding-left: 25px;
+  background-image: url("../images/ico-coaching-call-archive.png");
+}
+.user-dashboard-row .video {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  width: 275px;
+  margin-right: 20px;
+  margin-bottom: 10px;
+}
+.user-dashboard-row .video img, .user-dashboard-row .video .video-title {
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: middle;
+}
+.user-dashboard-row .video img {
+  margin-right: 5px;
+}
+.user-dashboard-row .video .video-title {
+  width: 215px;
+  text-decoration: underline;
+}
+
+.field-name-taxonomy-catalog {
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+}
+
+.field-name-field-subscriptions > .field-items > .field-item {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #E8E8E8;
+  margin-bottom: 15px;
+}
+.field-name-field-subscriptions > .field-items > .field-item.first {
+  margin-top: 15px;
+  border-top: 1px solid #E8E8E8;
+  padding-top: 15px;
+}
+
+.link-button {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background-color: transparent;
+  color: #3776c0;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.cart-upsell-pane {
+  /*padding-top:10px;
+  width: 243px;
+  border: 9px solid #ebecf0 !important;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  margin-left: 3px;
+  padding: 10px 15px;*/
+}
+.cart-upsell-pane .upsell-product {
+  width: 188px;
+  text-align: center;
+  margin: 0 4px;
+  display: inline-block;
+  *display: inline;
+  zoom: 1;
+  vertical-align: bottom;
+}
+
+.field-name-field-products {
+  margin-top: 10px;
+}
+.field-name-field-products > .field-items > .field-item {
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+#affiliate-iframe {
+  border: 0;
+  position: absolute;
+  left: -9999px;
+}
+
+.backordered {
+  color: red;
+  font-weight: bold;
+}

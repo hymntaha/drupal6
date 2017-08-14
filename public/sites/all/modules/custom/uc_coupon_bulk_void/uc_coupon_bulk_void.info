@@ -1,0 +1,6 @@
+name = Discount Coupon Bulk Void
+description = Allows specific bulk coupons to be voided.
+dependencies[] = uc_coupon
+package = Ubercart - payment
+core = 7.x
+version = "7.x-1.0"

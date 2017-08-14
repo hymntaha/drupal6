@@ -1,0 +1,1210 @@
+<?php
+
+define('THANK_YOU_PAGE', variable_get('thank_you_page_id', ''));
+
+define('TEACHER_RID', 5);
+define('TRAINER_RID', 9);
+define('INTEGRATED_TEACHER_RID', 14);
+define('AUTHENTICATED_WHOLESALE_RID', 19);
+define('ROLE_MODEL_RID', 23);
+
+/**
+ * Implements hook_menu().
+ */
+function account_menu() {
+  $items['admin/ytu-settings'] = array(
+    'title'            => 'YTU Settings',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('account_admin_settings_form'),
+    'access arguments' => array('access ytu settings'),
+    'file'             => 'account.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function account_permission() {
+  return array(
+    'access ytu settings' => array(
+      'title'       => t('Administer YTU Settings'),
+      'description' => t('Perform administration on general site settings for YTU.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function account_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'user_login':
+      drupal_set_title('Log in');
+      $form['name']['#title']       = 'Email:';
+      $form['name']['#description'] = '';
+      $form['pass']['#title']       = 'Password:';
+      $form['pass']['#description'] = '';
+      //$form['actions']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#limit_validation_errors' => array());
+      $form['actions']['#suffix'] = '<p class="forgot-password"><a href="/user/password">Forgot your password?</a></p>';
+      if (module_exists('simple_fb_connect')) {
+        $form['actions']['#suffix'] .= '<div class="fb-signin">';
+        $form['actions']['#suffix'] .= '<h2>OR</h2>';
+        $form['actions']['#suffix'] .= l('<img src="/' . drupal_get_path('theme', 'yogatuneup') . '/images/ico-fb-login.png" />', 'user/simple-fb-connect', array('html'  => TRUE,
+                                                                                                                                                                  'query' => array('destination' => 'user')
+        ));
+        $form['actions']['#suffix'] .= '</div>';
+      }
+      break;
+    case 'user_pass' :
+      drupal_set_title('Forgot Password');
+      $form['name']['#prefix'] = _mm('forgot_password_copy');
+      $form['name']['#title']  = 'Email Address:';
+      break;
+    case 'user_profile_form':
+      if (!account_is_admin()) {
+        array_unshift($form['#validate'], 'account_user_profile_form_validate');
+        $form['#prefix']                                                                        = '<h2 class="blue-title">User Profile</h2>';
+        $form['actions']['submit']['#attributes']                                               = array('class' => array('blue-button'));
+        $form['field_pain_ailment']['#prefix']                                                  = '<div>' . _mm('account_profile_copy', '') . '</div>';
+        $form['field_location'][LANGUAGE_NONE][0]['#required']                                  = TRUE;
+        $form['field_location'][LANGUAGE_NONE][0]['street_block']['thoroughfare']['#required']  = FALSE;
+        $form['field_location'][LANGUAGE_NONE][0]['locality_block']['postal_code']['#required'] = FALSE;
+        unset($form['field_license_date'], $form['field_license_renewal_date'], $form['field_training_id']);
+        global $user;
+        $pass_reset = isset($_SESSION['pass_reset_' . $user->uid]) && isset($_GET['pass-reset-token']) && ($_GET['pass-reset-token'] == $_SESSION['pass_reset_' . $user->uid]);
+        if ($pass_reset) {
+          unset($form['field_location']);
+        }
+        $form['field_pain_ailment']['#prefix']         = '<div class="account-column">';
+        $form['field_pain_ailment']['#suffix']         = '</div>';
+        $form['field_fitness_goal']['#prefix']         = '<div class="account-column">';
+        $form['field_fitness_goal']['#suffix']         = '</div>';
+        $form['field_educational_programs']['#prefix'] = '<div class="account-column">';
+        $form['field_educational_programs']['#suffix']  = '</div>';
+        $form['field_fitness_enthusiast']['#prefix']   = '<div class="account-column">';
+        $form['field_fitness_enthusiast']['#suffix']   = '</div>';
+        $form['field_fitness_professional']['#prefix'] = '<div class="account-column">';
+        $form['field_fitness_professional']['#suffix'] = '</div>';
+        $form['field_notification_emails']['#prefix'] = '<div class="account-column">';
+        $form['field_notification_emails']['#suffix'] = '</div>';
+      }
+      else {
+        $form['field_training_id']['#weight']          = 3;
+        $form['field_license_date']['#weight']         = 4;
+        $form['field_license_renewal_date']['#weight'] = 5;
+
+        $field_names = array(
+          'field_training_id',
+          'field_license_date',
+          'field_license_renewal_date',
+        );
+        foreach ($field_names as $field_name) {
+          $form[$field_name]['#states'] = array(
+            'visible' => array(
+              ':input[name="roles[' . TEACHER_RID . ']"]' => array('checked' => TRUE),
+            ),
+          );
+        }
+        $form['#pre_render'][] = 'account_admin_user_profile_pre_render';
+        $form['#validate'][]   = 'account_user_profile_teacher_form_validate';
+      }
+
+      if(module_exists('elements')){
+        $form['account']['mail']['#type'] = 'emailfield';
+      }
+      break;
+    case 'user_register_form' :
+      drupal_set_title('Register');
+
+      array_unshift($form['#validate'], 'account_user_register_form_validate');
+
+      $form['#prefix']                      = _mm('register_copy');
+      $form['account']['name']['#required'] = FALSE;
+      $form['account']['name']['#type']     = 'hidden';
+
+      if(module_exists('elements')){
+        $form['account']['mail']['#type'] = 'emailfield';
+      }
+
+      $form['account']['mail']['#description'] = '';
+      $form['account']['agreement']            = array(
+        '#title'    => _mm('register_agreement'),
+        '#type'     => 'checkbox',
+        '#required' => TRUE,
+      );
+      $form['account']['newsletter']           = array(
+        '#title'      => _mm('register_newsletter'),
+        '#type'       => 'checkbox',
+        '#attributes' => array('checked' => 'checked'),
+      );
+
+      /**
+       * https://avatarnewyork.mydonedone.com/issuetracker/projects/15627/issues/721#history-12546133
+       */
+      unset($form['field_which_best_describes_you'][LANGUAGE_NONE]['#options'][2548]);
+      unset($form['field_which_best_describes_you'][LANGUAGE_NONE]['#options'][2562]);
+      unset($form['field_which_best_describes_you'][LANGUAGE_NONE]['#options'][2564]);
+
+      $form['#submit'][]                       = 'account_user_register_form_submit';
+      break;
+    case 'node_admin_content':
+      if (isset($form['admin']['nodes']['#rows'])) {
+        foreach ($form['admin']['nodes']['#rows'] as $nid => $row) {
+          if ($row['type'] == 'Group' || $row['type'] == 'Student Group') {
+            $form['admin']['nodes']['#rows'][$nid]['operations']['data']['#links']['edit']['href'] = 'node/' . $nid . '/group';
+          }
+        }
+      }
+      if (account_is_teacher()) {
+        //Remove Status filter and limit type filter to allowed node types
+        unset($form['filter']['filters']['status']['filters']['status']);
+        if (isset($form['filter']['filters']['status']['filters']['type']['#options'])) {
+          foreach ($form['filter']['filters']['status']['filters']['type']['#options'] as $delta => $option) {
+            if ($delta == '[any]' || $delta == 'class' || $delta == 'student_group' || $delta == 'teacher') {
+              continue;
+            }
+            unset($form['filter']['filters']['status']['filters']['type']['#options'][$delta]);
+          }
+        }
+      }
+      break;
+    case 'authnet_user_payment_profile_form':
+      /**
+       * Hide options on user billing info form for non-admin users
+       */
+      if (!account_is_admin()) {
+        $form['label']['#type']         = 'hidden';
+        $form['is_default']['#type']    = 'hidden';
+        $form['customer_type']['#type'] = 'hidden';
+      }
+
+      $account      = user_load($form['uid']['#value']);
+      $billing_info = at_home_subscription_get_billing_info($account);
+      if (!$billing_info) {
+        $form['is_default']['#value']                  = 1;
+        $form['is_default']['#attributes']['disabled'] = 'disabled';
+      }
+      $form['card']['#description']           = '';
+      $form['card']['type']['#required']      = TRUE;
+      $form['card']['number']['#required']    = TRUE;
+      $form['card']['exp_month']['#required'] = TRUE;
+      $form['card']['exp_year']['#required']  = TRUE;
+      $form['card']['cvv']['#required']       = TRUE;
+      break;
+    case 'user_admin_account':
+      $header = array(
+        'username'   => array('data' => t('Username'), 'field' => 'u.name'),
+        'name'       => array('data' => t('Name')),
+        'status'     => array('data' => t('Status'), 'field' => 'u.status'),
+        'roles'      => array('data' => t('Roles')),
+        'member_for' => array('data'  => t('Member for'),
+                              'field' => 'u.created',
+                              'sort'  => 'desc'
+        ),
+        'access'     => array('data'  => t('Last access'),
+                              'field' => 'u.access'
+        ),
+        'operations' => array('data' => t('Operations')),
+      );
+
+      foreach ($form['accounts']['#options'] as $uid => $account) {
+        $account                                    = user_load($uid);
+        $form['accounts']['#options'][$uid]['name'] = account_get_full_name($account);
+      }
+
+      $form['accounts']['#header'] = $header;
+
+      break;
+    case 'uc_addresses_get_address_form':
+      $form['uc_addresses']['#title'] = t('Add a shipping address');
+      $form['submit']['#attributes']  = array('class' => array('blue-button'));
+      break;
+    case 'webform_client_form_12':
+      $form['#prefix'] = '<script src="//turndataintomoney.com/track/trackfu.js"></script>';
+
+      $form['_TrackingURL']  = array(
+        '#type'  => 'hidden',
+        '#title' => '_TrackingURL',
+      );
+      $form['_TrackingTime'] = array(
+        '#type'  => 'hidden',
+        '#title' => '_TrackingTime',
+      );
+      $form['_TrackingDone'] = array(
+        '#type'  => 'hidden',
+        '#title' => '_TrackingDone',
+      );
+
+      $form['submitted']['address']['#required']                                  = TRUE;
+      $form['submitted']['address']['street_block']['thoroughfare']['#required']  = FALSE;
+      $form['submitted']['address']['locality_block']['postal_code']['#required'] = FALSE;
+      $form['#submit'][]                                                          = 'account_newsletter_webform_submit';
+      break;
+    case 'webform_client_form_3614':
+      $form['submitted']['address']['#required']                                  = TRUE;
+      $form['submitted']['address']['street_block']['thoroughfare']['#required']  = FALSE;
+      $form['submitted']['address']['locality_block']['postal_code']['#required'] = FALSE;
+      $form['#submit'][]                                                          = 'account_24_hour_fitness_webform_submit';
+      break;
+  }
+
+  if($form['#action'] == '/wholesale-application' || $form['#action'] == '/preauthenticated-wholesaler'){
+    $form['#submit'][] = 'account_wholesale_application_webform_submit';
+  }
+}
+
+function account_admin_user_profile_pre_render($form) {
+  $form['overlay_control']['#weight'] = 5;
+  return $form;
+}
+
+function account_user_register_form_validate($form, &$form_state) {
+  //Set the username equal to the email address.
+  if (!empty($form_state['values']['mail'])) {
+    $form_state['values']['name'] = $form_state['values']['mail'];
+  }
+}
+
+function account_user_profile_form_validate($form, &$form_state) {
+  //Set the username equal to the email address.
+  if (!empty($form_state['values']['mail'])) {
+    $form_state['values']['name'] = $form_state['values']['mail'];
+  }
+}
+
+function account_user_profile_teacher_form_validate($form, &$form_state) {
+  if ($form_state['values']['roles'][TEACHER_RID]) {
+    if (empty($form_state['values']['field_training_id'][LANGUAGE_NONE][0]['value'])) {
+      form_set_error('field_training_id', 'Training ID is required for teachers.');
+    }
+    if (empty($form_state['values']['field_license_date'][LANGUAGE_NONE][0]['value'])) {
+      form_set_error('field_license_date', 'License Date is required for teachers.');
+    }
+    if (empty($form_state['values']['field_license_renewal_date'][LANGUAGE_NONE][0]['value'])) {
+      form_set_error('field_license_renewal_date', 'License Renewal Date is required for teachers.');
+    }
+  }
+}
+
+function account_user_register_form_submit($form, &$form_state) {
+  if ($form_state['values']['newsletter']) {
+    $tag_id = _mm('newsletter_infusionsoft_id', '', TRUE);
+    if ($tag_id) {
+      infusionsoft_contact_apply_tag($form_state['user'], $tag_id);
+    }
+  }
+  else {
+    $tag_id = _mm('news_nc_infusionsoft_id', '', TRUE);
+    if ($tag_id) {
+      infusionsoft_contact_apply_tag($form_state['user'], $tag_id);
+    }
+  }
+}
+
+function account_newsletter_webform_submit($form, &$form_state) {
+  global $user;
+  $account = user_load($user->uid);
+
+  $address = unserialize($form_state['values']['submitted_tree']['address']);
+  if (!empty($address['locality'])) {
+    $params['City3'] = $address['locality'];
+  }
+  if (!empty($address['country'])) {
+    $country            = db_select('uc_countries')
+      ->fields('uc_countries')
+      ->condition('country_iso_code_2', $address['country'])
+      ->execute()->fetchAssoc();
+    $params['Country3'] = $country['country_name'];
+
+    $params['State3'] = '-';
+    if (!empty($address['administrative_area'])) {
+      $state            = db_select('uc_zones')
+        ->fields('uc_zones', array('zone_name'))
+        ->condition('zone_country_id', $country['country_id'])
+        ->condition('zone_code', $address['administrative_area'])
+        ->execute()->fetchField();
+      $params['State3'] = $state;
+    }
+  }
+
+  $params['_TrackingURL']  = $form_state['values']['_TrackingURL'];
+  $params['_TrackingTime'] = $form_state['values']['_TrackingTime'];
+  $params['_TrackingDone'] = $form_state['values']['_TrackingDone'];
+
+  if ($account->uid) {
+    $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+    infusionsoft_update_contact_params($account, $params);
+  }
+  else {
+    $params['FirstName'] = $form_state['values']['submitted_tree']['first_name'];
+    $params['Email']     = $form_state['values']['submitted_tree']['email_address'];
+
+    $contact_id = infusionsoft_create_anon_contact($params, $account->uid);
+  }
+
+  $tag_id = _mm('interests_infusionsoft_tag_id', '', TRUE);
+  if ($tag_id) {
+    infusionsoft_anon_contact_apply_tag($contact_id, $tag_id);
+  }
+
+  foreach ($form_state['values']['submitted_tree']['my_interests_are'] as $tag_id) {
+    infusionsoft_anon_contact_apply_tag($contact_id, $tag_id);
+  }
+
+  foreach ($form_state['values']['submitted_tree']['send_me_monthly_newsletters'] as $tag_id) {
+    infusionsoft_anon_contact_apply_tag($contact_id, $tag_id);
+  }
+}
+
+function account_24_hour_fitness_webform_submit($form, &$form_state) {
+  global $user;
+  $account = user_load($user->uid);
+
+  $address = unserialize($form_state['values']['submitted_tree']['address']);
+  if (!empty($address['locality'])) {
+    $params['City3'] = $address['locality'];
+  }
+  if (!empty($address['country'])) {
+    $country            = db_select('uc_countries')
+      ->fields('uc_countries')
+      ->condition('country_iso_code_2', $address['country'])
+      ->execute()->fetchAssoc();
+    $params['Country3'] = $country['country_name'];
+
+    $params['State3'] = '-';
+    if (!empty($address['administrative_area'])) {
+      $state            = db_select('uc_zones')
+        ->fields('uc_zones', array('zone_name'))
+        ->condition('zone_country_id', $country['country_id'])
+        ->condition('zone_code', $address['administrative_area'])
+        ->execute()->fetchField();
+      $params['State3'] = $state;
+    }
+  }
+
+  if ($account->uid) {
+    $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+    infusionsoft_update_contact_params($account, $params);
+  }
+  else {
+    $params['FirstName'] = $form_state['values']['submitted_tree']['first_name'];
+    $params['LastName']  = $form_state['values']['submitted_tree']['last_name'];
+    $params['Email']     = $form_state['values']['submitted_tree']['email_address'];
+
+    $contact_id = infusionsoft_create_anon_contact($params, $account->uid);
+  }
+
+  $tag_id = _mm('instructor_infusionsoft_tag_id', '', TRUE);
+  if ($tag_id) {
+    infusionsoft_anon_contact_apply_tag($contact_id, $tag_id);
+  }
+}
+
+function account_wholesale_application_webform_submit($form, &$form_state) {
+  global $user;
+  $account = user_load($user->uid);
+
+  $address = unserialize($form_state['values']['submitted_tree']['billing_address']);
+  if (!empty($address['locality'])) {
+    $params['City3'] = $address['locality'];
+  }
+  if (!empty($address['country'])) {
+    $country            = db_select('uc_countries')
+      ->fields('uc_countries')
+      ->condition('country_iso_code_2', $address['country'])
+      ->execute()->fetchAssoc();
+    $params['Country3'] = $country['country_name'];
+
+    $params['State3'] = '-';
+    if (!empty($address['administrative_area'])) {
+      $state            = db_select('uc_zones')
+        ->fields('uc_zones', array('zone_name'))
+        ->condition('zone_country_id', $country['country_id'])
+        ->condition('zone_code', $address['administrative_area'])
+        ->execute()->fetchField();
+      $params['State3'] = $state;
+    }
+  }
+
+  $params['OnlineStoreName1'] = $form_state['values']['submitted_tree']['online_store_name'];
+
+  if ($account->uid) {
+    $contact_id = infusionsoft_user_get_infusionsoft_id($account);
+    infusionsoft_update_contact_params($account, $params);
+  }
+  else {
+    $params['FirstName'] = $form_state['values']['submitted_tree']['first_name'];
+    $params['LastName']  = $form_state['values']['submitted_tree']['last_name'];
+    $params['Email']     = $form_state['values']['submitted_tree']['email'];
+
+    $contact_id = infusionsoft_create_anon_contact($params, $account->uid);
+  }
+
+  $tags_to_apply = array();
+
+  foreach($form_state['values']['submitted_tree']['i_am_a'] as $tag_id){
+    if ($tag_id) {
+      $tags_to_apply[] = $tag_id;
+    }
+  }
+
+  if($form_state['values']['submitted_tree']['do_you_have_a_physical_retail_location']){
+    $tags_to_apply[] = $form_state['values']['submitted_tree']['do_you_have_a_physical_retail_location'];
+  }
+
+  if($form_state['values']['submitted_tree']['do_you_sell_online']){
+    $tags_to_apply[] = $form_state['values']['submitted_tree']['do_you_sell_online'];
+  }
+
+  if($form_state['values']['submitted_tree']['where_do_you_sell_online']){
+    $tags_to_apply[] = $form_state['values']['submitted_tree']['where_do_you_sell_online'];
+  }
+
+  foreach($tags_to_apply as $tag_id){
+    infusionsoft_anon_contact_apply_tag($contact_id, $tag_id);
+  }
+
+  $_SESSION['wholesale_application_submitted'] = TRUE;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function account_block_info() {
+  $blocks['account_links']   = array(
+    'info'  => t('Account Links'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  $blocks['dashboard_links'] = array(
+    'info'  => t('Dashboard Links'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function account_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'account_links':
+      $links            = account_get_account_links();
+      $block['subject'] = t('');
+      $block['content'] = theme('account_links', array('links' => $links));
+      break;
+    case 'dashboard_links':
+      $account = NULL;
+      if (account_is_admin() && arg(0) == 'user') {
+        $account = user_load(arg(1));
+      }
+      $links            = account_get_dashboard_links($account);
+      $block['subject'] = t('Dashboard Links');
+      $block['content'] = theme('dashboard_links', array('links' => $links));
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function account_theme($existing, $type, $theme, $path) {
+  return array(
+    'account_links'   => array(
+      'template'  => 'account-links',
+      'variables' => array('links' => array()),
+    ),
+    'dashboard_links' => array(
+      'template'  => 'dashboard-links',
+      'variables' => array('links' => array()),
+    ),
+  );
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function account_user_view($account, $view_mode, $langcode) {
+  global $user;
+
+  if (!account_is_admin() && account_is_pre_authenticated($account)) {
+    drupal_goto('toboggan/revalidate/' . $account->uid);
+  }
+
+  if (!account_is_admin() && $account->uid != $user->uid) {
+    drupal_goto('user');
+  }
+
+  $name = $account->name;
+  if (isset($account->content['field_first_name'][0]['#markup'])) {
+    $name = $account->content['field_first_name'][0]['#markup'];
+    if (isset($account->content['field_last_name'][0]['#markup'])) {
+      $name .= ' ' . $account->content['field_last_name'][0]['#markup'];
+    }
+  }
+
+  unset($account->content['field_first_name']);
+  unset($account->content['field_last_name']);
+
+  if (account_is_at_home($account)) {
+    $account_info = at_home_subscription_account_info_load($account);
+    if ($account_info['account']->status == AH_STATUS_ACTIVE) {
+      if (at_home_subscription_cc_expired($account_info)) {
+        drupal_set_message(_mm('ah_account_cc_exp', 'Your Credit Card has expired and your At Home Program has been placed on HOLD. Please udpate your Credit Card information to re-start your program.', TRUE), 'warning');
+      }
+      if (isset($account_info['account']->display_cc_problem) && $account_info['account']->display_cc_problem) {
+        drupal_set_message(_mm('ah_account_cc_prb', 'Our system had an issue running your Credit Card and your At Home Program has been placed on HOLD. Please contact your Credit Card company or update your card information to re-start your program.', TRUE), 'warning');
+      }
+    }
+  }
+
+  // Load the customer profile id.
+  $customer_profile_id = authnet_cim_entity_profile_id_load('user', $user->uid);
+
+  // Load the customer's payment profiles.
+  $payment_profiles = authnet_cim_entity_customer_payment_profiles_load($customer_profile_id);
+
+  foreach($payment_profiles as $payment_profile){
+    if(account_payment_profile_is_expired($payment_profile)){
+      drupal_set_message(format_string('Your card '.$payment_profile['cc_type'].' - ending in '.$payment_profile['cc_last_four'].' is expired. !link',array(
+        '!link' => l('Click here to Update your card.','user/'.$account->uid.'/billing/'.$payment_profile['pid'].'/edit'),
+      )), 'warning');
+    }
+  }
+
+  $account->content['#prefix'] = '<h2 class="blue-title">' . $name . '\'s Dashboard</h2><div class="dashboard-intro">' . _mm('dashboard_copy') . '</div>';
+
+  if (module_exists('uc_user_credit')) {
+    $credit = uc_user_credit_get_credit_for_user($account->uid);
+
+    if (!empty($credit)) {
+      $account->content['store_credit']['#weight'] = 0;
+      if(empty($account->content['store_credit']['#markup'])){
+        $account->content['store_credit']['#markup'] = '';
+      }
+      $account->content['store_credit']['#markup'] .= '<div class="user-dashboard-row clearfix"><h2 class="blue-title">Store Credit</h2><p>You have <strong><em>' . uc_currency_format($credit) . '</em></strong> store credit.</p></div>';
+    }
+  }
+
+  $playlist_uid = $user->uid;
+  if(account_is_admin() && $user->uid != $account->uid){
+    $playlist_uid = $account->uid;
+  }
+
+  $userVideoManager = new UserVideoManager($playlist_uid);
+
+  $at_home_playlists_image = theme_image(array(
+    'path' => drupal_get_path('theme', 'tuneupfitness').'/images/at-home-program.jpg',
+    'alt' => '',
+    'attributes' => array(),
+  ));
+
+  $at_home_playlists = array();
+  $other_playlists = array();
+
+  foreach($userVideoManager->getPlaylists() as $userPlaylist){
+    if(strpos($userPlaylist->getName(), 'At Home Program') === 0){
+      $at_home_playlists[] = $userPlaylist;
+    }
+    else{
+      $other_playlists[] = $userPlaylist;
+    }
+  }
+
+  $account->content['videos'] = array(
+    '#theme' => 'video_account_section',
+    '#at_home_playlists_image' => $at_home_playlists_image,
+    '#at_home_playlists' => $at_home_playlists,
+    '#other_playlists' => $other_playlists,
+    '#user_video_manager' => $userVideoManager,
+  );
+
+  $has_groups = FALSE;
+  $groups     = og_get_groups_by_user($account);
+  unset($account->content['og_user_node']);
+  if (!empty($groups)) {
+    $account->content['og_user_node']['#prefix'] = '<div class="user-dashboard-row clearfix"><h2 class="blue-title my-groups">My Groups</h2>';
+    $account->content['og_user_node']['#suffix'] = '</div>';
+    foreach ($groups['node'] as $delta => $nid) {
+      $group = node_load($nid);
+      if ($group->type == 'coaching_call') {
+      }
+      else {
+        if (group_user_can_email_group($nid, $account)) {
+          $account->content['og_user_node'][]['#markup'] = '<p>' . group_get_email_link($group->nid) . '</p>';
+          $has_groups                                    = TRUE;
+        }
+      }
+    }
+  }
+  if (!$has_groups) {
+    unset($account->content['og_user_node']);
+  }
+  else {
+    $account->content['og_user_node']['#weight'] = 2;
+  }
+
+  if (module_exists('testdotcom')) {
+    $tests = testdotcom_get_user_tests($account);
+    if (!empty($tests)) {
+      $account->content['coaching_calls']['upcoming'] = array(
+        '#prefix' => '<div class="user-dashboard-row clearfix"><h2 class="blue-title my-tests">My Tests</h2>',
+        '#suffix' => '</div>',
+        '#markup' => implode('<br />', $tests),
+      );
+    }
+  }
+
+  if (account_is_admin($account) || account_is_teacher($account)) {
+    $upcoming_call                                 = group_get_upcoming_coaching_call();
+    $account->content['coaching_calls']['#weight'] = 4;
+    if ($upcoming_call) {
+      $account->content['coaching_calls']['upcoming'] = array(
+        '#prefix' => '<div class="user-dashboard-row clearfix"><h2 class="blue-title coaching-call-archive">Upcoming Coaching Call</h2>',
+        '#suffix' => '</div>',
+        '#markup' => $upcoming_call,
+      );
+    }
+
+    $coaching_calls = group_get_coaching_call_archives();
+    if (!empty($coaching_calls)) {
+      $account->content['coaching_calls']['archive'] = array(
+        '#prefix' => '<div class="user-dashboard-row clearfix"><h2 class="blue-title coaching-call-archive">Coaching Call Archive</h2>',
+        '#suffix' => '</div>',
+        'content' => drupal_get_form('group_coaching_call_archives_form', $coaching_calls),
+      );
+    }
+  }
+
+  if (account_is_teacher($account) && variable_get('teacher_renewal_product_id', '')) {
+    if (teacher_is_expiring($account->uid)) {
+      $account->content['teacher']['#weight'] = 3;
+      $account->content['teacher']['renewal'] = array(
+        '#prefix' => '<div class="user-dashboard-row clearfix"><h2 class="blue-title teacher-renewal">' . _mm('teacher_license_renewal_title', 'Renew Your Teacher License') . '</h2>',
+        '#suffix' => '</div>',
+        'content' => node_view(node_load(variable_get('teacher_renewal_product_id', '')), 'teaser'),
+      );
+    }
+  }
+
+}
+
+/**
+ * Implements hook_init().
+ */
+function account_init() {
+  if (($_GET['q'] == 'system/ajax' || strstr($_GET['q'], 'file/ajax/')) && $_POST['form_id'] == 'user_profile_form') {
+    module_load_include('inc', 'user', 'user.pages');
+  }
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function account_node_view($node, $view_mode, $langcode) {
+  if ($node->nid == THANK_YOU_PAGE) {
+    global $user;
+    $account = user_load($user->uid);
+    module_load_include('inc', 'user', 'user.pages');
+    $user_profile = drupal_get_form('user_profile_form', $account);
+    $unset_deltas = array(
+      'account',
+      'signature_settings',
+      'picture',
+      'og_user_node',
+      'field_first_name',
+      'field_last_name',
+      'ckeditor',
+      'metatags',
+      'overlay_control',
+      'uc_roles',
+      'redirect',
+    );
+    foreach ($unset_deltas as $delta) {
+      unset($user_profile[$delta]);
+    }
+
+    $user_profile['field_pain_ailment']['#prefix']       = '<div class="form-header">' . _mm('thank_you_form_header_help_you', '') . '</div>';
+    $user_profile['field_fitness_enthusiast']['#prefix'] = '<div class="form-header">' . _mm('thank_you_form_header_lifestyle', '') . '</div>';
+
+    $user_profile['actions']['submit']['#attributes']['class'] = array('blue-button');
+    $user_profile['actions']['submit']['#value']               = 'Submit';
+
+    $node->content['user_profile'] = $user_profile;
+  }
+}
+
+/**
+ * Implements hook_uc_cart_order_create_user_alter().
+ */
+function account_uc_cart_order_create_user_alter(&$fields, $order) {
+  $fields['field_first_name'] = array(LANGUAGE_NONE => array(array('value' => $order->billing_first_name)));
+  $fields['field_last_name']  = array(LANGUAGE_NONE => array(array('value' => $order->billing_last_name)));
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function account_admin_paths() {
+  $paths = array(
+    'search/account'   => TRUE,
+    'search/account/*' => TRUE,
+  );
+  return $paths;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function account_admin_paths_alter(&$paths) {
+  $paths['user/*/addresses/*'] = FALSE;
+  $paths['user/*/billing/*']   = FALSE;
+
+  if (!account_is_admin()) {
+    $paths['user/*/edit'] = FALSE;
+  }
+}
+
+function account_get_account_links() {
+  global $user;
+
+  $items      = uc_cart_get_contents();
+  $item_count = count($items);
+
+  $links = array();
+
+  //$links[] = l('Shopping Cart: ' . $item_count , 'cart');
+
+  if ($user->uid == 0) {
+    if (drupal_is_front_page()) {
+      $destination_path = 'user';
+    }
+    else {
+      $destination_path = drupal_lookup_path('alias', current_path());
+      if (!$destination_path) {
+        $destination_path = current_path();
+      }
+    }
+
+    $destination = array();
+    if ($destination_path != 'blogs/chrome') {
+      $destination = array('query' => array('destination' => $destination_path));
+    }
+
+    if(request_path() == 'blogs/chrome'){
+      $destination['attributes']['class'][] = 'ignore-modal';
+    }
+
+    $destination['attributes']['class'][] = 'user-icon';
+
+    $links[] = l('Register', 'user/register');
+    $links[] = l('Login', 'user/login', $destination);
+  }
+  else {
+    $account = user_load($user->uid);
+    $name    = $account->name;
+    if (isset($account->field_first_name[LANGUAGE_NONE][0]['safe_value'])) {
+      $name = $account->field_first_name[LANGUAGE_NONE][0]['safe_value'];
+    }
+    if (!account_is_pre_authenticated($account)) {
+      $links[] = l('My Dashboard', 'user', array('attributes' => array('class' => array('user-icon'))));
+    }
+    $links[] = l('Logout', 'user/logout');
+  }
+
+  drupal_alter('account_get_account_links', $links);
+
+  return $links;
+}
+
+function account_get_dashboard_links($account = NULL) {
+  global $user;
+
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+
+  $links = array();
+
+  $links[] = l('Edit My Profile', 'user/' . $account->uid . '/edit', array('attributes' => array('class' => array('user-edit'))));
+  $links[] = l('Order History', 'user/' . $account->uid . '/orders', array('attributes' => array('class' => array('user-orders'))));
+  $links[] = l('Order Address Book', 'user/' . $account->uid . '/addresses', array('attributes' => array('class' => array('user-address-book'))));
+  $links[] = l('Billing Information', 'user/' . $account->uid . '/billing', array('attributes' => array('class' => array('user-billing-info'))));
+
+  drupal_alter('dashboard_links', $links, $account);
+
+  return $links;
+}
+
+/**
+ * Implements hook_query_alter().
+ */
+function account_query_alter(QueryAlterableInterface $query) {
+  if (account_is_teacher() && arg(0) == 'admin' && arg(1) == 'content' && $query->hasTag('node_access')) {
+    global $user;
+    $query->condition('n.uid', $user->uid);
+  }
+}
+
+/**
+ * Implements hook_search_info().
+ */
+function account_search_info() {
+  return array(
+    'title' => 'YTU User Search',
+  );
+}
+
+/**
+ * Implements hook_search_access().
+ */
+function account_search_access() {
+  return user_access('access ytu settings');
+}
+
+/**
+ * Implements hook_search_execute().
+ */
+function account_search_execute($keys = NULL, $conditions = NULL) {
+  $find = array();
+  // Replace wildcards with MySQL/PostgreSQL wildcards.
+  $keys  = preg_replace('!\*+!', '%', $keys);
+  $query = db_select('users')->extend('PagerDefault');
+  $query->fields('users', array('uid'));
+  if (user_access('administer users')) {
+    // Administrators can also search in the otherwise private email field,
+    // and they don't need to be restricted to only active users.
+    $query->fields('users', array('mail'));
+    $query->leftJoin('field_data_field_first_name', 'fn', 'users.uid = fn.entity_id');
+    $query->leftJoin('field_data_field_last_name', 'ln', 'users.uid = ln.entity_id');
+    $query->condition(db_or()
+      ->condition('name', '%' . db_like($keys) . '%', 'LIKE')
+      ->condition('mail', '%' . db_like($keys) . '%', 'LIKE')
+      ->condition('fn.field_first_name_value', '%' . db_like($keys) . '%', 'LIKE')
+      ->condition('ln.field_last_name_value', '%' . db_like($keys) . '%', 'LIKE')
+    );
+  }
+  else {
+    // Regular users can only search via usernames, and we do not show them
+    // blocked accounts.
+    $query->condition('name', '%' . db_like($keys) . '%', 'LIKE')
+          ->condition('status', 1);
+  }
+
+  $uids     = $query
+    ->limit(15)
+    ->execute()
+    ->fetchCol();
+  $accounts = user_load_multiple($uids);
+
+  $results = array();
+  foreach ($accounts as $account) {
+    $result = array(
+      'title' => account_get_full_name($account),
+      'link'  => url('user/' . $account->uid, array('absolute' => TRUE)),
+    );
+    if (user_access('administer users')) {
+      $result['title'] .= ' (' . $account->mail . ')';
+    }
+    $results[] = $result;
+  }
+
+  return $results;
+}
+
+function account_messages_info() {
+  return array(
+    'forgot_password_copy'            => array(
+      'title'       => "Forgot Password Copy",
+      'description' => "Text copy on Forgot Password page",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "forgot_password",
+    ),
+    'register_copy'                   => array(
+      'title'       => "Register Copy",
+      'description' => "Text copy on Registration page",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "registration",
+    ),
+    'register_agreement'              => array(
+      'title'       => "Register Agreement",
+      'description' => "Agreement checkbox text on Registration page",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "registration",
+    ),
+    'register_newsletter'             => array(
+      'title'       => "Register Newletter",
+      'description' => "Newsletter checkbox text on Registration page",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "registration",
+    ),
+    'dashboard_copy'                  => array(
+      'title'       => "User Dashboard Copy",
+      'description' => "Text copy that appears at the top of the user dashboard page.",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "dashboard",
+    ),
+    'newsletter_infusionsoft_id'      => array(
+      'title'       => "Newsletter Infusionsoft Tag ID",
+      'description' => "Infusionsoft tag id that will be applied to the contact who flagged for the newsletter during registration.",
+      'type'        => "textfield",
+      'group'       => "account",
+      'fieldset'    => "infusionsoft",
+    ),
+    'news_nc_infusionsoft_id'         => array(
+      'title'       => "Newsletter Not Checked Infusionsoft Tag ID",
+      'description' => "Infusionsoft tag id that will be applied to the contact who unchecked the newsletter during registration.",
+      'type'        => "textfield",
+      'group'       => "account",
+      'fieldset'    => "infusionsoft",
+    ),
+    'thank_you_form_header_help_you'  => array(
+      'title'       => "Thank You form How Can We Help Header",
+      'description' => "Header for first set of checkboxes on the Thank You page.",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "registration_thank_you",
+    ),
+    'thank_you_form_header_lifestyle' => array(
+      'title'       => "Thank You form Lifestyle Header",
+      'description' => "Header for second set of checkboxes on the Thank You page.",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "registration_thank_you",
+    ),
+    'account_profile_copy'            => array(
+      'title'       => "Account Profile Copy",
+      'description' => "Text copy above the checkboxes on the account profile edit page.",
+      'type'        => "richtext",
+      'group'       => "account",
+      'fieldset'    => "profile",
+    ),
+    'teacher_license_renewal_title'   => array(
+      'title'       => "Teacher License Renewal Title",
+      'description' => "Blue Title for Teacher Licenese Renewal on Dashboard",
+      'type'        => "textfield",
+      'group'       => "account",
+      'fieldset'    => "dashboard",
+    ),
+    'interests_infusionsoft_tag_id'   => array(
+      'title'       => 'Infusionsoft Tag ID for Interests Form',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'account',
+      'fieldset'    => 'infusionsoft',
+    ),
+    'instructor_infusionsoft_tag_id'  => array(
+      'title'       => 'Infusionsoft Tag ID for Instructor Form',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'account',
+      'fieldset'    => 'infusionsoft',
+    ),
+    'role_model_practitioner_infusionsoft_tag_id'  => array(
+      'title'       => 'Infusionsoft Tag ID for Role Model Practitioner',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'account',
+      'fieldset'    => 'infusionsoft',
+    ),
+    'role_model_practitioner_removed_infusionsoft_tag_id'  => array(
+      'title'       => 'Infusionsoft Tag ID for Removed Role Model Practitioner',
+      'description' => '',
+      'type'        => 'textfield',
+      'group'       => 'account',
+      'fieldset'    => 'infusionsoft',
+    ),
+  );
+}
+
+function account_get_first_name($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+
+  $name = $account->name;
+  if (isset($account->field_first_name[LANGUAGE_NONE][0]['value'])) {
+    $name = $account->field_first_name[LANGUAGE_NONE][0]['value'];
+  }
+
+  return $name;
+}
+
+function account_get_last_name($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+
+  $name = $account->name;
+  if (isset($account->field_last_name[LANGUAGE_NONE][0]['value'])) {
+    $name = $account->field_last_name[LANGUAGE_NONE][0]['value'];
+  }
+
+  return $name;
+}
+
+function account_get_full_name($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  $name = account_get_first_name($account);
+  if (isset($account->field_last_name[LANGUAGE_NONE][0]['value'])) {
+    $name .= ' ' . $account->field_last_name[LANGUAGE_NONE][0]['value'];
+  }
+
+  return $name;
+}
+
+function account_is_pre_authenticated($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('pre-authenticated user', $account->roles);
+}
+
+function account_is_at_home($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('at home', $account->roles);
+}
+
+function account_is_teacher($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('teacher', $account->roles);
+}
+
+function account_is_trainer($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('trainer', $account->roles);
+}
+
+function account_is_order_manager($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('order manager', $account->roles);
+}
+
+function account_is_pose_manager($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('pose manager', $account->roles);
+}
+
+function account_is_integrated_teacher($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('integrated teacher', $account->roles);
+}
+
+function account_is_authenticated_wholesale($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('authenticated-wholesale', $account->roles);
+}
+
+function account_is_pending_wholesale($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('pending-wholesale', $account->roles);
+}
+
+function account_is_denied_wholesale($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('denied-wholesale', $account->roles);
+}
+
+function account_is_role_model_practitioner($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return in_array('Roll Model Practitioner', $account->roles);
+}
+
+function account_is_admin($account = NULL) {
+  if (!$account) {
+    global $user;
+    $account = $user;
+  }
+  return ($account->uid == 1 || in_array('administrator', $account->roles) || in_array('super administrator', $account->roles));
+}
+
+function account_simple_fb_connect_create_user($fb_user_profile) {
+
+  $user_data = array(
+    'field_first_name' => array(LANGUAGE_NONE => array(array('value' => $fb_user_profile['first_name']))),
+    'field_last_name'  => array(LANGUAGE_NONE => array(array('value' => $fb_user_profile['last_name']))),
+  );
+
+  return $user_data;
+
+}
+
+function account_load_default_payment_profile(){
+  global $user;
+
+  if($user->uid){
+    // Load the customer profile id.
+    $customer_profile_id = authnet_cim_entity_profile_id_load('user', $user->uid);
+
+    $default_pid = authnet_cim_entity_customer_payment_profile_default($customer_profile_id);
+
+    if($default_pid){
+      if($payment_profile_id = authnet_cim_entity_payment_profile_id_load($default_pid)){
+        return authnet_cim_entity_payment_profile_load($payment_profile_id);
+      }
+    }
+
+  }
+
+  return FALSE;
+}
+
+function account_payment_profile_is_expired($payment_profile){
+  if($payment_profile){
+    $now         = strtotime(date('Y-m', strtotime('now')) . '-01');
+    $cc_exp_date = $payment_profile['cc_exp_year'] . '-';
+    $cc_exp_date .= strlen($payment_profile['cc_exp_month']) == 1 ? '0' . $payment_profile['cc_exp_month'] : $payment_profile['cc_exp_month'];
+    $cc_exp_date = strtotime($cc_exp_date . '-01');
+
+    return $cc_exp_date <= $now;
+  }
+
+  return FALSE;
+}

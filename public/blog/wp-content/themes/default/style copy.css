@@ -1,0 +1,869 @@
+/*
+Theme Name: WordPress Default
+Theme URI: http://wordpress.org/
+Description: The default WordPress theme based on the famous <a href="http://binarybonsai.com/kubrick/">Kubrick</a>.
+Version: 1.6
+Author: Michael Heilemann
+Author URI: http://binarybonsai.com/
+Tags: blue, custom header, fixed width, two columns, widgets
+
+	Kubrick v1.5
+	 http://binarybonsai.com/kubrick/
+
+	This theme was designed and built by Michael Heilemann,
+	whose blog you will find at http://binarybonsai.com/
+
+	The CSS, XHTML and design is released under GPL:
+	http://www.opensource.org/licenses/gpl-license.php
+
+*/
+
+
+
+/* Begin Typography & Colors */
+body {
+	
+	font-family: Arial, Verdana, Sans-Serif;
+	color:#555555;
+	margin: 0px;
+	font-size:13px;
+	padding:0px;
+	background-color:#E7ECF2;
+	background-image:url(../images/bg.gif);
+	background-position:top left;
+	background-repeat:repeat-x;
+	}
+
+
+
+
+<!-- #header {
+	 padding:15px 35px;
+	} -->
+
+#headerimg 	{
+	margin: 7px 9px 0;
+	height: 192px;
+	width: 740px;
+	}
+
+#content {
+	font-size:13px; margin:0px; width:600px; border:0px; padding:0px; padding-left:25px; margin:0px; margin-top:-20px; float:left; 	}
+
+.widecolumn .entry p {
+	font-size: 13px;
+	}
+
+.narrowcolumn .entry p {
+	font-size: 13px;
+	}
+	
+.narrowcolumn .entry, .widecolumn .entry {
+	line-height: 1.4em;
+	}
+
+.widecolumn {
+	line-height: 1.6em;
+	}
+
+.narrowcolumn .postmetadata {
+	text-align: left;
+	}
+
+.alt {
+	background-color: #f8f8f8;
+	border-top: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+	}
+
+
+
+small {
+	font-family: Arial, Helvetica, Sans-Serif;
+	font-size: 0.9em;
+	line-height: 1.5em;
+	}
+
+h1, h2, h3 {
+	font-family: Arial, Verdana, Sans-Serif;
+	font-weight: bold;
+	}
+
+h1 {
+	font-size: 13px;
+	text-align: center;
+	}
+
+#headerimg .description {
+	font-size: 1.2em;
+	text-align: center;
+	}
+
+h2 {
+	font-size: 13px;
+	}
+
+h2.pagetitle {
+	font-size: 13px;
+	}
+
+#sidebar h2 {
+	font-family: Arial, Verdana, Sans-Serif;
+	font-size:13px;
+	}
+
+h3 {
+	font-size: 1.3em;
+	}
+
+h1, h1 a, h1 a:hover, h1 a:visited, #headerimg .description {
+	text-decoration: none;
+	color: white;
+	}
+
+h2, h2 a, h2 a:visited, h3, h3 a, h3 a:visited {
+	color: #333;
+	}
+
+h2, h2 a, h2 a:hover, h2 a:visited, h3, h3 a, h3 a:hover, h3 a:visited, #sidebar h2, #wp-calendar caption, cite {
+	text-decoration: none;
+	}
+
+.entry p a:visited {
+	color: #b85b5a;
+	}
+
+.commentlist li, #commentform input, #commentform textarea {
+	font: 0.9em  Arial, Sans-Serif;
+	}
+
+.commentlist li {
+	font-weight: bold;
+	}
+
+.commentlist li .avatar { 
+	float: right;
+	border: 1px solid #eee;
+	padding: 2px;
+	background: #fff;
+	}
+
+.commentlist cite, .commentlist cite a {
+	font-weight: bold;
+	font-style: normal;
+	font-size: 1.1em;
+	}
+
+.commentlist p {
+	font-weight: normal;
+	line-height: 1.5em;
+	text-transform: none;
+	}
+
+#commentform p {
+	font-family: Arial, Verdana, Sans-Serif;
+	}
+
+.commentmetadata {
+	font-weight: normal;
+	}
+
+#sidebar {
+	font: 1em Arial, Verdana, Arial, Sans-Serif; background-color:#fff; 
+	font-size:13px;
+	}
+
+small, #sidebar ul ul li, #sidebar ul ol li, .nocomments, .postmetadata, blockquote, strike {
+	color: #777;
+	}
+
+code {
+	font: 1.1em Arial, Courier, Fixed;
+	}
+
+acronym, abbr, span.caps
+{
+	font-size: 0.9em;
+	letter-spacing: .07em;
+	}
+
+a, h2 a:hover, h3 a:hover {
+	color: #06c;
+	text-decoration:underline;
+	}
+
+a:hover {
+	
+	text-decoration:none;
+	}
+
+#wp-calendar #prev a, #wp-calendar #next a {
+	font-size: 9pt;
+	}
+
+#wp-calendar a {
+	text-decoration: none;
+	}
+
+#wp-calendar caption {
+	font: bold 1.3em Arial, Verdana, Arial, Sans-Serif;
+	text-align: center;
+	}
+
+#wp-calendar th {
+	font-style: normal;
+	text-transform: capitalize;
+	}
+/* End Typography & Colors */
+
+
+
+/* Begin Structure */
+body {
+	
+	}
+
+#page {
+	background-color: white;
+	margin: 0px auto 10px auto;
+	padding: 0;
+	width: 1004px;
+	position:relative;
+	background: url(../images/main-bg.gif) repeat-y top left;
+}
+
+<!--#header {
+	
+	margin: 0 ;
+	padding: 0;
+	padding-bottom:20px;	
+	width: 1004px;
+	
+	}-->
+
+#headerimg {
+	margin: 0;
+	height: 200px;
+	width: 100%;
+	}
+
+
+
+.widecolumn {
+	padding: 10px 0 20px 0;
+	margin: 5px 0 0 50px;
+	width: 600px;
+	}
+
+.post {
+	margin: 0 0 40px;
+	text-align: justify;
+	}
+
+.post hr {
+	display: block;
+	}
+
+.widecolumn .post {
+	margin: 0;
+	}
+
+.narrowcolumn .postmetadata {
+	padding-top: 5px;
+	}
+
+.widecolumn .postmetadata {
+	margin: 30px 0;
+	}
+
+.widecolumn .smallattachment {
+	text-align: center;
+	float: left;
+	width: 128px;
+	margin: 5px 5px 5px 0px;
+}
+
+.widecolumn .attachment {
+	text-align: center;
+	margin: 5px 0px;
+}
+
+.postmetadata {
+	clear: both;
+}
+
+.clear {
+	clear: both;
+}
+
+
+
+/* End Structure */
+
+
+
+/*	Begin Headers */
+h1 {
+	padding-top: 70px;
+	margin: 0;
+	}
+
+h2 {
+	margin: 30px 0 0;
+	}
+
+h2.pagetitle {
+	margin-top: 30px;
+	text-align: left;
+}
+
+#sidebar h2 {
+	margin: 5px 0 0;
+	padding: 0;
+	}
+
+h3 {
+	padding: 0;
+	margin: 30px 0 0;
+	}
+
+h3.comments {
+	padding: 0;
+	margin: 40px auto 20px ;
+	}
+/* End Headers */
+
+
+
+/* Begin Images */
+p img {
+	padding: 0;
+	max-width: 100%;
+	}
+
+/*	Using 'class="alignright"' on an image will (who would've
+	thought?!) align the image to the right. And using 'class="centered',
+	will of course center the image. This is much better than using
+	align="center", being much more futureproof (and valid) */
+
+img.centered {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+	}
+
+img.alignright {
+	padding: 4px;
+	margin: 0 0 2px 7px;
+	display: inline;
+	}
+
+img.alignleft {
+	padding: 4px;
+	margin: 0 7px 2px 0;
+	display: inline;
+	}
+
+.alignright {
+	float: right;
+	}
+
+.alignleft {
+	float: left
+	}
+/* End Images */
+
+
+
+/* Begin Lists
+
+	Special stylized non-IE bullets
+	Do not work in Internet Explorer, which merely default to normal bullets. */
+
+html>body .entry ul {
+	margin-left: 0px;
+	padding: 0 0 0 30px;
+	list-style: none;
+	padding-left: 10px;
+	text-indent: -10px;
+	}
+
+html>body .entry li {
+	margin: 7px 0 8px 10px;
+	}
+
+.entry ul li:before, #sidebar ul ul li:before {
+	
+	}
+
+.entry ol {
+	padding: 0 0 0 35px;
+	margin: 0;
+	}
+
+.entry ol li {
+	margin: 0;
+	padding: 0;
+	}
+
+.postmetadata ul, .postmetadata li {
+	display: inline;
+	list-style-type: none;
+	list-style-image: none;
+	}
+
+#sidebar ul, #sidebar ul ol {
+	margin: 0;
+	padding: 0;
+	
+	}
+
+#sidebar ul li {
+	list-style-type: none;
+	list-style-image: none;
+	margin-bottom: 15px;
+	}
+
+#sidebar ul p, #sidebar ul select {
+	margin: 5px 0 8px;
+	}
+
+#sidebar ul ul, #sidebar ul ol {
+	margin: 5px 0 0 10px;
+	}
+
+#sidebar ul ul ul, #sidebar ul ol {
+	margin: 0 0 0 10px;
+	
+	}
+
+ol li, #sidebar ul ol li {
+	list-style: decimal outside;
+	}
+
+#sidebar ul ul li, #sidebar ul ol li {
+	margin: 3px 0 0;
+	padding: 0;
+	}
+/* End Entry Lists */
+
+
+
+/* Begin Form Elements */
+#searchform {
+	margin: 10px 0;
+	padding: 5px 3px;
+	text-align: left;
+	}
+
+#sidebar #searchform #s {
+	width: 138px;
+	padding: 2px;
+	
+	}
+
+#sidebar #searchsubmit {
+	padding: 1px;
+	}
+
+.entry form { /* This is mainly for password protected posts, makes them look better. */
+	text-align:center;
+	}
+
+select {
+	width: 130px;
+	}
+
+#commentform input {
+	width: 170px;
+	padding: 2px;
+	margin: 5px 5px 1px 0;
+	}
+
+#commentform textarea {
+	width: 100%;
+	padding: 2px;
+	}
+
+#commentform #submit {
+	margin: 0;
+	float: right;
+	}
+/* End Form Elements */
+
+
+
+/* Begin Comments*/
+.alt {
+	margin: 0;
+	padding: 10px;
+	}
+
+.commentlist {
+	padding: 0;
+	text-align: justify;
+	}
+
+.commentlist li {
+	margin: 15px 0 3px;
+	padding: 5px 10px 3px;
+	list-style: none;
+	}
+
+.commentlist p {
+	margin: 10px 5px 10px 0;
+	}
+
+#commentform p {
+	margin: 5px 0;
+	}
+
+.nocomments {
+	text-align: center;
+	margin: 0;
+	padding: 0;
+	}
+
+.commentmetadata {
+	margin: 0;
+	display: block;
+	}
+/* End Comments */
+
+
+
+/* Begin Sidebar */
+#sidebar
+{
+	padding:20px 15px 10px 15px;
+	margin-left: 0px;
+	margin-right:35px;
+	width:260px;	
+	border:9px solid #EBECF0;
+	float:right
+
+	}
+
+#sidebar form {
+	margin: 0; 
+	}
+/* End Sidebar */
+
+
+
+/* Begin Calendar */
+#wp-calendar {
+	empty-cells: show;
+	margin: 10px auto 0;
+	width: 155px;
+	}
+
+#wp-calendar #next a {
+	padding-right: 10px;
+	text-align: right;
+	}
+
+#wp-calendar #prev a {
+	padding-left: 10px;
+	text-align: left;
+	}
+
+#wp-calendar a {
+	display: block;
+	}
+
+#wp-calendar caption {
+	text-align: center;
+	width: 100%;
+	}
+
+#wp-calendar td {
+	padding: 3px 0;
+	text-align: center;
+	}
+
+#wp-calendar td.pad:hover { /* Doesn't work in IE */
+	background-color: #fff; }
+/* End Calendar */
+
+
+
+/* Begin Various Tags & Classes */
+acronym, abbr, span.caps {
+	cursor: help;
+	}
+
+acronym, abbr {
+	border-bottom: 1px dashed #999;
+	}
+
+blockquote {
+	margin: 15px 30px 0 10px;
+	padding-left: 20px;
+	border-left: 5px solid #ddd;
+	}
+
+blockquote cite {
+	margin: 5px 0 0;
+	display: block;
+	}
+
+.center {
+	text-align: center;
+	}
+
+.hidden {
+	display: none;
+	}
+
+hr {
+	display: none;
+	}
+
+a img {
+	border: none;
+	}
+.narrowcolumn{  border:9px solid #EBECF0; padding-left:45px; float:left; width:600px;text-align:left; }
+.navigation {
+	display: block;
+	text-align: center;
+	margin-top: 10px;
+	margin-bottom: 60px;
+	}
+/* End Various Tags & Classes*/
+
+
+
+/* Captions */
+.aligncenter,
+div.aligncenter {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.wp-caption {
+	border: 1px solid #ddd;
+	text-align: center;
+	background-color: #f3f3f3;
+	padding-top: 4px;
+	margin: 10px;
+	-moz-border-radius: 3px;
+	-khtml-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+}
+
+.wp-caption img {
+	margin: 0;
+	padding: 0;
+	border: 0 none;
+}
+
+.wp-caption p.wp-caption-text {
+	font-size: 11px;
+	line-height: 17px;
+	padding: 0 4px 5px;
+	margin: 0;
+}
+/* End captions */
+
+
+/* "Daisy, Daisy, give me your answer do. I'm half crazy all for the love of you.
+	It won't be a stylish marriage, I can't afford a carriage.
+	But you'll look sweet upon the seat of a bicycle built for two." */
+
+
+
+ .headerlt{ margin:0px; padding:0px; float:left; width:28px; position:relative; background-color:#FFFFFF;}
+ .headerrt{ margin:0px; padding:0px; float:left; width:28px; position:relative; background-color:#FFFFFF;}
+
+ .header-bg{ margin:0px; padding:0px; background-image:url(../images/head-bg.gif); background-repeat:repeat-x; background-position:top;  position:relative; width:948px; background-color:#FFFFFF; min-height:165px; float:left; }
+
+.header-bg .logo{ margin:0px; padding:0px; padding-top:25px; padding-left:15px; float:left}
+.header-bg .logo-rt{ margin:0px; padding:0px; padding-top:35px; float:right; width:330px;}
+.logo-rt .login-box-top { margin:0px; padding:0px; width:330px; float:left; }
+
+.logo-rt .login-box-bg {
+	margin: 0px;
+	border-right: #E7E8E8 solid 1px;
+	border-left: #E7E8E8 solid 1px;
+	background-color: #FFFFFF;
+	position: relative;
+	padding: 0px 10px 0px 10px;
+	width: 308px;
+	float: left;
+}
+
+.logo-rt .login-box-bg div,.logo-rt .login-box-bg div input{
+	font-size: 11px!important;
+}
+
+.tabing-sec { margin:0px; padding: 0px 20px 0px 20px; height:auto; width:auto; background-image:url(../images/main-bg.gif); background-repeat:repeat-y; background-position:top;  position:relative; float:left; }
+.header-bg .top-tab { margin:0px; padding:0px; position:absolute; width:653px; top:127px; z-index:9999; left:294px; }
+.header-bg .top-tab ul { margin:16px 0px 0px 0px; padding:0px 0px 0px 0px; list-style:none; width:auto;}
+.header-bg .top-tab ul li { margin:0px 0px 0px 2px; padding:0px 0px 0px 0px; list-style:none; width:auto; float:right; background-color:#ffffff; }
+.header-bg .top-tab ul li a { font-family:Arial, Helvetica, sans-serif; font-size:11px; font-weight:bold; color:#3776C0; text-decoration:none; background-image:url(../images/top-tab-left.gif); background-position:left top; background-repeat:no-repeat; height:22px; padding:0px 0px 0px 12px; display:block; float:left; background-color:#ffffff; }
+.header-bg .top-tab ul li a:hover { font-family:Arial, Helvetica, sans-serif; font-size:11px; font-weight:bold; color:#3776C0; text-decoration:underline; background-image:url(../images/top-tab-left.gif); background-position:left top; background-repeat:no-repeat; height:22px; padding:0px 0px 0px 12px; display:block; float:left; background-color:#ffffff; }
+.header-bg .top-tab ul li a span { margin:0px; padding:5px 12px 0px 0px; background-image:url(../images/top-tab-right.gif); background-position:right top; height:17px; float:left; display:block; cursor:pointer; background-color:#ffffff; }
+.tablt { float:left; width:8px; }
+.tabmid { float:left; width:948px; background-image:url(../images/tab-bg-blue.gif); background-repeat:repeat-x; height:29px; display:block; }
+.tabmid a:link, .tabmid a:visited { font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#FFFFFF; font-weight:bold; float:left; width:948px; display:block; text-decoration:none; }
+.tabrt { float:left; width:8px; }
+
+.tab-blue { background:url(http://www.yogatuneup.com/images/menu_bg.jpg) repeat-x 100% 0; float:left; display:block; padding:0px 0px 0px 0px ; height: 28px;}
+.tab-blue b{background:url(http://www.yogatuneup.com/images/menu_left_corner.jpg) no-repeat 0 0; padding:0px; display:block; float:left; width:958px; }
+.tab-blue a:link, .tab-blue a:visited {
+	color:#FFFFFF;
+	font-weight:bold;
+	font-size:13px;
+	background-image:url(http://www.yogatuneup.com/images/line.gif);
+	background-repeat:no-repeat;
+	background-position:right;
+	text-decoration:none;
+	line-height:28px;
+	padding-right:14px;
+	padding-left:14px;
+}
+
+.tab-blue a:hover{ color:#FFFFFF; font-weight:bold; font-size:13px; background-image:url(http://www.yogatuneup.com/images/line.gif); background-repeat:no-repeat; background-position:right; text-decoration:underline; line-height:28px;}
+
+.blue-link:link, .blue-link:visited{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size: 13px;
+	color: #3776C0;
+	margin:0px;
+	padding:0px;
+	font-weight:bold;
+	text-decoration:none;
+}
+.blue-link:hover {
+		text-decoration:underline;
+}
+
+div, td{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:13px;
+	color:#555555;
+	margin:0px;
+	padding:0px;
+	font-weight:normal;
+}
+.bio1{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:13px;
+	color:#555555;
+	margin:0px;
+	padding:0px;
+	font-weight:normal;
+	}
+.inputauto {
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:13px;
+	color:#767D8F;
+	width:auto;
+	border:1px solid #CCCFD3;
+	padding-left:5px;
+	padding-top:3px;
+	padding-bottom:3px;
+	background-image:url(../images/input-bg.gif);
+	background-position:left top;
+	background-repeat:repeat-x;
+}
+
+
+#footer {
+	clear: both;
+	width: 986px;
+	margin: 10px auto 0px auto;
+	background: url('../../../../images/footer_bg.gif') repeat-y center;
+}
+
+div#footer div#footer_content{
+	display: block;
+	text-align: center;
+	color: #02B0F2;
+	padding: 10px 0;
+	font-size: 11px;
+}
+
+div#footer div#footer_content a:link,div#footer div#footer_content a:visited{
+	color: #02B0F2;
+	text-decoration: none;
+}
+
+div#footer div#footer_content a:hover{
+	text-decoration:underline;
+}
+
+div#footer div#footer_content hr{
+	width: 924px;
+	background: url('../../../../images/line3.gif') repeat-x;
+	height: 3px;
+	border: 0px;
+	margin: 8px auto;
+	display: block;
+}
+
+div#footer div#footer_content p{
+	margin: 4px 0;
+}
+
+div#footer div#footer_content p.copyright{
+	color:#838FA0;
+	font-size: 10px;
+}
+
+.footer-sect{ margin:0px; padding:0px; float:left; width:1004px; position:relative;}
+.footer-sect .footer-lt{ margin:0px; padding:0px; float:left; position:relative}
+.footer-sect .footer-rt{ margin:0px; padding:0px; float:right; position:relative}
+.footer-sect .footer-bg{ margin:0px; padding:0px; float:left; background-image:url(../../../../images/foot-bg.gif); background-repeat:repeat-x; height:270px; width:948px; position:relative}
+
+.footer-bg .text-sec{
+	padding:0px;
+	margin:0px;
+	padding-top:20px;
+	text-align:center;
+	color:#02B0F2;
+	font-weight:bold;
+	width:auto;
+	text-align:center;
+}
+
+.text-sec a:link, .text-sec a:visited{
+	color: #02B0F2;
+	text-decoration:none;
+	font-size: 13px;
+}
+
+.text-sec a:hover{text-decoration:underline;}
+
+.text-sec1 a:link, .text-sec1 a:visited{
+	color:#02B0F2;
+	font-size: 13px;
+	text-decoration:none;
+}
+
+.text-sec1 a:hover{ text-decoration:underline;}
+.text-sec1 a:hover{ color:#02B0F2; text-decoration: underline}
+.footer-bg .text-sec1{padding:0px; margin:0px;  float:left; width:924px; padding-left:8px; padding-right:8px; text-align:center; color:#02B0F2; font-weight:bold }
+.text-sec1 span{ margin:0px; padding:0px; padding-top:8px; padding-bottom:8px; float:left}
+.footer-text{font-size: 13px; padding:0px; margin:0px;  float:left; width:924px; padding-left:8px; padding-right:8px; text-align:center; color:#838FA0; font-weight:bold }
+.footer-text a:link, .footer-text a:visited { color:#838FA0; text-decoration:none; }
+.footer-text a:hover { text-decoration:underline; }
+.banner-sec { margin:0px; padding:0px; padding-left:20px; float:left; width:964px;}
+.banner-img { background-image:url(../images/inner-bg.jpg); background-position:left; background-repeat:no-repeat; width:934px; height:63px; padding-top:25px; padding-left:30px; }
+
+
+
+.redtxt { font-family:Arial, Helvetica, sans-serif; font-size:13px; color:#C0332F; font-weight:bold; }
+
+
+
+
+div#menu_right_corner{
+	background: url(http://www.yogatuneup.com/images/menu_right_corner.jpg) no-repeat!important;
+	width: 6px!important;
+	height: 28px;
+	float: right;
+}

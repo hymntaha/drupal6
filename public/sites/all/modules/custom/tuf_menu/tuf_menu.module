@@ -1,0 +1,98 @@
+<?php
+
+function tuf_menu_messages_info() {
+  return array(
+    'main_menu_dropdown_1' => array(
+      'title' => "Main Menu Dropdown 1",
+      'description' => "%featured_product = Featured Product",
+      'type' => "richtext",
+      'group' => "main_menu",
+    ),
+    'main_menu_dropdown_2' => array(
+      'title' => "Main Menu Dropdown 2",
+      'description' => "%weekly_exercise = Weekly Exercise",
+      'type' => "richtext",
+      'group' => "main_menu",
+    ),
+    'main_menu_dropdown_3' => array(
+      'title' => "Main Menu Dropdown 3",
+      'description' => "%weekly_pose = Weekly Pose",
+      'type' => "richtext",
+      'group' => "main_menu",
+    ),
+    'main_menu_dropdown_4' => array(
+      'title' => "Main Menu Dropdown 4",
+      'description' => "%blog_posts = Blog Posts",
+      'type' => "richtext",
+      'group' => "main_menu",
+    ),
+    'main_menu_dropdown_5' => array(
+      'title' => "Main Menu Dropdown 5",
+      'description' => "",
+      'type' => "richtext",
+      'group' => "main_menu",
+    ),
+    'main_menu_dropdown_6' => array(
+      'title' => "Main Menu Dropdown 6",
+      'description' => "",
+      'type' => "richtext",
+      'group' => "main_menu",
+    ),
+  );
+}
+
+/**
+ * Implements hook_messages_alter().
+ */
+function tuf_menu_messages_alter(&$val, $key) {
+  $replace = '';
+
+  switch($key){
+    case 'main_menu_dropdown_1':
+      if($featured_product = product_get_featured_product()){
+        $featured_product = node_view($featured_product, 'right_block');
+        $replace = render($featured_product);
+      }
+      $val = str_replace('%featured_product',$replace,$val);
+      break;
+    case 'main_menu_dropdown_2':
+      if($weekly_exercise = pose_get_current_exercise('right_block')){
+        $replace = render($weekly_exercise);
+      }
+      $val = str_replace('%weekly_exercise',$replace,$val);
+      break;
+    case 'main_menu_dropdown_3':
+      if($weekly_pose = pose_get_current_pose('right_block')){
+        $replace = render($weekly_pose);
+      }
+      $val = str_replace('%weekly_pose',$replace,$val);
+      break;
+    case 'main_menu_dropdown_4':
+      if($blog_posts = tuf_menu_get_blog_items()){
+        $replace = render($blog_posts);
+      }
+      $val = str_replace('%blog_posts',$replace,$val);
+      break;
+  }
+}
+
+function tuf_menu_get_blog_items(){
+  $output = '<div class="list-group">';
+
+  if(module_exists('aggregator')){
+    $result = db_query_range("SELECT ai.* FROM {aggregator_item} ai, {aggregator_feed} af WHERE ai.fid = af.fid AND af.title = :title ORDER BY timestamp DESC, iid DESC",0,3,array(':title' => 'WP Blog Videos'));
+
+    if (!empty($result)) {
+      foreach ($result as $item) {
+        $output .= '<a href="'.$item->link.'" class="list-group-item">';
+        $output .= '<h4 class="list-group-item-heading">'.$item->title.'</h4>';
+        $output .= '<p class="list-group-item-text">'.text_summary($item->description,'richtext',100).'...</p>';
+        $output .= '</a>';
+      }
+    }
+  }
+
+  $output .= '</div>';
+
+  return $output;
+}

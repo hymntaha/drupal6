@@ -1,0 +1,63 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the Office hours module.
+ */
+
+/**
+ * Implements hook_field_schema($field).
+ */
+function office_hours_field_schema($field) {
+  switch ($field['type']) {
+    case 'office_hours':
+      $db_columns = array(
+        'day' => array(
+          'type' => 'int',
+          'not null' => FALSE,
+        ),
+        'starthours' => array(
+          'type' => 'int',
+          'not null' => FALSE,
+        ),
+        'endhours' => array(
+          'type' => 'int',
+          'not null' => FALSE,
+        ),
+      );
+    break;
+  }
+  return array('columns' => $db_columns);
+}
+
+/**
+ * Implements hook_install().
+ */
+//function office_hours_install() {
+//}
+
+/**
+ * Implements hook_uninstall().
+ */
+//function office_hours_uninstall() {
+//}
+
+/**
+ * Implements hook_enable().
+ */
+//function office_hours_enable() {
+//}
+
+/**
+ * Implements hook_disable().
+ */
+//function office_hours_disable() {
+//}
+
+/**
+ * Change value of 'day' column from 0-13 range to normal 0-6 day range.
+ * This allows for more then 2 hours blocks per day.
+ */
+function office_hours_update_7100() {
+  _office_hours_update_7100_daynum();
+  return "Updated 'day' column of Office hours fields.";
+}

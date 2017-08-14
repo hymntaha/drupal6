@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function uc_google_trusted_stores_theme($existing, $type, $theme, $path) {
+  return array(
+    'uc_google_trusted_stores_header_tag' => array(
+      'template' => 'uc-google-trusted-stores-header-tag',
+      'sku' => '',
+    ),
+    'uc_google_trusted_stores_order_complete_tag' => array(
+      'template' => 'uc-google-trusted-stores-order-complete-tag',
+      'order' => NULL,
+    ),
+  );
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function uc_google_trusted_stores_page_build(&$page) {
+  $sku = '';
+
+  if($node = menu_get_object()){
+    if(uc_product_is_product($node)){
+      $sku = $node->model;
+    }
+  }
+
+  $data = array(
+    '#type' => 'markup',
+    '#markup' => theme('uc_google_trusted_stores_header_tag', array('sku' => $sku)),
+  );
+
+  drupal_add_html_head($data, 'uc_google_trusted_stores_header_tag');
+}
+
+function _uc_google_trusted_stores_get_order_information($order, $field){
+  $output = '';
+
+  switch($field){
+    case 'country':
+      $country = uc_get_country_data(array('country_id' => $order->delivery_country));
+      if(isset($country[0]['country_iso_code_2'])){
+        $output = $country[0]['country_iso_code_2'];
+      }
+      break;
+    case 'discounts':
+      $output = 0;
+      foreach($order->line_items as $line_item){
+        if($line_item['type'] == 'coupon'){
+          $output -= $line_item['amount'];
+        }
+      }
+      break;
+    case 'shipping':
+    case 'tax':
+      $output = 0;
+      foreach($order->line_items as $line_item){
+        if($line_item['type'] == $field){
+          $output += $line_item['amount'];
+        }
+      }
+      $output = round($output,2);
+      break;
+    case 'backorder':
+      $output = 'N';
+      if(module_exists('order')){
+        $output = order_order_has_backordered_item($order) ? 'Y' : 'N';
+      }
+      break;
+    case 'digital':
+      $output = 'N';
+      if(module_exists('order')){
+        $output = order_order_has_non_shippable_item($order) ? 'Y' : 'N';
+      }
+      break;
+    case 'est_ship_date':
+      $output = date('Y-m-d',strtotime('+2 days'));
+      break;
+    case 'est_delivery_date':
+      $output = date('Y-m-d',strtotime('+4 days'));
+      break;
+  }
+
+  return $output;
+}

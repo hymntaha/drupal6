@@ -1,0 +1,12 @@
+name = Authorize.net - CIM Entity Integration
+description = Maintains a connection between Drupal entities and Authorize.net CIM customer profiles.
+dependencies[] = authnet
+package = Authorize.net
+core = 7.x
+
+; Information added by drupal.org packaging script on 2013-02-02
+version = "7.x-1.1"
+core = "7.x"
+project = "authnet"
+datestamp = "1359835969"
+

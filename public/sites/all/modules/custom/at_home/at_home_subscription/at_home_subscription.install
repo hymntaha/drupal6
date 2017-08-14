@@ -1,0 +1,186 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function at_home_subscription_schema() {
+
+  $schema['at_home_products'] = array(
+    'description' => 'Products for At Home Program',
+    'fields'      => array(
+      'id'    => array(
+        'description' => '',
+        'type'        => 'serial',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'level' => array(
+        'description' => 'Level',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'month' => array(
+        'description' => 'Month',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'nid'   => array(
+        'description' => 'Product nid',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'type'  => array(
+        'type'     => 'varchar',
+        'length'   => 255,
+        'not null' => TRUE,
+        'default'  => 'dvd',
+      ),
+    ),
+    'indexes'     => array(
+      'level' => array('level'),
+      'month' => array('month'),
+      'nid'   => array('nid'),
+      'type'   => array('type'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['users_at_home'] = array(
+    'description' => 'General User At Home Program Information',
+    'fields'      => array(
+      'uid'                => array(
+        'description' => 'User ID',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'joined'             => array(
+        'description' => 'Joined',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'last_shipment'      => array(
+        'description' => 'Last Shipment',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'next_shipment'      => array(
+        'description' => 'Next Shipment',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => FALSE,
+      ),
+      'status'             => array(
+        'description' => 'Program Status',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'shipping_option'    => array(
+        'description' => 'User shipping cycle options',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'display_cc_problem' => array(
+        'description' => 'Display CC problem message on dashboard',
+        'type'        => 'int',
+        'size'        => 'tiny',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+        'default'     => 0,
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'dvd',
+      ),
+    ),
+    'indexes'     => array(
+      'last_shipment' => array('last_shipment'),
+      'next_shipment' => array('next_shipment'),
+      'status'        => array('status'),
+    ),
+    'primary key' => array('uid'),
+  );
+
+  $schema['users_at_home_queue'] = array(
+    'description' => 'User At Home Program Queue Information',
+    'fields'      => array(
+      'uid'    => array(
+        'description' => 'User ID',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'ahp_id' => array(
+        'description' => 'At Home Product ID',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'status' => array(
+        'description' => 'Product Shipment Status',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+    ),
+    'indexes'     => array(
+      'uid'    => array('uid'),
+      'ahp_id' => array('ahp_id'),
+      'status' => array('status'),
+    ),
+    'primary key' => array('uid', 'ahp_id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Added display_cc_problem field
+ */
+function at_home_subscription_update_7111(&$sandbox) {
+  if (!db_field_exists('users_at_home', 'display_cc_problem')) {
+    db_add_field('users_at_home', 'display_cc_problem', array(
+      'description' => 'Display CC problem message on dashboard',
+      'type'        => 'int',
+      'size'        => 'tiny',
+      'unsigned'    => TRUE,
+      'not null'    => TRUE,
+      'default'     => 0,
+    ));
+  }
+}
+
+/**
+ * Added support for physical or digital videos
+ */
+function at_home_subscription_update_7120(&$sandbox) {
+  if (!db_field_exists('at_home_products', 'type')) {
+    db_add_field('at_home_products', 'type', array(
+      'type'        => 'varchar',
+      'length'        => 255,
+      'not null'    => TRUE,
+      'default'     => 'dvd',
+    ));
+  }
+
+  if (!db_field_exists('users_at_home', 'type')) {
+    db_add_field('users_at_home', 'type', array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+      'default' => 'dvd',
+    ));
+  }
+}

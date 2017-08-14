@@ -1,0 +1,310 @@
+// For screens wider than 480px
+@media @mobile {
+  .node-quickfix-video {
+    .node-product {
+      .right-content {
+        .add-to-cart-wrapper {
+          .form-item-qty {
+            .make-sm-column(3);
+          }
+          .view-video-intro {
+            .make-sm-column(2);
+            margin-top: 4px !important;
+            display: inline-block;
+          }
+          .add-to-cart {
+            float: right;
+            clear: none;
+            margin-top: 0;
+            .make-sm-column(5);
+          }
+        }
+      }
+    }
+  }
+
+  .node-product.node-teaser form input[id^="edit-submit"],
+  .node-gift-card.node-teaser form input[id^="edit-submit"],
+  .node-quickfix-video.node form input[id^="edit-submit"],
+  .node-quickfix-video.node-teaser form input[id^="edit-submit"] {
+    float: right;
+    clear: none;
+    margin-top: 0;
+  }
+
+  .upsell-product .node-product .add-to-cart-wrapper > div.add-to-cart {
+    .make-sm-column(12);
+    float: none;
+  }
+
+  .upsell-product .node-product .add-to-cart-wrapper > div.add-to-cart input[id^="edit-submit"] {
+    float: none;
+    clear: none;
+    width: inherit;
+  }
+
+  section[id*="block-account-account-links"], section[id*="block-uc-ajax-cart-delta"] {
+    display: block;
+    text-align: center;
+  }
+}
+
+@media (max-width: @screen-xs-max) {
+  .full-width-mobile-button {
+    .btn;
+    .btn-primary;
+    text-align: center;
+    padding: 9px 20px;
+  }
+
+  .page-user-program-manager {
+    .tabs {
+      padding-left: 15px;
+    }
+    .queue {
+      padding: 0 15px;
+    }
+    .form-submit {
+      margin-bottom: 20px;
+      display: block;
+      clear: both;
+      margin-left: 0;
+    }
+  }
+
+  .node-teaser .field-name-uc-product-image, .node-teaser .field-name-field-image {
+  }
+
+  .node-product.node-teaser.grid-view .overlay .add-to-cart .node-add-to-cart.ajax-cart-submit-form-button, .node-gift-card.node-teaser.grid-view .overlay .add-to-cart .node-add-to-cart.ajax-cart-submit-form-button {
+    float: none;
+  }
+
+  .node-product.node-teaser.grid-view .overlay .add-to-cart .form-type-uc-quantity, .node-gift-card.node-teaser.grid-view .overlay .add-to-cart .form-type-uc-quantity {
+    float: none;
+  }
+
+  .node-type-product .node-product .field-name-uc-product-image {
+    .clearfix;
+  }
+
+  .node-type-product .field.field-name-body.field-type-text-with-summary.field-label-hidden {
+    clear: both;
+    margin-top: 20px;
+  }
+
+  .right-content {
+    clear: both;
+  }
+
+  input[id^="edit-submit"][type="submit"] {
+    display: block;
+    margin: 10px 0;
+  }
+
+  body.page-user.page-user-program-manager .program-manager .info-wrapper {
+
+    .tabs {
+      margin-left: 0;
+      padding: 0 15px;
+    }
+
+    button {
+      width: 100%;
+      margin: 0;
+    }
+  }
+
+  #at-home-subscription-queue-form .form-submit {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .btn,
+  a.find-all,
+  a.meet-all-teachers,
+  a.continue-shopping,
+  a.mobile-cart-remove,
+  a.search-all-trainings,
+  a.blue-button {
+    width: 100%;
+    margin: 10px 0;
+    display: block;
+    float: none !important;
+    clear: both;
+
+    &.node-add-to-cart {
+      width: auto;
+    }
+  }
+
+  .page-cart {
+    .cart-top {
+      text-align: center;
+      margin-bottom: 0;
+
+      input.btn,
+      a.continue-shopping {
+        width: auto;
+        display: inline-block;
+        padding: 0 15px;
+        font-size: @font-size-h6;
+      }
+    }
+
+    .entity-uc-cart-item > h2 {
+      display: none;
+    }
+
+    #uc-cart-view-form img {
+      padding: 0;
+      float: none;
+    }
+
+    a.mobile-cart-remove {
+      .full-width-mobile-button;
+    }
+
+    .mobile-remove-container {
+      input {
+        display: none;
+      }
+    }
+
+    input[type="text"] {
+      width: 100%;
+    }
+
+  }
+
+  #cart-login-page {
+    #user-login {
+      .form-type-textfield,
+      .form-type-password {
+        max-width: 100%;
+      }
+    }
+  }
+
+  .page-cart-checkout {
+    .uc-cart-checkout-form {
+      input.btn {
+        width: 100%;
+        &[id^='edit-continue'] {
+          margin-bottom: 40px;
+        }
+      }
+    }
+  }
+
+  .page-cart-checkout-review {
+    #uc-cart-checkout-review-form {
+      input.btn {
+        &[id^="edit-"] {
+          margin-top: 30px;
+        }
+      }
+    }
+  }
+
+  #carousel-bootstrap {
+    .carousel-caption {
+      h2 {
+        font-size: @font-size-base;
+      }
+    }
+
+    .carousel-indicators {
+      left: auto;
+      right: 15px;
+      margin-left: 0;
+      width: 100%;
+      text-align: right;
+    }
+  }
+
+  .page-weekly-yoga-pose,
+  .page-weekly-exercise {
+    #pose-email-form,
+    #pose-exercise-email-form {
+      input#edit-submit {
+        display: block;
+        margin-top: 10px;
+      }
+    }
+  }
+
+  .webform-client-form {
+    .next {
+      float: none;
+    }
+  }
+
+  .grid-view {
+    .image {
+      height: auto !important;
+    }
+  }
+
+  .list-view {
+    .node-teaser {
+      .field-name-uc-product-image {
+        margin: 0;
+        width: 100%;
+
+        img {
+          margin-top: 0 !important;
+        }
+      }
+    }
+  }
+
+  div.modal-forms-modal-content {
+    width: 100% !important;
+    top: 20% !important;
+    left: 0 !important;
+  }
+
+  #modalBackdrop {
+    position: fixed !important;
+  }
+
+  .page-quickfix-yoga-videos {
+    #block-system-main {
+      header {
+        float: none !important;
+      }
+    }
+
+    .node-quickfix-video {
+      > .quick-video {
+        a {
+          .full-width-mobile-button;
+        }
+      }
+    }
+  }
+
+  #ytu-tabs {
+    &.nav-tabs > li.active > a,
+    &.nav-tabs > li.active > a:hover {
+      border: none;
+      background-color: @gray-ultra-light;
+    }
+  }
+
+  .blockMsg {
+    width: 100% !important;
+    left: 0 !important;
+  }
+
+  .footer {
+    .region-footer-rights {
+      #block-menu-menu-footer {
+        ul {
+          float: none;
+          text-align: center;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+/**
+ * @file
+ * Views Styling
+ */
+/*
+ * Views' admin tabs
+ *
+ * The views admin tabs use the same classes as the secondary tabs. We prevent
+ * some of our tab styling from bleeding into (and breaking) the Views admin
+ * pages. If your sub-theme isn't used for admin pages, you can remove this
+ * entire section.
+ */
+.views-displays .secondary li {
+  float: none;
+  margin: 0 6px 0;
+}
+.views-displays .secondary a:link,
+.views-displays .secondary a:visited {
+  text-shadow: none;
+  padding: 2px 7px 3px;
+}
+.views-displays .secondary .open > a {
+  -moz-border-radius: 7px 7px 0 0;
+  -webkit-border-radius: 7px;
+  border-radius: 7px 7px 0 0;
+}
+.views-displays .secondary .open > a:hover {
+  color: #333;
+}
+.views-displays .secondary .action-list li {
+  margin: 0;
+}
+.views-displays .secondary .action-list li:first-child {
+  -moz-border-radius: 0 7px 0 0;
+  -webkit-border-radius: 0;
+  border-radius: 0 7px 0 0;
+}
+.views-displays .secondary .action-list li:last-child {
+  -moz-border-radius: 0 0 7px 7px;
+  -webkit-border-radius: 0;
+  border-radius: 0 0 7px 7px;
+}
+
+.view-uc-orders-user table {
+  width: 100%;
+}
+.view-uc-orders-user table thead {
+  background-color: #EBF4FC;
+  line-height: 23px;
+  border-top: 1px solid #E8E8E8;
+  border-bottom: 1px solid #E8E8E8;
+}
+.view-uc-orders-user table thead th {
+  color: #3776C0;
+  padding: 0 5px;
+}
+.view-uc-orders-user table tbody tr {
+  line-height: 30px;
+  background-color: #fff;
+}
+.view-uc-orders-user table tbody tr td {
+  padding: 0 5px;
+}
+.view-uc-orders-user table tbody tr td.active {
+  background-color: transparent;
+}

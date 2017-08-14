@@ -1,0 +1,5 @@
+name = Mobile Ubercart
+description = Mobile version of ubercart panes
+core = 7.x
+package = Avatar New York
+version = 7.x-1.0

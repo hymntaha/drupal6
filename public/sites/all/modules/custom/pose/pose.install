@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function pose_schema() {
+  $schema['pose_dates'] = array(
+    'description' => 'Pose Dates',
+    'fields' => array(
+      'id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'unsigned' => true,
+        'not null' => true,
+        ),
+      'nid' => array(
+        'description' => 'Pose nid',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+        ),
+      'start' => array(
+        'description' => 'Start Timestamp',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+        ),
+      'end' => array(
+        'description' => 'End Timestamp',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        ),
+      ),
+    'indexes' => array(
+      'nid' => array('nid'),
+      'start' => array('start'),
+      ),
+    'primary key' => array('id'),
+  );
+
+  $schema['users_email_pose'] = array(
+    'description' => 'User Pose Email Notification',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'User id',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+        ),
+      ),
+    'primary key' => array('uid'),
+  );
+
+  $schema['exercise_dates'] = array(
+    'description' => 'Exercise Dates',
+    'fields' => array(
+      'id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'nid' => array(
+        'description' => 'Exercise nid',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'start' => array(
+        'description' => 'Start Timestamp',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'end' => array(
+        'description' => 'End Timestamp',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+      ),
+    ),
+    'indexes' => array(
+      'nid' => array('nid'),
+      'start' => array('start'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['users_email_exercise'] = array(
+    'description' => 'User Exercise Email Notification',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'User id',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Added user_email_pose table
+ */
+function pose_update_7112(&$sandbox) {
+
+  if (!db_table_exists('users_email_pose')) {
+    db_create_table('users_email_pose',drupal_get_schema_unprocessed('pose', 'users_email_pose'));
+  }
+  
+}
+
+/**
+ * Add exercise tables
+ */
+function pose_update_7113(&$sandbox) {
+  if (!db_table_exists('exercise_dates')) {
+    db_create_table('exercise_dates',drupal_get_schema_unprocessed('pose', 'exercise_dates'));
+  }
+  if (!db_table_exists('users_email_exercise')) {
+    db_create_table('users_email_exercise',drupal_get_schema_unprocessed('pose', 'users_email_exercise'));
+  }
+}

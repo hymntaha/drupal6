@@ -1,0 +1,33 @@
+// For screens wider than 992px
+@media @normal{
+  section[id*="block-account-account-links"], section[id*="block-uc-ajax-cart-delta"] {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  ol.breadcrumb{
+    display: block;
+  }
+  footer.footer #block-menu-block-1 ul.menu.nav > li{
+    &:nth-child(2n){
+      clear:none;
+    }
+  }
+  .social.clearfix {
+    .message,
+    #pose-email-form,
+    #pose-exercise-email-form,
+    .addthis_toolbox {
+      margin-bottom: 0;
+    }
+  }
+
+  #pose-email-form,
+  #pose-exercise-email-form {
+    button#edit-submit {
+      width: 20%;
+      margin-top: -10px;
+      padding: 10px;
+    }
+  }
+}

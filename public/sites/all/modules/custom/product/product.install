@@ -1,0 +1,28 @@
+<?php
+
+function product_schema(){
+
+  $schema['featured_product'] = array(
+    'fields' => array(
+      'nid'=>array(
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Added featured_product table
+ */
+function product_update_7111(&$sandbox) {
+
+  if (!db_table_exists('featured_product')) {
+    db_create_table('featured_product',drupal_get_schema_unprocessed('product', 'featured_product'));
+  }
+
+}

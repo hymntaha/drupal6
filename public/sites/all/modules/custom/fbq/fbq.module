@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * Implements hook_init().
+ */
+function fbq_init() {
+  drupal_add_js(drupal_get_path('module','fbq').'/fbq.js');
+}
+
+/**
+ * Implements hook_html_head_alter().
+ */
+function fbq_html_head_alter(&$head_elements) {
+  $head_elements['fbq_init'] = array(
+    '#theme' => 'fbq_init',
+    '#initiate_checkout' => request_path() == 'cart/checkout',
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function fbq_theme($existing, $type, $theme, $path) {
+  return array(
+    'fbq_init' => array(
+      'template' => 'fbq-init',
+      'variables' => array(
+        'initiate_checkout' => FALSE,
+      )
+    ),
+    'fbq_purchase' => array(
+      'template' => 'fbq-purchase',
+      'variables' => array(
+        'order_json' => '',
+      ),
+    ),
+  );
+}
+
+function fbq_checkout_order_tracking_pixel($order) {
+  $order_json = array(
+    'value' => $order->order_total,
+    'currency' => 'USD',
+  );
+
+  foreach($order->products as $product){
+    $order_json['content_ids'][] = $product->model;
+  }
+
+  $order_json = drupal_json_encode($order_json);
+
+  return theme('fbq_purchase', array('order_json' => $order_json));
+}

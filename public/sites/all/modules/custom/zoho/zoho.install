@@ -1,0 +1,80 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function zoho_schema() {
+
+  $schema['zoho_nodes'] = array(
+    'description' => t('Nodes that are tracked in Zoho'),
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('Node ID'),
+      ),
+      'zoho_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+      ),
+      'last_update' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid'),
+    'unique keys' => array(
+      'zoho_id' => array('zoho_id'),
+    ),
+    'indexes' => array(
+      'last_update' => array('last_update'),
+    ),
+  );
+
+  $schema['zoho_users'] = array(
+    'description' => t('Users that are tracked in Zoho'),
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('User ID'),
+      ),
+      'zoho_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => true,
+      ),
+      'last_update' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('uid'),
+    'unique keys' => array(
+      'zoho_id' => array('zoho_id'),
+    ),
+    'indexes' => array(
+      'last_update' => array('last_update'),
+    ),
+  );
+  
+  return $schema;
+}
+
+/**
+ * Added zoho_users table
+ */
+function zoho_update_7111(&$sandbox) {
+
+  if (!db_table_exists('zoho_users')) {
+    db_create_table('zoho_users',drupal_get_schema_unprocessed('zoho', 'zoho_users'));
+  }
+  
+}

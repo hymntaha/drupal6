@@ -1,0 +1,742 @@
+<?php
+
+define('WEEKLY_POSE_URL', 'weekly-yoga-pose');
+define('WEEKLY_EXERCISE_URL', 'weekly-exercise');
+
+/**
+ * Implements hook_menu().
+ */
+function pose_menu() {
+  $items[WEEKLY_POSE_URL] = array(
+    'title' => 'Pose of the Week',
+    'page callback' => 'pose_page_callback',
+    'access arguments' => array('access content'),
+  );
+  $items[WEEKLY_EXERCISE_URL] = array(
+    'title' => 'Weekly Rollout',
+    'page callback' => 'pose_exercise_page_callback',
+    'access arguments' => array('access content'),
+  );
+  $items['admin/ytu-settings/daily-management'] = array(
+    'title' => 'Daily Management',
+    'page callback' => 'pose_daily_admin_settings_page_callback',
+    'access arguments' => array('access ytu pose settings'),
+    'file' => 'pose.admin.inc',
+  );
+  $items['request/pose'] = array(
+    'title' => 'Pose Cron',
+    'page callback' => 'pose_cron_callback',
+    'access arguments' => array('access content'),
+  );
+  $items['admin/ytu-settings/daily-management/pose'] = array(
+    'title' => 'Pose Management',
+    'page callback' => 'pose_admin_settings_page_callback',
+    'access arguments' => array('access ytu pose settings'),
+    'file' => 'pose.admin.inc',
+  );
+  $items['request/exercise'] = array(
+    'title' => 'Exercise Cron',
+    'page callback' => 'pose_exercise_cron_callback',
+    'access arguments' => array('access content'),
+  );
+  $items['admin/ytu-settings/daily-management/exercise'] = array(
+    'title' => 'Exercise Management',
+    'page callback' => 'pose_exercise_admin_settings_page_callback',
+    'access arguments' => array('access ytu pose settings'),
+    'file' => 'pose.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function pose_permission() {
+  return array(
+    'access ytu pose settings' =>  array(
+      'title' => t('Administer YTU Pose Settings'),
+      'description' => t('Manage YTU Poses.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function pose_node_view($node, $view_mode, $langcode) {
+	if($node->type == 'pose' || $node->type == 'exercise'){
+	  if($view_mode != 'right_block'){
+        $node->content['field_video_file_name'][0] = video_get_embed($node->nid);
+      }
+	}
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pose_theme($existing, $type, $theme, $path) {
+  return array(
+    'pose_social' => array(
+      'template' => 'pose-social',
+    ),
+    'pose_email' => array(
+      'template' => 'pose-email',
+      'variables' => array('title' => '','body' => ''),
+    ),
+  );
+}
+
+/**
+ * Implements hook_metatag_metatags_view_alter().
+ */
+function pose_metatag_metatags_view_alter(&$output, $instance) {
+  $current = FALSE;
+
+  switch(request_path()){
+    case WEEKLY_POSE_URL:
+      $current = pose_get_current_pose();
+      break;
+    case WEEKLY_EXERCISE_URL:
+      $current = pose_get_current_exercise();
+      break;
+  }
+
+  if($current){
+    $og_image = file_create_url($current['field_video_thumbnail']['#items'][0]['uri']);
+    $output['og:image'] = $output['og:url'];
+    $output['og:image']['#attached']['drupal_add_html_head'][0][0]['#id'] = 'metatag_og:image';
+    $output['og:image']['#attached']['drupal_add_html_head'][0][0]['#name'] = 'og:image';
+    $output['og:image']['#attached']['drupal_add_html_head'][0][0]['#value'] = $og_image;
+    $output['og:image']['#attached']['drupal_add_html_head'][0][1] = 'metatag_og:image';
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function pose_node_insert($node) {
+  if($node->type == 'pose'){
+    $start_date = pose_get_start_date($node->nid);
+    if($start_date !== FALSE){
+      db_insert('pose_dates')
+        ->fields(array(
+          'nid' => $node->nid,
+          'start' => $start_date,
+        ))
+        ->execute();
+    }
+  }
+  else if($node->type == 'exercise'){
+    $start_date = pose_get_start_date($node->nid);
+    if($start_date !== FALSE){
+      db_insert('exercise_dates')
+        ->fields(array(
+          'nid' => $node->nid,
+          'start' => $start_date,
+        ))
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function pose_node_update($node) {
+  if($node->type == 'pose'){
+    if($node->nid != pose_get_current_pose_nid()){
+      $start_date = pose_get_start_date($node->nid);
+      if($start_date !== FALSE){
+        $num_rows = db_update('pose_dates')
+          ->fields(array('start' => $start_date))
+          ->condition('nid', $node->nid)
+          ->isNull('end')
+          ->execute();
+
+        if($num_rows == 0){
+          db_insert('pose_dates')
+            ->fields(array(
+              'nid' => $node->nid,
+              'start' => $start_date,
+            ))
+            ->execute();
+        }
+      }
+      else{
+        db_delete('pose_dates')
+          ->condition('nid', $node->nid)
+          ->isNull('end')
+          ->execute();
+      }
+    }
+  }
+  else if($node->type == 'exercise'){
+    if($node->nid != pose_get_current_exercise_nid()){
+      $start_date = pose_get_start_date($node->nid);
+      if($start_date !== FALSE){
+        $num_rows = db_update('exercise_dates')
+          ->fields(array('start' => $start_date))
+          ->condition('nid', $node->nid)
+          ->isNull('end')
+          ->execute();
+
+        if($num_rows == 0){
+          db_insert('exercise_dates')
+            ->fields(array(
+              'nid' => $node->nid,
+              'start' => $start_date,
+            ))
+            ->execute();
+        }
+      }
+      else{
+        db_delete('exercise_dates')
+          ->condition('nid', $node->nid)
+          ->isNull('end')
+          ->execute();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function pose_node_delete($node) {
+  if($node->type == 'pose'){
+    db_delete('pose_dates')
+      ->condition('nid', $node->nid)
+      ->execute();
+  }
+  else if($node->type == 'exercise'){
+    db_delete('exercise_dates')
+      ->condition('nid', $node->nid)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function pose_init() {
+  if(!account_is_admin() && !account_is_pose_manager()){
+    if($node = menu_get_object()){
+      if($node->type == 'pose'){
+        drupal_goto(WEEKLY_POSE_URL);
+      }
+      else if($node->type == 'exercise'){
+        drupal_goto(WEEKLY_EXERCISE_URL);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function pose_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link to 'node/add/pose' on 'admin/ytu-settings/pose' page.
+  if ($root_path == 'admin/ytu-settings/daily-management/pose') {
+    $item = menu_get_item('node/add/pose');
+    $item['title'] = 'Add '.$item['title'];
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+  else if ($root_path == 'admin/ytu-settings/daily-management/exercise') {
+    $item = menu_get_item('node/add/exercise');
+    $item['title'] = 'Add '.$item['title'];
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+function pose_page_callback(){
+	$render = array();
+
+  $form = array();
+  if(!pose_get_email_user()){
+    $form = drupal_get_form('pose_email_form');
+  }
+
+	$render['pose'] = array(
+		'#prefix' => '<header>'._mm('pose_header_copy').'</header><div class="social clearfix"><div class="message">'._mm('pose_social_copy').'</div>'.theme('pose_social').render($form).'</div>',
+    'current_pose' => pose_get_current_pose(),
+		'#suffix' => '<div class="pose-footer">'._mm('pose_footer_copy').'</div>',
+	);
+
+	return $render;
+}
+
+function pose_exercise_page_callback(){
+  $render = array();
+
+  $form = array();
+  if(!pose_get_exercise_email_user()){
+    $form = drupal_get_form('pose_exercise_email_form');
+  }
+
+  $render['pose'] = array(
+    '#prefix' => '<header>'._mm('pose_exercise_header_copy').'</header><div class="social clearfix"><div class="message">'._mm('pose_exercise_social_copy').'</div>'.theme('pose_social').render($form).'</div>',
+    'current_pose' => pose_get_current_exercise(),
+    '#suffix' => '<div class="pose-footer">'._mm('pose_exercise_footer_copy').'</div>',
+  );
+
+  return $render;
+}
+
+function pose_email_form($form, &$form_state){
+  $form['pose_email'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Notify me when new poses are posted!'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+
+  return $form;
+}
+
+function pose_email_form_validate($form,&$form_state){
+  global $user;
+  if($user->uid == 0){
+    form_set_error('',t(_mm('pose_email_notification_anon')));
+  }
+}
+
+function pose_email_form_submit($form,&$form_state){
+  if($form_state['values']['pose_email']){
+    pose_set_email_user();
+    drupal_set_message(t(_mm('pose_email_notification')));
+  }
+}
+
+function pose_exercise_email_form($form, &$form_state){
+  $form['pose_email'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Notify me when new exercises are posted!'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+
+  return $form;
+}
+
+function pose_exercise_email_form_validate($form,&$form_state){
+  global $user;
+  if($user->uid == 0){
+    form_set_error('',t(_mm('pose_exercise_email_notification_anon')));
+  }
+}
+
+function pose_exercise_email_form_submit($form,&$form_state){
+  if($form_state['values']['pose_email']){
+    pose_set_exercise_email_user();
+    drupal_set_message(t(_mm('pose_exercise_email_notification')));
+  }
+}
+
+function pose_cron_callback(){
+  set_time_limit(0);
+  
+  $old_pose = pose_get_current_pose();
+  $old_pose_start = pose_get_start_date($old_pose['#node']->nid);
+
+  watchdog('pose', 'Pose Cron Start: Old Pose !title', array('!title' => $old_pose['#node']->title));
+
+  $num_rows = db_select('pose_dates','p')->fields('p')->condition('start',$old_pose_start,'>')->condition('start',strtotime('now'),'<')->countQuery()->execute()->fetchField();
+
+  if($num_rows > 0){
+     $query = db_update('pose_dates')
+      ->fields(array('end' => strtotime('now')))
+      ->isNull('end')
+      ->condition('nid',$old_pose['#node']->nid)
+      ->execute();
+
+      if(!isset($_GET['no_email'])){
+        pose_email_users();
+      }
+  }
+
+  $pose = pose_get_current_pose();
+
+  watchdog('pose', 'Pose Cron End: New Pose !title', array('!title' => $pose['#node']->title));
+
+  metatag_config_cache_clear();
+
+}
+
+function pose_exercise_cron_callback(){
+  set_time_limit(0);
+
+  $old_pose = pose_get_current_exercise();
+  $old_pose_start = pose_get_start_date($old_pose['#node']->nid);
+
+  watchdog('pose', 'Exercise Cron Start: Old Exercise !title', array('!title' => $old_pose['#node']->title));
+
+  $num_rows = db_select('exercise_dates','p')->fields('p')->condition('start',$old_pose_start,'>')->condition('start',strtotime('now'),'<')->countQuery()->execute()->fetchField();
+
+  if($num_rows > 0){
+    $query = db_update('exercise_dates')
+      ->fields(array('end' => strtotime('now')))
+      ->isNull('end')
+      ->condition('nid',$old_pose['#node']->nid)
+      ->execute();
+
+    if(!isset($_GET['no_email'])){
+      pose_exercise_email_users();
+    }
+  }
+
+  $pose = pose_get_current_exercise();
+
+  watchdog('pose', 'Exercise Cron End: New Pose !title', array('!title' => $pose['#node']->title));
+
+  metatag_config_cache_clear();
+
+}
+
+function pose_get_current_pose($view_mode = 'full'){
+  $nid = pose_get_current_pose_nid();
+  if(!empty($nid)){
+	 return node_view(node_load($nid),$view_mode);
+  }
+  else{
+    return array();
+  }
+}
+
+function pose_get_current_exercise($view_mode = 'full'){
+  $nid = pose_get_current_exercise_nid();
+  if(!empty($nid)){
+    return node_view(node_load($nid),$view_mode);
+  }
+  else{
+    return array();
+  }
+}
+
+function pose_get_current_pose_nid(){
+  return db_select('pose_dates','p')->fields('p',array('nid'))->isNull('p.end')->orderBy('p.start')->range(0,1)->execute()->fetchField();
+}
+
+function pose_get_current_exercise_nid(){
+  return db_select('exercise_dates','p')->fields('p',array('nid'))->isNull('p.end')->orderBy('p.start')->range(0,1)->execute()->fetchField();
+}
+
+function pose_get_start_date($nid){
+  $start = db_select('field_data_field_start_date','sd')->fields('sd',array('field_start_date_value'))->condition('sd.entity_id',$nid)->execute()->fetchField();
+  if(empty($start)){
+    return false;
+  }
+  return strtotime($start);
+}
+
+function pose_email_users(){
+  $pose = pose_get_current_pose();
+  $email_info = array('contact_list' => array());
+  $tag_id =  _mm('pose_infusionsoft_id','',true);
+  if($tag_id){
+      $email_info['contact_list'] = infusionsoft_get_contacts_by_tag_id($tag_id);
+  }
+
+  if(!empty($email_info['contact_list'])){
+    $email_info['from'] = _mm('pose_email_from','videos@yogatuneup.com',true);
+    $email_info['subject'] = _mm('pose_email_subject','Weekly YTU Pose Notification',true);
+    $email_body = array(
+      '#theme' => 'pose_email',
+      '#title' => $email_info['subject'],
+      '#body' => str_replace('%pose_name',$pose['#node']->title,_mm('pose_email_body','',true)),
+    );
+    $email_info['body'] = render($email_body);
+
+    $result = infusionsoft_email_blast($email_info);
+
+    if(!$result){
+      watchdog('pose', 'Infusionsoft Pose Email Blast Failed: :error', array(':error' => print_r($result,true)), WATCHDOG_ERROR);
+    }
+  }
+}
+
+function pose_exercise_email_users(){
+  $pose = pose_get_current_exercise();
+  $email_info = array('contact_list' => array());
+  $tag_id =  _mm('pose_exercise_infusionsoft_id','',true);
+  if($tag_id){
+    $email_info['contact_list'] = infusionsoft_get_contacts_by_tag_id($tag_id);
+  }
+
+  if(!empty($email_info['contact_list'])){
+    $email_info['from'] = _mm('pose_exercise_email_from','videos@yogatuneup.com',true);
+    $email_info['subject'] = _mm('pose_exercise_email_subject','Weekly YTU Pose Notification',true);
+    $email_body = array(
+      '#theme' => 'pose_email',
+      '#title' => $email_info['subject'],
+      '#body' => str_replace('%exercise_name',$pose['#node']->title,_mm('pose_exercise_email_body','',true)),
+    );
+    $email_info['body'] = render($email_body);
+
+    $result = infusionsoft_email_blast($email_info);
+
+    if(!$result){
+      watchdog('pose', 'Infusionsoft Exercise Email Blast Failed: :error', array(':error' => print_r($result,true)), WATCHDOG_ERROR);
+    }
+  }
+}
+
+function pose_get_email_user($account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  return db_select('users_email_pose','p')->fields('p',array('uid'))->condition('uid',$account->uid)->execute()->fetchField();
+}
+
+function pose_get_exercise_email_user($account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  return db_select('users_email_exercise','p')->fields('p',array('uid'))->condition('uid',$account->uid)->execute()->fetchField();
+}
+
+function pose_get_email_users(){
+  $uids = array();
+
+  $result = db_select('users_email_pose','p')->fields('p')->execute();
+  foreach($result as $row){
+    $uids[] = $row->uid;
+  }
+
+  return $uids;
+}
+
+function pose_get_exercise_email_users(){
+  $uids = array();
+
+  $result = db_select('users_email_exercise','p')->fields('p')->execute();
+  foreach($result as $row){
+    $uids[] = $row->uid;
+  }
+
+  return $uids;
+}
+
+function pose_set_email_user($account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  $tag_id = _mm('pose_infusionsoft_id','',true);
+  if(!empty($tag_id)){
+    infusionsoft_contact_apply_tag($account,$tag_id);
+  }
+
+  db_insert('users_email_pose')->fields(array('uid' => $account->uid))->execute();
+}
+
+function pose_set_exercise_email_user($account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  $tag_id = _mm('pose_exercise_infusionsoft_id','',true);
+  if(!empty($tag_id)){
+    infusionsoft_contact_apply_tag($account,$tag_id);
+  }
+
+  db_insert('users_email_exercise')->fields(array('uid' => $account->uid))->execute();
+}
+
+function pose_messages_info(){
+	return array(
+    'pose_email_from'=>array(
+      'title'=>"Pose of the Week Email From Address",
+      'description'=>"From address for the Pose of the Week notification e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'pose',
+      ),
+    'pose_email_subject'=>array(
+      'title'=>"Pose of the Week Email Subject",
+      'description'=>"Subject for the Pose of the Week notification e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'pose',
+      ),
+    'pose_email_body'=>array(
+      'title'=>"Pose of the Week Email Body",
+      'description'=>"Body text for the Pose of the Week notification e-mail. %pose_name = Current Pose Name",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'pose',
+      ),
+    'pose_infusionsoft_id'=>array(
+      'title'=>"Pose Infusionsoft Tag ID",
+      'description'=>"Tag ID to apply to contacts who sign up to recieve pose notifications",
+      'type'=>"textfield",
+      'fieldset'=>"infusionsoft",
+      'group'=>"pose", 
+    ),
+    'pose_header_copy'=>array(
+      'title'=>"Pose of the Week header copy",
+      'description'=>"Text copy for the header of the Pose of the Week page",
+      'type'=>"richtext",
+      'group'=>"pose",
+      ),
+    'pose_social_copy'=>array(
+      'title'=>"Pose of the Week social copy",
+      'description'=>"Text copy to the left of social icons on Pose of the Week page",
+      'type'=>"textfield",
+      'group'=>"pose",
+      ),
+    'pose_email_notification'=>array(
+      'title'=>"Pose of the Week Sign Up Notification",
+      'description'=>"Text that appears when a user asks to be notified about new poses",
+      'type'=>"textfield",
+      'group'=>"pose",
+      ),
+    'pose_email_notification_anon'=>array(
+      'title'=>"Pose of the Week Sign Up message when not logged in",
+      'description'=>"Text that appears when a non-logged user asks to be notified about new poses",
+      'type'=>"richtext",
+      'group'=>"pose",
+      ),
+    'pose_warning_copy' => array(
+    	'title'=>'Pose warning copy',
+    	'description'=>'Text copy below the pose text content',
+    	'type'=>'richtext',
+    	'group'=>'pose',
+    ),
+    'pose_footer_copy' => array(
+    	'title'=>'Pose footer copy',
+    	'description'=>'Text copy in the footer of the Pose of the Week page',
+    	'type'=>'richtext',
+    	'group'=>'pose',
+    ),
+      'pose_exercise_email_from'=>array(
+        'title'=>"Exercise of the Week Email From Address",
+        'description'=>"From address for the Exercise of the Week notification e-mail",
+        'type'=>"textfield",
+        'group'=>"emails",
+        'fieldset'=>'exercise',
+      ),
+      'pose_exercise_email_subject'=>array(
+        'title'=>"Exercise of the Week Email Subject",
+        'description'=>"Subject for the Exercise of the Week notification e-mail",
+        'type'=>"textfield",
+        'group'=>"emails",
+        'fieldset'=>'exercise',
+      ),
+      'pose_exercise_email_body'=>array(
+        'title'=>"Exercise of the Week Email Body",
+        'description'=>"Body text for the Exercise of the Week notification e-mail. %exercise_name = Current Exercise Name",
+        'type'=>"richtext",
+        'group'=>"emails",
+        'fieldset'=>'exercise',
+      ),
+      'pose_exercise_infusionsoft_id'=>array(
+        'title'=>"Exercise Infusionsoft Tag ID",
+        'description'=>"Tag ID to apply to contacts who sign up to recieve exercise notifications",
+        'type'=>"textfield",
+        'fieldset'=>"infusionsoft",
+        'group'=>"exercise",
+      ),
+      'pose_exercise_header_copy'=>array(
+        'title'=>"Exercise of the Week header copy",
+        'description'=>"Text copy for the header of the Exercise of the Week page",
+        'type'=>"richtext",
+        'group'=>"exercise",
+      ),
+      'pose_exercise_social_copy'=>array(
+        'title'=>"Exercise of the Week social copy",
+        'description'=>"Text copy to the left of social icons on Exercise of the Week page",
+        'type'=>"textfield",
+        'group'=>"exercise",
+      ),
+      'pose_exercise_email_notification'=>array(
+        'title'=>"Exercise of the Week Sign Up Notification",
+        'description'=>"Text that appears when a user asks to be notified about new exercises",
+        'type'=>"textfield",
+        'group'=>"exercise",
+      ),
+      'pose_exercise_email_notification_anon'=>array(
+        'title'=>"Exercise of the Week Sign Up message when not logged in",
+        'description'=>"Text that appears when a non-logged user asks to be notified about new exercises",
+        'type'=>"richtext",
+        'group'=>"exercise",
+      ),
+      'pose_exercise_warning_copy' => array(
+        'title'=>'Exercise warning copy',
+        'description'=>'Text copy below the exercise text content',
+        'type'=>'richtext',
+        'group'=>'exercise',
+      ),
+      'pose_exercise_footer_copy' => array(
+        'title'=>'Exercise footer copy',
+        'description'=>'Text copy in the footer of the Exercise of the Week page',
+        'type'=>'richtext',
+        'group'=>'exercise',
+      ),
+  );
+}
+
+/**
+ * Implements hook_hide_submit_valid_forms().
+ */
+function pose_hide_submit_valid_forms() {
+  return array('pose_node_form', 'exercise_node_form');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function pose_form_pose_node_form_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'pose_node_form_validate';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function pose_form_exercise_node_form_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'pose_exercise_node_form_validate';
+}
+
+function pose_node_form_validate($form, &$form_state){
+  $node = $form_state['build_info']['args'][0];
+  if($node->nid != pose_get_current_pose_nid()){
+    if(isset($form_state['values']['field_start_date'][LANGUAGE_NONE][0]['value'])){
+      if(strtotime($form_state['values']['field_start_date'][LANGUAGE_NONE][0]['value']) < strtotime('now')){
+        form_set_error('field_start_date','Please set the start date to a future date or leave it blank to not schedule the pose.');
+      }
+    }
+  }
+}
+
+function pose_exercise_node_form_validate($form, &$form_state){
+  $node = $form_state['build_info']['args'][0];
+  if($node->nid != pose_get_current_exercise_nid()){
+    if(isset($form_state['values']['field_start_date'][LANGUAGE_NONE][0]['value'])){
+      if(strtotime($form_state['values']['field_start_date'][LANGUAGE_NONE][0]['value']) < strtotime('now')){
+        form_set_error('field_start_date','Please set the start date to a future date or leave it blank to not schedule the pose.');
+      }
+    }
+  }
+}

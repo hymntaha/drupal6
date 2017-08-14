@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * Data Export CSV
+ * Pass an array of arrays in the $data argument to export each array as a row of csv fields.
+ * 
+ * Example
+ * $data = array(
+ * 	array('avatar','new','york'),
+ * 	array('new','york','dev'),
+ * );
+ * 
+ * will output 
+ * 
+ * "avatar","new","york"
+ * "new","york","dev"
+ * 
+ * @param array $data 
+ * @param array $headers 
+ * @param string $filename 
+ */
+function data_export_csv_export($data, $headers = array(), $filename = 'result'){
+
+	$filename .= '-'.date('mdYhi',strtotime('now'));
+
+	drupal_add_http_header('Content-Type', 'text/csv; utf-8');
+	drupal_add_http_header('Content-Disposition','attachment; filename='.$filename.'.csv');
+
+	$fp = fopen('php://output', 'w');
+
+	if(!empty($headers)){
+		fputcsv($fp, $headers,',','"');
+	}
+
+	foreach($data as $row){
+		fputcsv($fp, $row, ',', '"');
+	}
+
+	fclose($fp);
+
+	drupal_exit();
+}

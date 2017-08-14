@@ -1,0 +1,5 @@
+name = Pose of the Week
+description = Pose of the Week Functionality
+package = "Yoga Tune Up"
+core = 7.x
+version = 7.x-1.3

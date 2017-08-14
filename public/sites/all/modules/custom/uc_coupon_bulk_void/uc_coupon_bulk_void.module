@@ -1,0 +1,163 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function uc_coupon_bulk_void_menu() {
+  $items['admin/store/coupons/%uc_coupon/void/%'] = array(
+    'title' => 'Void Coupon',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_coupon_bulk_void_form',3,5),
+    'access arguments' => array('manage store coupons'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function uc_coupon_bulk_void_menu_alter(&$items) {
+	$items['admin/store/coupons/%uc_coupon/codes']['page callback'] = 'uc_coupon_bulk_void_uc_coupon_codes_csv';
+	$items['admin/store/coupons/%uc_coupon/codes']['file'] = '';
+
+	$items['admin/store/coupons/%uc_coupon/print']['page callback'] = 'uc_coupon_bulk_void_uc_coupon_print';
+	$items['admin/store/coupons/%uc_coupon/print']['file'] = '';
+}
+
+function uc_coupon_bulk_void_form($form, &$form_state, $coupon, $bulk_code){
+	$form['are_you_sure'] = array(
+		'#markup' => '<p>'.t('Are you sure you want to void the code: !code',array('!code' => $bulk_code)).'</p>',
+	);
+
+	$form['cid'] = array(
+		'#type' => 'hidden',
+		'#value' => $coupon->cid,
+	);
+
+	$form['code'] = array(
+		'#type' => 'hidden',
+		'#value' => $bulk_code,
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Void Code',
+	);
+
+	return $form;
+}
+
+function uc_coupon_bulk_void_form_submit($form, &$form_state){
+	if(!empty($form_state['values']['code'])){
+		uc_coupon_bulk_void_void_code($form_state['values']['code']);
+		drupal_set_message(t('The code !code has been voided.',array('!code' => $form_state['values']['code'])));
+		$form_state['redirect'] = 'admin/store/coupons/'.$form_state['values']['cid'];
+	}
+}
+
+function uc_coupon_bulk_void_void_code($code){
+	$record = array(
+		'code' => $code,
+		'timestamp' => time(),
+	);
+
+	drupal_write_record('uc_coupon_bulk_void',$record);
+}
+
+/**
+ * Implements hook_uc_coupon_validate().
+ */
+function uc_coupon_bulk_void_uc_coupon_validate(&$coupon, $order, $account) {
+	if($coupon->bulk && !empty($coupon->bulk_seed)){
+		if(uc_coupon_bulk_void_is_void($coupon->code)){
+			return t('This code no longer valid.');
+		}
+	}
+}
+
+function uc_coupon_bulk_void_is_void($code){
+	return db_select('uc_coupon_bulk_void','v')->fields('v',array('code'))->condition('code',$code)->execute()->fetchField();
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function uc_coupon_bulk_void_entity_view($entity, $type, $view_mode, $langcode) {
+	if($type == 'uc_coupon'){
+		if($view_mode == 'full'){
+			if($entity->bulk){
+				foreach($entity->content['admin_summary']['#rows'] as $delta => $row){
+					if(isset($row[0]['header']) && $row[0]['header'] && $row[0]['data'] == 'Codes'){
+				      $codes = '<strong>' . check_plain($entity->code) . ' &times; ' . check_plain($entity->data['bulk_number']) . '</strong>';
+				      $codes .= ' (' . l(t('Download codes'), 'admin/store/coupons/' . $entity->cid . '/codes') . ')';
+				      $codes .= ' (' . l(t('Print all'), 'admin/store/coupons/' . $entity->cid . '/print') . ')';
+				      for ($id = 0; $id < $entity->data['bulk_number']; $id++) {
+				        $code = uc_coupon_get_bulk_code($entity, $id);
+				        if(uc_coupon_bulk_void_is_void($code)){
+				        	$codes .= '<br />' . check_plain($code) . ' (<strong>' . t('Voided') . '</strong>)';
+				        }
+				        else{
+				        	$codes .= '<br />' . check_plain($code) . ' (' . l(t('Print'), 'admin/store/coupons/' . $entity->cid . '/print/' . $code) . ')';
+				        	$codes .= ' (' . l(t('Void'), 'admin/store/coupons/' . $entity->cid . '/void/' . $code) . ')';
+				    	}
+				      }
+				  
+				      $entity->content['admin_summary']['#rows'][$delta][1] = $codes;
+					}
+				}
+			}
+		}
+	}
+}
+
+function uc_coupon_bulk_void_uc_coupon_codes_csv($coupon){
+  if (!$coupon->bulk) {
+    drupal_not_found();
+    return;
+  }
+
+  header('Content-Type: application/octet-stream');
+  header('Content-Disposition: attachment; filename="' . $coupon->code . '.csv";');
+
+  for ($id = 0; $id < $coupon->data['bulk_number']; $id++) {
+  	$code = uc_coupon_get_bulk_code($coupon, $id);
+
+  	if(!uc_coupon_bulk_void_is_void($code)){
+    	echo $code . "\n";
+	}
+  }
+  exit;
+}
+
+function uc_coupon_bulk_void_uc_coupon_print($coupon, $code = NULL, $op = 'view') {
+  if ($code) {
+    $codes = array($code);
+  }
+  elseif (!$coupon->bulk) {
+    $codes = array($coupon->code);
+  }
+  else {
+    $codes = array();
+    for ($id = 0; $id < $coupon->data['bulk_number']; $id++) {
+      $bulk_code = uc_coupon_get_bulk_code($coupon, $id);
+      if(!uc_coupon_bulk_void_is_void($bulk_code)){
+    	  $codes[] = $bulk_code;
+  	  }
+    }
+  }
+
+  $output = '';
+  foreach ($codes as $code) {
+    $output .= theme('uc_coupon_certificate', array('coupon' => $coupon, 'code' => $code));
+  }
+
+  drupal_add_css(drupal_get_path('module', 'uc_coupon') . '/uc_coupon.css');
+
+  if ($op == 'print') {
+    echo theme('uc_coupon_page', array('content' => $output));
+    exit;
+  }
+
+  return $output;
+}

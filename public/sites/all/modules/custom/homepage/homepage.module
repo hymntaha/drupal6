@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * Implements hook_node_view().
+ */
+function homepage_node_view($node, $view_mode, $langcode) {
+  if ($node->type == 'homepage') {
+    if ($view_mode == 'full') {
+      $image = render($node->content['field_body_background_image']);
+      if (!empty($image)) {
+        $image_path = explode('src="', $image);
+        $image_path = explode('"', $image_path[1]);
+        $image_path = $image_path[0];
+        drupal_add_js(array('homepage' => array('body_bg' => $image_path)), 'setting');
+      }
+      if (isset($node->content['field_feature_image_link']['#items'][0]['url'])) {
+        $node->content['field_feature_image'][0]['#path'] = array('path' => $node->content['field_feature_image_link']['#items'][0]['url']);
+      }
+
+      $node->content['pose']            = pose_get_current_pose('teaser');
+      $node->content['exercise']            = pose_get_current_exercise('teaser');
+
+      $blog_items = array();
+
+      if(module_exists('aggregator')){
+        $result = db_query_range("SELECT ai.* FROM {aggregator_item} ai, {aggregator_feed} af WHERE ai.fid = af.fid AND af.title = :title ORDER BY timestamp DESC, iid DESC",0,4,array(':title' => 'WP Blog Non-Events'));
+
+        if (!empty($result)) {
+          foreach ($result as $item) {
+            $blog_items[] = $item;
+          }
+        }
+      }
+
+      $classes = class_get_classes(array(
+        'pagination' => FALSE,
+        'type' => array(CLASS_TYPE_TEACHER_TRAINING),
+        'limit' => 5,
+        ));
+
+      $classes = node_load_multiple($classes);
+
+      $node->content['blog'] = $blog_items;
+      $node->content['event'] = node_view_multiple($classes, 'right_block');
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function homepage_entity_info_alter(&$entity_info)
+{
+  $entity_info['node']['view modes']['above_content'] = array(
+    'label' => t('Above Content'),
+    'custom settings' => TRUE,
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function homepage_block_info() {
+  $block['above_content'] = array(
+    'info' => 'Above Content',
+  );
+  return $block;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function homepage_block_view($delta = '') {
+  $block = array();
+  switch($delta){
+    case 'above_content':
+      if($node = menu_get_object()){
+        $block = array(
+          'subject' => '',
+          'content' => node_view($node,'above_content'),
+        );
+      }
+
+      break;
+  }
+  return $block;
+}

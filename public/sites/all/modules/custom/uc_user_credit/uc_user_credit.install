@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function uc_user_credit_schema() {
+
+  $schema['uc_user_credit'] = array(
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+        'description' => t('User the credit is for')
+      ),
+      'credit' => array(
+        'type' => 'numeric',
+        'precision' => 10,
+        'scale' => 2,
+        'not null' => TRUE,
+        'default' => 0.0,
+        'description' => t('Credit amount'),
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'logged_uid' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'not null' => true,
+        'unsigned' => true,
+      ),
+      'memo' => array(
+        'type' => 'text',
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+  );
+  
+  return $schema;
+}
+
+/**
+ * Added memo field
+ */
+function uc_user_credit_update_7110($sandbox){
+  if (!db_field_exists('uc_user_credit', 'memo')) {
+    db_add_field('uc_user_credit', 'memo', array(
+      'type' => 'text',
+      'not null' => true,
+    ));
+  }
+}

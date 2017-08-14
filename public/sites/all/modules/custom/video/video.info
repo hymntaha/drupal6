@@ -1,0 +1,10 @@
+name = Video
+description = Video Functionality
+package = "Yoga Tune Up"
+core = 7.x
+version = 7.x-1.2
+
+files[] = classes/UserVideoManager.php
+files[] = classes/UserVideo.php
+files[] = classes/UserPlaylist.php
+files[] = classes/UserPlaylistVideo.php

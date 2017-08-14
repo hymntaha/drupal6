@@ -1,0 +1,856 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function group_menu() {
+
+  $items['request/coaching-calls'] = array(
+    'title' => 'Coaching Call Email Cron',
+    'page callback' => 'group_coaching_calls_cron_callback',
+    'access arguments' => array('access content'),
+  );
+
+  $items['group-email/%'] = array(
+  	'title' => 'Group Email',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('group_email_form',1),
+  	'access callback' => 'group_email_page_access_callback',
+  	'access arguments' => array(1),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths_alter().
+ */
+function group_admin_paths_alter(&$paths) {
+  $paths['group-email/*'] = TRUE;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function group_form_alter(&$form, &$form_state, $form_id) {
+	if($form_id == 'og_ui_add_users'){
+		
+		$form['#prefix'] = '<div id="group-user-search-results">';
+		$form['#suffix'] = '</div>';
+
+		unset($form['og_user']['name']);
+
+		$form['membership_fields']['#prefix'] = '<div id="og-ui-field-name" style="display:none;">';
+		$form['og_user']['roles']['#prefix'] = '<div id="og-ui-roles" style="display:none;">';
+		$form['og_user']['roles']['#suffix'] = '</div>' ;
+
+		$form['og_user']['search'] = array(
+			'#type' => 'textfield',
+			'#title' => t('User Search'),
+		);
+
+		$form['og_user']['or'] = array(
+		  '#type' => 'item',
+          '#markup' => '- OR -',
+        );
+
+		$form['og_user']['user_list'] = array(
+		  '#type' => 'textarea',
+          '#title' => t('User List'),
+          '#description' => 'Paste a list of user emails each on their own line',
+        );
+
+		$form['og_user']['search_submit'] = array(
+			'#type' => 'button',
+			'#value' => t('Search for Users'),
+			'#ajax' => array(
+				'wrapper' => 'group-user-search-results',
+				'callback' => 'group_user_search_ajax_callback',
+				'event' => 'click',
+			),
+		);
+
+		$form['search_results'] = array(
+			'#type' => 'fieldset',
+			'#title' => t('User Search Results'),
+		);
+
+		$form['actions']['submit']['#prefix'] = '<div style="display:none;">';
+		$form['actions']['submit']['#suffix'] = '</div>';
+
+		if(!empty($form_state['values']['search'])){
+			$users = group_user_search($form_state['values']['search'],$form['gid']['#value']);
+
+			if(count($users)){
+				$form['search_results']['users'] = array(
+					'#type' => 'checkboxes',
+					'#title' => t('Users'),
+					'#options' => $users,
+				);
+
+				$form['actions']['submit']['#prefix'] = '';
+				$form['actions']['submit']['#suffix'] = '';
+			}
+		}
+		else if(!empty($form_state['values']['user_list'])){
+		  $emails = avatar_utils_parse_custom_list($form_state['values']['user_list']);
+
+		  $result = db_select('users', 'u')
+            ->fields('u', array('uid'))
+            ->condition('mail', $emails, 'IN')
+            ->execute();
+
+		  $options = array();
+		  $default_values = array();
+		  foreach($result as $row){
+		    $account = user_load($row->uid);
+		    $name = account_get_full_name($account);
+
+            if(!og_get_membership('node', $form['gid']['#value'], 'user', $account->uid)){
+              $name .= ' ('.$account->mail.')';
+            }
+
+		    $options[$account->uid] = $name;
+            $default_values[] = $account->uid;
+          }
+
+          if(!empty($options)){
+            $form['search_results']['users'] = array(
+              '#type' => 'checkboxes',
+              '#title' => t('Users'),
+              '#options' => $options,
+              '#default_value' => $default_values,
+            );
+
+            $form['actions']['submit']['#prefix'] = '';
+            $form['actions']['submit']['#suffix'] = '';
+          }
+        }
+
+		$form['#validate'] = array('group_og_ui_add_users_validate');
+		$form['#submit'] = array('group_og_ui_add_users_submit');
+	}
+
+	if($form_id == 'student_group_node_form'){
+		if(account_is_teacher()){
+			$teacher_nid = teacher_get_teacher_page_nid();
+			if(!empty($teacher_nid)){
+				$teacher = node_load($teacher_nid);
+				$form['title']['#default_value'] = $teacher->title.'\'s Student Group';
+			}
+		}
+	}
+
+	if($form_id == 'coaching_call_node_form'){
+		drupal_add_js(drupal_get_path('theme', 'yogatuneup').'/js/date_range_handling.js');
+	}
+}
+
+function group_user_search_ajax_callback($form, &$form_state){
+	return $form;
+}
+
+/**
+ * Validate handler; Add users to group.
+ */
+function group_og_ui_add_users_validate($form, &$form_state) {
+	if($form_state['values']['op'] == 'Add users'){
+		if(isset($form_state['values']['users'])){
+			$checked_users = false;
+			foreach($form_state['values']['users'] as $uid => $checked){
+				if($checked){
+					$checked_users = true;
+					$account = user_load($uid);
+					$group_type = $form_state['values']['group_type'];
+					$gid = $form_state['values']['gid'];
+					$field_name = $form_state['values']['field_name'];
+					$params = array('%name' => format_username($account));
+					if (!$account) {
+						form_set_error('name', t('You have entered an invalid user name.'));
+						return;
+					}
+					elseif (og_get_membership($group_type, $gid, 'user', $account->uid)) {
+						form_set_error('name', t('User %name is already subscribed to group.', $params));
+					}
+					// Check field cardinality.
+					elseif (!og_check_field_cardinality('user', $account, $field_name)) {
+						$instance = field_info_instance('user', $field_name, 'user');
+						$params['%field'] = $instance['label'];
+						form_set_error('field_name', t('%name has reached maximum values in field %field.', $params));
+					}
+					else {
+						$og_membership = $form_state['og_membership'];
+						field_attach_form_validate('og_membership', $og_membership, $form['membership_fields'], $form_state);
+					}
+				}
+			}
+			if(!$checked_users){
+				form_set_error('',t('Please select users to add.'));
+			}
+		}
+		else{
+			form_set_error('',t('Please search for users to add.'));
+		}
+	}
+}
+
+/**
+ * Submit handler; Add users to group.
+ */
+function group_og_ui_add_users_submit($form, &$form_state) {
+
+	$group_type = $form_state['values']['group_type'];
+	$gid = $form_state['values']['gid'];
+	$state = $form_state['values']['state'];
+
+	foreach($form_state['values']['users'] as $uid => $checked){
+		if($checked){		
+			$account = user_load($uid);
+			// Ungroup user, in case they were already registered.
+			og_ungroup($group_type, $gid, 'user', $account);
+
+			og_group($group_type,$gid,array('entity_type' => 'user', 'entity' => $account->uid));
+
+		    $name = account_get_first_name($account);
+		    $group = node_load($gid);
+
+		    drupal_mail(
+		      "group",
+		      "group_invite_email",
+		      $account->mail,
+		      language_default(),
+		      array(
+		      	'firstname'=> $name,
+		      	'subject' => _mm('group_invite_email_subject','Yoga Tune Up Group Notification',true),
+		      	'group' => $group->title,
+		      ),
+		      _mm('group_invite_email_from','info@yogatuneup.com',true)
+		    );
+		}
+	}
+
+	$group = entity_load_single($group_type, $gid);
+	drupal_set_message(t('Users has been added to the group %group-title.', array('%group-title' => entity_label($group_type, $group))));
+
+}
+
+/**
+ * Implements hook_theme().
+ */
+function group_theme($existing, $type, $theme, $path) {
+  return array(
+    'group_email' => array(
+      'template' => 'group-email',
+      'variables' => array('body' => ''),
+    ),
+  );
+}
+
+function group_user_search($string,$gid){
+	$users = array();
+
+	if(!empty($string)){
+
+		$query = db_select('users','u')->fields('u',array('uid'));
+		$query->innerJoin('field_data_field_first_name','fn','u.uid = fn.entity_id');
+		$query->leftJoin('field_data_field_last_name','ln','u.uid = ln.entity_id');
+
+		$query->condition(db_or()
+					->condition('mail', db_like($string) . '%', 'LIKE')
+					->condition('fn.field_first_name_value', db_like($string) . '%', 'LIKE')
+					->condition('ln.field_last_name_value', db_like($string) . '%', 'LIKE'));
+
+		$result = $query->execute(); 
+
+		$form['og_users']['users'] = array(
+			'#type' => 'checkboxes',
+			'#title' => t('Select Users'),
+		);
+
+		foreach($result as $row){
+			$account = user_load($row->uid);
+			$name = account_get_first_name($account);
+			if(isset($account->field_last_name[LANGUAGE_NONE][0]['safe_value'])){
+				$name .= ' '.$account->field_last_name[LANGUAGE_NONE][0]['safe_value'];
+			}
+			if(!og_get_membership('node', $gid, 'user', $account->uid)){
+				$users[$account->uid] = $name.' ('.$account->mail.')';
+			}
+		}
+
+	}
+
+	return $users;	
+}
+
+function group_get_teacher_student_group($teacher_nid){
+	$query = db_select('node','n')
+		->fields('n',array('nid'))
+		->condition('n.type','student_group')
+		->condition('n.status',1);
+
+	$query->innerJoin('node','n2','n.uid = n2.uid');
+	$query->condition('n2.nid',$teacher_nid);
+
+	return $query->execute()->fetchField();
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function group_node_view($node, $view_mode, $langcode) {
+  if($node->type == 'coaching_call'){
+  	$node->content['field_call_date'][0]['#markup'] .= '<span> (PST)</span>';
+  	if(!og_is_member('node',$node->nid)){
+  		$node->content['join_group'] = drupal_get_form('group_join_coaching_call_form',$node->nid);
+  	}
+  	else{
+  		$node->content['join_group']['#markup'] = '<p>You have already signed up for this call.</p>';
+  	}
+  }
+  if($node->type == 'group' || $node->type == 'student_group'){
+  	if($view_mode == 'full'){
+  		global $user;
+  		if(account_is_admin() || (account_is_teacher() && $user->uid == $node->uid)){
+  			drupal_goto('node/'.$node->nid.'/group');
+  		}
+  		else{
+  			drupal_goto('user');
+  		}
+  	}
+  }
+}
+
+function group_join_coaching_call_form($form, &$form_state, $group_nid){
+	$form['ccg'] = array(
+		'#type' => 'hidden',
+		'#value' => $group_nid,
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Sign Up'),
+		'#attributes' => array('class' => array('blue-button')),
+	);
+
+	return $form;
+}
+
+function group_join_coaching_call_form_submit($form, &$form_state){
+	global $user;
+
+	og_group('node',$form_state['values']['ccg']);
+	drupal_set_message(t('You have been added to this coaching call.'));
+
+    $account = user_load($user->uid);
+    $name = account_get_first_name($account);
+    drupal_mail(
+      "group",
+      "cc_reg_email",
+      $account->mail,
+      language_default(),
+      array(
+      	'firstname'=> $name,
+      	'subject' => _mm('cc_reg_email_subject','YTU Teacher Coaching Call Confirmation',true),
+      	'link' => l('Coaching Call Information','node/'.$form_state['values']['ccg'],array('absolute' => true)),
+      ),
+      _mm('cc_reg_email_from','jillmiller@yogatuneup.com',true)
+    );
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function group_node_update($node){
+/*
+	Disabled as per Robert: https://starworksgroup.mydonedone.com/issuetracker/projects/15627/issues/126
+
+	if($node->type == 'coaching_call'){
+		$uids = group_get_group_members($node->nid);
+		foreach($uids as $uid){
+			$account = user_load($uid);
+			$name = account_get_first_name($account);
+		    drupal_mail(
+		      "group",
+		      "cc_update_email",
+		      $account->mail,
+		      language_default(),
+		      array(
+		      	'firstname'=> $name,
+		      	'subject' => _mm('cc_update_email_subject','YTU Teacher Coaching Call Confirmation',true),
+		      	'link' => l('Coaching Call Information','node/'.$node->nid,array('absolute' => true)),
+		      ),
+		      _mm('cc_update_email_from','jillmiller@yogatuneup.com',true)
+		    );
+		}
+	}
+*/
+}
+
+/**
+ * Implements hook_mail()
+ */
+function group_mail($key, &$message, $params){
+  switch($key){
+    case 'cc_reg_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%firstname', '%link'),
+        array($params['firstname'],$params['link']),
+        _mm('cc_reg_email_body','',true)
+      );
+      break;
+    case 'cc_reminder_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%firstname', '%link', '%date','%time'),
+        array($params['firstname'],$params['link'],$params['date'],$params['time']),
+        _mm('cc_reminder_email_body','',true)
+      );
+      break;
+    case 'cc_1w_reminder_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%firstname', '%link', '%date','%call_title','%time'),
+        array($params['firstname'],$params['link'],$params['date'],$params['call_title'],$params['time']),
+        _mm('cc_1w_reminder_email_body','',true)
+      );
+      break;
+    case 'cc_update_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%firstname', '%link'),
+        array($params['firstname'],$params['link']),
+        _mm('cc_update_email_body','',true)
+      );
+      break;
+    case 'group_invite_email':
+      $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+      $message['no_message_wrap'] = false;
+      $message['subject'] = $params['subject'];
+      $message['body'] = str_replace(
+        array('%firstname', '%group'),
+        array($params['firstname'],$params['group']),
+        _mm('group_invite_email_body','',true)
+      );
+      break;
+  }
+}
+
+function group_coaching_calls_cron_callback(){
+	set_time_limit(0);
+
+	group_coaching_call_send_tomorrow_reminder_emails();
+	group_coaching_call_one_week_reminder_emails();
+}
+
+function group_coaching_call_send_tomorrow_reminder_emails(){
+	$tomorrow = date('Y-m-d',strtotime('tomorrow'));
+	$query = db_select('field_data_field_call_date','cd')->fields('cd',array('entity_id','field_call_date_value'))->where('DATE(cd.field_call_date_value) = :tomorrow',array(':tomorrow' => $tomorrow));
+	$query->innerJoin('og_membership','ogm','cd.entity_id = ogm.gid');
+	$result = $query->fields('ogm',array('etid','gid'))->execute();
+
+	foreach($result as $row){
+		$account = user_load($row->etid);
+		$name = account_get_first_name($account);
+	    drupal_mail(
+	      "group",
+	      "cc_reminder_email",
+	      $account->mail,
+	      language_default(),
+	      array(
+	      	'firstname'=> $name,
+	      	'subject' => _mm('cc_reminder_email_subject','YTU Teacher Coaching Call Confirmation',true),
+	      	'link' => l('Coaching Call Information','node/'.$row->gid,array('absolute' => true)),
+            'date' => date('l, F jS Y',strtotime($row->field_call_date_value)),
+            'time' => date('h:ia',strtotime($row->field_call_date_value)),
+	      ),
+	      _mm('cc_reminder_email_from','jillmiller@yogatuneup.com',true)
+	    );
+	}
+}
+
+function group_coaching_call_one_week_reminder_emails(){
+	$next_week = date('Y-m-d',strtotime('+1 week'));
+	$query = db_select('field_data_field_call_date','cd')->fields('cd',array('entity_id','field_call_date_value'))->where('DATE(cd.field_call_date_value) = :next_week',array(':next_week' => $next_week));
+	$query->innerJoin('node','n','cd.entity_id = n.nid');
+	$result = $query->fields('n',array('title'))->execute();
+
+	$teachers = teacher_get_teacher_users();
+
+	foreach($result as $row){
+		foreach($teachers as $uid => $email){
+			$account = user_load($uid);
+			$name = account_get_first_name($account);
+		    drupal_mail(
+		      "group",
+		      "cc_1w_reminder_email",
+		      $account->mail,
+		      language_default(),
+		      array(
+		      	'firstname'=> $name,
+		      	'subject' => _mm('cc_1w_reminder_email_subject','YTU Teacher Coaching Call Confirmation',true),
+		      	'link' => l('Coaching Call Information','node/'.$row->entity_id,array('absolute' => true)),
+		      	'date' => date('l, F jS Y',strtotime($row->field_call_date_value)),
+		      	'time' => date('h:ia',strtotime($row->field_call_date_value)),
+		      	'call_title' => $row->title,
+		      ),
+		      _mm('cc_1w_reminder_email_from','jillmiller@yogatuneup.com',true)
+		    );
+		}
+	}
+}
+
+/**
+ * Implements hook_og_user_access_alter().
+ */
+function group_og_user_access_alter(&$temp_perm,$context){
+	if(account_is_teacher($context['account']) && $context['group']->uid == $context['account']->uid){
+		if($context['string'] == 'manage members' || $context['string'] == 'administer group'){
+			$temp_perm[$context['string']] = true;
+		}
+	}
+}
+
+function group_get_coaching_call_archives(){
+	$calls = array();
+
+	$query = db_select('node','n')
+			->fields('n',array('title'))
+			->condition('n.status',1)
+			->condition('n.type','coaching_call');
+	$query->innerJoin('field_data_field_mp3','m','n.nid = m.entity_id');
+	$query->innerJoin('field_data_field_call_date','cd','n.nid = cd.entity_id');
+
+	$result = $query->fields('cd',array('field_call_date_value'))
+				->fields('m',array('field_mp3_fid'))
+				->orderBy('field_call_date_value','DESC')
+				->execute();
+
+	foreach($result as $row){
+		$calls[$row->field_mp3_fid] = date('m/d/Y',strtotime($row->field_call_date_value)).': '.$row->title;
+	}
+
+	return $calls;
+}
+
+function group_get_upcoming_coaching_call(){
+	$query = db_select('node','n')
+				->fields('n',array('nid','title'))
+				->condition('n.type','coaching_call')
+				->condition('n.status',1);
+	$query->innerJoin('field_data_field_call_date','cd','n.nid = cd.entity_id');
+	$query->fields('cd',array('field_call_date_value'));
+	$query->condition('cd.field_call_date_value',date('Y-m-d'),'>')->orderBy('cd.field_call_date_value','ASC')->range(0,1);
+
+	$result = $query->execute();
+	foreach($result as $row){
+		return '<span>'.l($row->title,'node/'.$row->nid).' - <strong>'.date('l, F j, Y - g:ia',strtotime($row->field_call_date_value)).' (PST)</strong></span>';
+	}
+
+	return '';
+}
+
+function group_coaching_call_archives_form($form,&$form_state,$coaching_calls){
+	$form['archives'] = array(
+		'#type' => 'select',
+		'#options' => $coaching_calls,
+		'#required' => TRUE,
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+
+	return $form;
+}
+
+function group_coaching_call_archives_form_submit($form,&$form_state){
+	$file = file_load($form_state['values']['archives']);
+	file_transfer($file->uri,array(
+		'Content-type' => 'audio/mpeg, audio/x-mpeg, audio/x-mpeg-3, audio/mpeg3',
+		'Content-Disposition' => 'attachment; filename="'.$file->filename.'"',
+		'Cache-Control' => 'no-cache',
+	));
+}
+
+function group_messages_info(){
+	return array(
+    'group_invite_email_from'=>array(
+      'title'=>"Group Invitation From Address",
+      'description'=>"From address for the Group Invitation e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'group_invitation',
+      ),
+    'group_invite_email_subject'=>array(
+      'title'=>"Group Invitation Email Subject",
+      'description'=>"Subject for the Group Invitation e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'group_invitation',
+      ),
+    'group_invite_email_body'=>array(
+      'title'=>"Group Invitation Email Body",
+      'description'=>"Body text for the Group Invitation e-mail. %firstname = Users First Name. %group = Name of the group.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'group_invitation',
+      ),
+    'cc_reg_email_from'=>array(
+      'title'=>"Coaching Call Registration From Address",
+      'description'=>"From address for the Coaching Call Registration e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_registration',
+      ),
+    'cc_reg_email_subject'=>array(
+      'title'=>"Coaching Call Registration Email Subject",
+      'description'=>"Subject for the Coaching Call Registration e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_registration',
+      ),
+    'cc_reg_email_body'=>array(
+      'title'=>"Coaching Call Registration Email Body",
+      'description'=>"Body text for the Coaching Call Registration e-mail. %firstname = Users First Name. %link = Link to coaching call page.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_registration',
+      ),
+    'cc_update_email_from'=>array(
+      'title'=>"Coaching Call update From Address",
+      'description'=>"From address for the Coaching Call Update e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_update',
+      ),
+    'cc_update_email_subject'=>array(
+      'title'=>"Coaching Call update Email Subject",
+      'description'=>"Subject for the Coaching Call Update e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_update',
+      ),
+    'cc_update_email_body'=>array(
+      'title'=>"Coaching Call update Email Body",
+      'description'=>"Body text for the Coaching Call Update e-mail. %firstname = Users First Name. %link = Link to coaching call page.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_update',
+      ),
+    'cc_reminder_email_from'=>array(
+      'title'=>"Coaching Call - Registered From Address",
+      'description'=>"From address for the Coaching Call Reminder e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_reminder',
+      ),
+    'cc_reminder_email_subject'=>array(
+      'title'=>"Coaching Call - Registered Email Subject",
+      'description'=>"Subject for the Coaching Call Reminder e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_reminder',
+      ),
+    'cc_reminder_email_body'=>array(
+      'title'=>"Coaching Call - Registered Email Body",
+      'description'=>"Body text for the Coaching Call Reminder e-mail. %firstname = Users First Name. %link = Link to coaching call page. %date = Date of the coaching call. %time = Time of the coaching call.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_reminder',
+      ),
+    'cc_1w_reminder_email_from'=>array(
+      'title'=>"Coaching Call Reminder - All Teacher From Address",
+      'description'=>"From address for the 1 Week Coaching Call Reminder e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_reminder',
+      ),
+    'cc_1w_reminder_email_subject'=>array(
+      'title'=>"Coaching Call Reminder - All Teacher Email Subject",
+      'description'=>"Subject for the 1 Week Coaching Call Reminder e-mail",
+      'type'=>"textfield",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_reminder',
+      ),
+    'cc_1w_reminder_email_body'=>array(
+      'title'=>"Coaching Call Reminder - All Teacher Email Body",
+      'description'=>"Body text for the 1 Week Coaching Call Reminder e-mail. %firstname = Users First Name. %link = Link to coaching call page. %date = Date of the coaching call. %time = Time of the coaching call. %call_title = Title of coaching call.",
+      'type'=>"richtext",
+      'group'=>"emails",
+      'fieldset'=>'coaching_call_reminder',
+      ),
+  );
+}
+
+function group_get_group_members($gid){
+	$uids = array();
+	$result = db_select('og_membership','ogm')->fields('ogm',array('etid'))->condition('gid',$gid)->condition('state',1)->execute();
+	foreach($result as $row){
+		$uids[] = $row->etid;
+	}
+	return $uids;
+}
+
+function group_get_email_link($gid){
+	$emails = array();
+	$uids = group_get_group_members($gid);
+	$group = node_load($gid);
+	if(!empty($uids)){
+		return l($group->title,'group-email/'.$gid);
+	}
+	return false;
+}
+
+function group_email_form($form, &$form_state, $gid){
+	drupal_set_breadcrumb();
+	global $user;
+
+	$group = node_load($gid);
+
+	$form['email'] = array(
+		'#type' => 'fieldset',
+		'#title' => 'Group E-mail for '.$group->title,
+	);
+
+	$form['email']['from'] = array(
+		'#type' => 'hidden',
+		'#value' => $user->mail,
+	);
+
+	$form['email']['subject'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Subject'),
+		'#required' => true,
+	);
+
+	$format = 'rich_text_user';
+	if(account_is_teacher()){
+		$format = 'rich_text_teacher';
+	}
+	else if(account_is_admin()){
+		$format = 'rich_text_admin';
+	}
+
+	$form['email']['body'] = array(
+		'#type' => 'text_format',
+		'#format' => $format,
+		'#title' => t('Body'),
+		'#required' => true,
+	);
+
+	if($format == 'rich_text_user'){
+		$form['email']['body']['#after_build'][] = 'group_email_form_after_build';
+	}
+
+	$form['gid'] = array(
+		'#type' => 'hidden',
+		'#value' => $gid,
+	);
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Send Email',
+		'#attributes' => array('class' => array('blue-button'), 'style' => 'margin-top:20px;'),
+	);
+
+	return $form;
+}
+
+function group_email_form_after_build($form, &$form_state){
+	$form['format']['#prefix'] = '<div style="display:none;">';
+	$form['format']['#suffix'] = '</div>';
+
+	return $form;
+}
+
+function group_email_form_submit($form, &$form_state){
+	$email_info = array('contact_list' => array());
+
+	foreach(group_get_group_members($form_state['values']['gid']) as $uid){
+		$account = user_load($uid);
+		$contact_id = infusionsoft_user_get_infusionsoft_id($account);
+		if($contact_id){
+		  $email_info['contact_list'][] = $contact_id;
+		}
+	}
+
+	if(!empty($email_info['contact_list'])){
+		$email_info['from'] = $form_state['values']['from'];
+		$email_info['subject'] = $form_state['values']['subject'];
+		$email_body = array(
+		  '#theme' => 'group_email',
+		  '#body' => $form_state['values']['body']['value'],
+		);
+		$email_info['body'] = render($email_body);
+
+		$result = infusionsoft_email_blast($email_info);
+
+		if(!$result){
+		  watchdog('group', 'Infusionsoft Group Email Blast Failed: :error', array(':error' => print_r($result,true)), WATCHDOG_ERROR);
+		}
+		else{
+			drupal_set_message(t('Group e-mail has been sent.'));
+		}
+	}
+
+}
+
+function group_email_page_access_callback($gid){
+	return group_user_can_email_group($gid);
+}
+
+function group_user_is_group_admin($gid, $account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  return db_select('node','n')->fields('n',array('nid'))->condition('nid',$gid)->condition('uid',$account->uid)->execute()->fetchField();
+}
+
+function group_user_is_in_group($gid, $account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  return db_select('og_membership','ogm')->fields('ogm',array('etid'))->condition('gid',$gid)->condition('state',1)->condition('etid',$account->uid)->execute()->fetchField();
+}
+
+function group_user_can_email_group($gid, $account = null){
+  if(!$account){
+    global $user;
+    $account = $user;
+  }
+
+  $group = node_load($gid);
+  if($group->type == 'group'){
+  	return group_user_is_in_group($gid);
+  }
+  else if($group->type == 'student_group'){
+  	return $account->uid == $group->uid;
+  }
+  else{
+  	return false;
+  }
+}
+
+/**
+ * Implements hook_hide_submit_alter().
+ */
+function group_hide_submit_alter(&$hide_submit_settings) {
+  if (arg(0) == 'node' && arg(1) == 'add' && arg(2) == 'student-group') {
+    $hide_submit_settings['hide_submit']['hide_submit_status'] = TRUE;
+  }
+}

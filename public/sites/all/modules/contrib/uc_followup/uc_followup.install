@@ -1,0 +1,182 @@
+<?php
+
+/**
+ * @file
+ * UC Followup install and uninstall routine.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function uc_followup_schema() {
+  $schema['uc_followup'] = array(
+    'fields' => array(
+      'followup_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'status' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'effective_date' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'order_status' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'hours_past' => array(
+        'type' => 'int',
+        'default' => 24,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'repeat_after' => array(
+        'type' => 'int',
+        'default' => 0,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'repeat_max' => array(
+        'type' => 'int',
+        'default' => 0,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'last_order' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'sender' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'subject' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'body' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'body_format' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('followup_id'),
+  );
+
+  $schema['uc_followup_sent'] = array(
+    'fields' => array(
+      'follow_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'order_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'followup_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'manual' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'date' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'email' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'sender' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'subject' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'body' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('follow_id'),
+    'indexes' => array(
+      'date' => array('date'),
+      'order_id' => array('order_id'),
+      'order_id_followup_id' => array('order_id', 'followup_id'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function uc_followup_uninstall() {
+
+  // Delete variables.
+  variable_del('uc_followup_auto_send');
+  variable_del('uc_followup_send_limit');
+  variable_del('uc_followup_bcc');
+}
+
+/**
+ * Add last_order field to {uc_followup} table.
+ */
+function uc_followup_update_7000(&$sandbox) {
+  db_add_field('uc_followup', 'last_order', array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ));
+  return t('Added field to {uc_followup}: last_order');
+}
+
+/**
+ * Add body_format field to {uc_followup} table.
+ */
+function uc_followup_update_7001(&$sandbox) {
+  db_add_field('uc_followup', 'body_format', array(
+    'type' => 'varchar',
+    'length' => '255',
+    'not null' => FALSE,
+  ));
+  return t('Added field to {uc_followup}: body_format');
+}

@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function affiliate_menu() {
+  $items['admin/ytu-settings/affiliate-settings'] = array(
+    'title' => 'Affiliate Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('affiliate_admin_settings_form'),
+	'access arguments' => array('access ytu settings'),
+  );
+
+  $items['affiliate-url-process'] = array(
+  	'title' => 'Affiliate Process',
+  	'page callback' => 'affiliate_url_process_page_callback',
+  	'access arguments' => array('access content'),
+  	'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function affiliate_admin_settings_form($form,&$form_state){
+	$form['affiliate_url'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Affiliate Url',
+		'#default_value' => variable_get('affiliate_url',''),
+	);
+
+	$form['affiliate_redirect_url'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Affiliate Redirect Url',
+		'#default_value' => variable_get('affiliate_redirect_url',''),
+	);
+
+	return system_settings_form($form);
+}
+
+function affiliate_url_process_page_callback(){
+	if(!isset($_SESSION['infusionsoft_affiliate_id']) || empty($_SESSION['infusionsoft_affiliate_id'])){
+		$params = drupal_get_query_parameters();
+		if(!empty($params['acd'])){
+			$affiliate_id = infusionsoft_get_affiliate_id_by_code($params['acd']);
+			if($affiliate_id){
+				$_SESSION['infusionsoft_affiliate_id'] = $affiliate_id;
+			}
+		}
+	}
+
+	drupal_exit();
+}
+
+/**
+ * Implements hook_theme().
+ */
+function affiliate_theme($existing, $type, $theme, $path) {
+  return array(
+    'affiliate_iframe' => array(
+      'template' => 'affiliate-iframe',
+      'variables' => array(
+      	'iframe_src' => '',
+      	'redirect_url' => '',
+      ),
+    ),
+  );
+}

@@ -1,0 +1,188 @@
+<?php
+
+define('TEACHER_CEC_PAGE_LIMIT',20);
+
+/**
+ * Implements hook_menu().
+ */
+function teacher_cec_menu() {
+  $items['user/%user/cec'] = array(
+    'title' => 'CEC Tracking',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_cec_tracking_form',1),
+    'access callback' => 'teacher_cec_access_callback',
+    'access arguments' => array(1),
+  );
+
+  $items['user/%user/cec/%/delete'] = array(
+    'title' => 'CEC Tracking Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_cec_tracking_delete_form',1,3),
+    'access callback' => 'teacher_cec_access_callback',
+    'access arguments' => array(1),
+  );
+
+  return $items;
+}
+
+function teacher_cec_access_callback($account){
+	if(account_is_teacher($account)){
+		if(account_is_admin()){
+			return true;
+		}
+
+		if(account_is_teacher()){
+			global $user;
+			return $user->uid == $account->uid;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function teacher_cec_theme($existing, $type, $theme, $path) {
+  return array(
+    'teacher_cec_tracking_form' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+function theme_teacher_cec_tracking_form($variables){
+  $form = $variables['form'];
+
+  $activity_width = '70%';
+  $date_width = '20%';
+
+  $header = array(
+  	array('data' => t('Activity'), 'width' => $activity_width),
+  	array('data' => t('Date'), 'width' => $date_width),
+  	t('# CECs'),
+  	t('HOURS ACCRUED THIS LICENSE PERIOD'),
+  );
+
+  $rows_form = array(
+  	array(
+  		array('data' => drupal_render($form['activity']),'width' => $activity_width),
+  		array('data' => drupal_render($form['date']), 'width' => $date_width),
+  		drupal_render($form['num_cec']),
+  		drupal_render($form['hours']),
+  	),
+  );
+
+  $account = user_load($form['uid']['#value']);
+  $previous_data = teacher_cec_load($account);
+  $rows_prev = array();
+  foreach($previous_data as $item){
+  	$rows_prev[] = array(
+      l('x','user/'.$account->uid.'/cec/'.$item->id.'/delete',array('attributes' => array('class' => array('cec-remove')))),
+  		array('data' => $item->activity, 'width' => $activity_width),
+  		array('data' => $item->date, 'width' => $date_width, 'align' => 'center'),
+  		array('data' => $item->num_cec, 'align' => 'center'),
+  		array('data' => $item->hours, 'align' => 'center'),
+  	);
+  }
+  $pager = array('#theme'=>'pager','#quantity'=>5);
+
+  $output = '<h2 class="blue-title">CEC Tracking Data</h2>';
+  $output .= theme('table', array('header' => $header, 'rows' => $rows_form));
+  $output .= drupal_render_children($form);
+
+  $header = array(
+    ' ',
+    array('data' => t('Activity'), 'width' => $activity_width),
+    array('data' => t('Date'), 'width' => $date_width),
+    t('# CECs'),
+    t('HOURS ACCRUED THIS LICENSE PERIOD'),
+  );
+
+  $output .= theme('table', array('header' => $header, 'rows' => $rows_prev));
+  $output .= drupal_render($pager);
+
+  return $output;
+}
+
+function teacher_cec_get_fields(){
+	return array(
+		'activity',
+		'date',
+		'num_cec',
+		'hours',
+	);
+}
+
+function teacher_cec_tracking_form($form, &$form_state, $account){
+	$form['uid'] = array(
+		'#type' => 'hidden',
+		'#value' => $account->uid,
+	);
+
+	$fields = teacher_cec_get_fields();
+
+	foreach($fields as $field){
+		$form[$field] = array(
+			'#type' => 'textfield',
+			'#required' => TRUE,
+		);
+	}
+
+	$form['actions'] = array(
+		'#type' => 'actions',
+	);
+
+	$form['actions']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+		'#attributes' => array('class' => array('blue-button')),
+	);
+
+	return $form;
+}
+
+function teacher_cec_tracking_form_submit($form, &$form_state){
+	$new_record = array(
+		'uid' => $form_state['values']['uid'],
+		'activity' => $form_state['values']['activity'],
+		'date' => $form_state['values']['date'],
+		'num_cec' => $form_state['values']['num_cec'],
+		'hours' => $form_state['values']['hours'],
+	);
+
+	drupal_write_record('teacher_cec',$new_record);
+
+	drupal_set_message(t('Your CEC data has been saved.'));
+}
+
+function teacher_cec_load($account){
+	return db_select('teacher_cec','t')->extend('PagerDefault')->limit(TEACHER_CEC_PAGE_LIMIT)->fields('t')->condition('uid',$account->uid)->orderBy('id','DESC')->execute();
+}
+
+function teacher_cec_tracking_delete_form($form, &$form_state, $account, $cec_id){
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $account->uid,
+  );
+
+  $form['cec_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $cec_id,
+  );
+
+  $form['submit'] = array(
+    '#prefix' => '<p>Click the Delete button to remove the CEC line.</p>',
+    '#type' => 'submit',
+    '#value' => 'Delete',
+    '#attributes' => array('class' => array('blue-button')),
+  );
+
+  return $form;
+}
+
+function teacher_cec_tracking_delete_form_submit($form, &$form_state){
+  db_delete('teacher_cec')->condition('id',$form_state['values']['cec_id'])->execute();
+  $form_state['redirect'] = 'user/'.$form_state['values']['uid'].'/cec';
+  drupal_set_message('The CEC line has been deleted.');
+}

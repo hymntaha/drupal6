@@ -1,0 +1,49 @@
+/* CSS Document */
+#dropmenudiv{
+position:absolute;
+border:0px solid #AA0000;
+width:201px;
+background:url(/images/menu_bg.png) bottom no-repeat;
+background-color:;
+border-bottom-width:0px;
+padding-bottom:5px;
+text-align:left;
+font:normal 12px arial;
+font-weight:bold;
+line-height:25px;
+z-index:100;
+margin-top:5px;
+margin-left:-28px;
+}
+.dropmenudiv A {
+COLOR:#ffffff; TEXT-DECORATION:none;
+font-family:Verdana, Arial, Helvetica, sans-serif;
+font-size:11px;
+font-weight:bold;
+}
+.dropmenudiv A:hover {
+COLOR:#ffffff; TEXT-DECORATION:none;
+}
+
+
+#dropmenudiv a{
+color:#003d6d;
+width: 100%px;
+height:90%;
+display: block;
+text-indent: 5px;
+border-bottom: 1px solid #666666;
+margin:0px 25px 0px 22px;
+text-decoration: none;
+font-weight: bold;
+}
+
+#dropmenudiv .lm {
+border-bottom: 0px solid #ffffff
+}
+
+#dropmenudiv a:hover{ /*hover background color*/
+background-color:#;
+color:#b70f0f;
+}
+

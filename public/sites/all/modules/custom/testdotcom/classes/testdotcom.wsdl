@@ -1,0 +1,1998 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="http://webservices" xmlns:apachesoap="http://xml.apache.org/xml-soap"
+                  xmlns:impl="http://webservices" xmlns:intf="http://webservices"
+                  xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns1="http://rpc.xml.coldfusion"
+                  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <!--WSDL created by ColdFusion-->
+    <wsdl:types>
+        <schema targetNamespace="http://rpc.xml.coldfusion" xmlns="http://www.w3.org/2001/XMLSchema">
+            <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+            <complexType name="CFCInvocationException">
+                <sequence/>
+            </complexType>
+        </schema>
+    </wsdl:types>
+
+    <wsdl:message name="updateGroupScheduled20130401Response">
+
+        <wsdl:part name="updateGroupScheduled20130401Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getUserTestTakenTransactions20121001Response">
+
+        <wsdl:part name="getUserTestTakenTransactions20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateGroupMembership20110405Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsMember" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsUserAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsContentAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsReportingAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsProctorAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkGroupScheduled20130401Response">
+
+        <wsdl:part name="checkGroupScheduled20130401Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getContentLookupCodeValues20130401Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getUserTestTakenTransactions20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="ContentLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="FinishDateRangeStart" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="FinishDateRangeEnd" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateGroupScheduled20130401Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="OptionalUniqueID" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsMember" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsUserAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsContentAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsReportingAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserIsProctorAdmin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="DateGroupMembership" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="HourGroupMembership" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="DateUnGroupMembership" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="HourUnGroupMembership" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="update20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserName" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserEmail" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateMonth" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateDay" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateYear" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserCredits" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserAccountInactive" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserIgnoreAccounting" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserTimeZone" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLocalCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AddIfUserLoginNoMatch" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getContentTestTakenTransactions20121001Response">
+
+        <wsdl:part name="getContentTestTakenTransactions20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateInactiveFlag20100415Response">
+
+        <wsdl:part name="updateInactiveFlag20100415Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="add20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserName" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserEmail" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateMonth" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateDay" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateYear" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserCredits" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserAccountInactive" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserIgnoreAccounting" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserTimeZone" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLocalCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserPassword" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkCustomField20110426Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="CustomFieldWSCode" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getContentPurchaseTransactions20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="ContentLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="PurchaseDate" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="update20100415Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserName" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserEmail" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateMonth" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateDay" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateYear" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserCredits" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserAccountInactive" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserIgnoreAccounting" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserTimeZone" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLocalCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AddIfUserLoginNoMatch" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkPurchaseTransaction20121001Response">
+
+        <wsdl:part name="checkPurchaseTransaction20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getUserPurchaseTransactions20121001Response">
+
+        <wsdl:part name="getUserPurchaseTransactions20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="update20121001Response">
+
+        <wsdl:part name="update20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="update20100415Response">
+
+        <wsdl:part name="update20100415Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="test20130401Response">
+
+        <wsdl:part name="test20130401Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkGroupMembership20110405Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="addPurchaseTransaction20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="ContentLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="PurchaseTransAmount" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="PurchaseTransStatusCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="PurchaseTransID" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="add20121001Response">
+
+        <wsdl:part name="add20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkPurchaseTransaction20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="ContentLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkCustomField20110426Response">
+
+        <wsdl:part name="checkCustomField20110426Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateCredits20100415Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserCredits" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getContentPurchaseTransactions20121001Response">
+
+        <wsdl:part name="getContentPurchaseTransactions20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateGroupMembership20110405Response">
+
+        <wsdl:part name="updateGroupMembership20110405Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getContentLookupCodeValues20130401Response">
+
+        <wsdl:part name="getContentLookupCodeValues20130401Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkGroupMembership20110405Response">
+
+        <wsdl:part name="checkGroupMembership20110405Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="add20100415Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserName" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserEmail" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateMonth" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateDay" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserNewHireDateYear" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserCredits" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserAccountInactive" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserIgnoreAccounting" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserTimeZone" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserPassword" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateCustomField20110426Response">
+
+        <wsdl:part name="updateCustomField20110426Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getContentTestTakenTransactions20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="ContentLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="FinishDate" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateInactiveFlag20100415Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserAccountInactive" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="CFCInvocationException">
+
+        <wsdl:part name="fault" type="tns1:CFCInvocationException">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateCredits20100415Response">
+
+        <wsdl:part name="updateCredits20100415Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="updateCustomField20110426Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="CustomFieldWSCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="CustomFieldValue" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="CustomFieldValueDelete" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="add20100415Response">
+
+        <wsdl:part name="add20100415Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="test20130401Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="TestString" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="addPurchaseTransaction20121001Response">
+
+        <wsdl:part name="addPurchaseTransaction20121001Return" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="checkGroupScheduled20130401Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="OptionalUniqueID" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="GroupUserLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:message name="getUserPurchaseTransactions20121001Request">
+
+        <wsdl:part name="AccountLoginCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountXMLCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AccountIDSpecialCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="AuthorPassword" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="UserLogin" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="ContentLookupCode" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="PurchaseDateRangeStart" type="xsd:string">
+
+        </wsdl:part>
+
+        <wsdl:part name="PurchaseDateRangeEnd" type="xsd:string">
+
+        </wsdl:part>
+
+    </wsdl:message>
+
+    <wsdl:portType name="Ws_users">
+
+        <wsdl:operation name="getUserTestTakenTransactions20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin ContentLookupCode FinishDateRangeStart FinishDateRangeEnd">
+
+            <wsdl:input message="impl:getUserTestTakenTransactions20121001Request"
+                        name="getUserTestTakenTransactions20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:getUserTestTakenTransactions20121001Response"
+                         name="getUserTestTakenTransactions20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getUserPurchaseTransactions20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin ContentLookupCode PurchaseDateRangeStart PurchaseDateRangeEnd">
+
+            <wsdl:input message="impl:getUserPurchaseTransactions20121001Request"
+                        name="getUserPurchaseTransactions20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:getUserPurchaseTransactions20121001Response"
+                         name="getUserPurchaseTransactions20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getContentTestTakenTransactions20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword ContentLookupCode FinishDate">
+
+            <wsdl:input message="impl:getContentTestTakenTransactions20121001Request"
+                        name="getContentTestTakenTransactions20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:getContentTestTakenTransactions20121001Response"
+                         name="getContentTestTakenTransactions20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getContentPurchaseTransactions20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword ContentLookupCode PurchaseDate">
+
+            <wsdl:input message="impl:getContentPurchaseTransactions20121001Request"
+                        name="getContentPurchaseTransactions20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:getContentPurchaseTransactions20121001Response"
+                         name="getContentPurchaseTransactions20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="addPurchaseTransaction20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin ContentLookupCode PurchaseTransAmount PurchaseTransStatusCode PurchaseTransID">
+
+            <wsdl:input message="impl:addPurchaseTransaction20121001Request"
+                        name="addPurchaseTransaction20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:addPurchaseTransaction20121001Response"
+                         name="addPurchaseTransaction20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateCredits20100415"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserCredits UserLogin">
+
+            <wsdl:input message="impl:updateCredits20100415Request" name="updateCredits20100415Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:updateCredits20100415Response" name="updateCredits20100415Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateGroupMembership20110405"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin GroupUserLookupCode GroupUserIsMember GroupUserIsUserAdmin GroupUserIsContentAdmin GroupUserIsReportingAdmin GroupUserIsProctorAdmin">
+
+            <wsdl:input message="impl:updateGroupMembership20110405Request" name="updateGroupMembership20110405Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:updateGroupMembership20110405Response"
+                         name="updateGroupMembership20110405Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkGroupMembership20110405"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin GroupUserLookupCode">
+
+            <wsdl:input message="impl:checkGroupMembership20110405Request" name="checkGroupMembership20110405Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:checkGroupMembership20110405Response"
+                         name="checkGroupMembership20110405Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="update20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserName UserEmail UserNewHireDateMonth UserNewHireDateDay UserNewHireDateYear UserCredits UserAccountInactive UserIgnoreAccounting UserTimeZone UserLocalCode UserLogin UserPassword AddIfUserLoginNoMatch">
+
+            <wsdl:input message="impl:update20121001Request" name="update20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:update20121001Response" name="update20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="update20100415"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserName UserEmail UserNewHireDateMonth UserNewHireDateDay UserNewHireDateYear UserCredits UserAccountInactive UserIgnoreAccounting UserTimeZone UserLocalCode UserLogin UserPassword AddIfUserLoginNoMatch">
+
+            <wsdl:input message="impl:update20100415Request" name="update20100415Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:update20100415Response" name="update20100415Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateCustomField20110426"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin CustomFieldWSCode CustomFieldValue CustomFieldValueDelete">
+
+            <wsdl:input message="impl:updateCustomField20110426Request" name="updateCustomField20110426Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:updateCustomField20110426Response" name="updateCustomField20110426Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateInactiveFlag20100415"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserAccountInactive UserLogin">
+
+            <wsdl:input message="impl:updateInactiveFlag20100415Request" name="updateInactiveFlag20100415Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:updateInactiveFlag20100415Response" name="updateInactiveFlag20100415Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkCustomField20110426"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin CustomFieldWSCode">
+
+            <wsdl:input message="impl:checkCustomField20110426Request" name="checkCustomField20110426Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:checkCustomField20110426Response" name="checkCustomField20110426Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkGroupScheduled20130401"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin OptionalUniqueID GroupUserLookupCode">
+
+            <wsdl:input message="impl:checkGroupScheduled20130401Request" name="checkGroupScheduled20130401Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:checkGroupScheduled20130401Response" name="checkGroupScheduled20130401Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateGroupScheduled20130401"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin OptionalUniqueID GroupUserLookupCode GroupUserIsMember GroupUserIsUserAdmin GroupUserIsContentAdmin GroupUserIsReportingAdmin GroupUserIsProctorAdmin DateGroupMembership HourGroupMembership DateUnGroupMembership HourUnGroupMembership">
+
+            <wsdl:input message="impl:updateGroupScheduled20130401Request" name="updateGroupScheduled20130401Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:updateGroupScheduled20130401Response"
+                         name="updateGroupScheduled20130401Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="add20100415"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserName UserEmail UserNewHireDateMonth UserNewHireDateDay UserNewHireDateYear UserCredits UserAccountInactive UserIgnoreAccounting UserTimeZone UserLogin UserPassword">
+
+            <wsdl:input message="impl:add20100415Request" name="add20100415Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:add20100415Response" name="add20100415Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="test20130401"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword TestString">
+
+            <wsdl:input message="impl:test20130401Request" name="test20130401Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:test20130401Response" name="test20130401Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="add20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserName UserEmail UserNewHireDateMonth UserNewHireDateDay UserNewHireDateYear UserCredits UserAccountInactive UserIgnoreAccounting UserTimeZone UserLocalCode UserLogin UserPassword">
+
+            <wsdl:input message="impl:add20121001Request" name="add20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:add20121001Response" name="add20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getContentLookupCodeValues20130401"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword">
+
+            <wsdl:input message="impl:getContentLookupCodeValues20130401Request"
+                        name="getContentLookupCodeValues20130401Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:getContentLookupCodeValues20130401Response"
+                         name="getContentLookupCodeValues20130401Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkPurchaseTransaction20121001"
+                        parameterOrder="AccountLoginCode AccountXMLCode AccountIDSpecialCode AuthorLogin AuthorPassword UserLogin ContentLookupCode">
+
+            <wsdl:input message="impl:checkPurchaseTransaction20121001Request"
+                        name="checkPurchaseTransaction20121001Request">
+
+            </wsdl:input>
+
+            <wsdl:output message="impl:checkPurchaseTransaction20121001Response"
+                         name="checkPurchaseTransaction20121001Response">
+
+            </wsdl:output>
+
+            <wsdl:fault message="impl:CFCInvocationException" name="CFCInvocationException">
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+    </wsdl:portType>
+
+    <wsdl:binding name="ws_users.cfcSoapBinding" type="impl:Ws_users">
+
+        <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+        <wsdl:operation name="getUserTestTakenTransactions20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="getUserTestTakenTransactions20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="getUserTestTakenTransactions20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getUserPurchaseTransactions20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="getUserPurchaseTransactions20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="getUserPurchaseTransactions20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getContentTestTakenTransactions20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="getContentTestTakenTransactions20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="getContentTestTakenTransactions20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getContentPurchaseTransactions20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="getContentPurchaseTransactions20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="getContentPurchaseTransactions20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="addPurchaseTransaction20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="addPurchaseTransaction20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="addPurchaseTransaction20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateCredits20100415">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="updateCredits20100415Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="updateCredits20100415Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateGroupMembership20110405">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="updateGroupMembership20110405Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="updateGroupMembership20110405Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkGroupMembership20110405">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="checkGroupMembership20110405Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="checkGroupMembership20110405Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="update20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="update20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="update20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="update20100415">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="update20100415Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="update20100415Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateCustomField20110426">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="updateCustomField20110426Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="updateCustomField20110426Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateInactiveFlag20100415">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="updateInactiveFlag20100415Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="updateInactiveFlag20100415Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkCustomField20110426">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="checkCustomField20110426Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="checkCustomField20110426Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkGroupScheduled20130401">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="checkGroupScheduled20130401Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="checkGroupScheduled20130401Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="updateGroupScheduled20130401">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="updateGroupScheduled20130401Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="updateGroupScheduled20130401Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="add20100415">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="add20100415Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="add20100415Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="test20130401">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="test20130401Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="test20130401Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="add20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="add20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="add20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="getContentLookupCodeValues20130401">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="getContentLookupCodeValues20130401Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="getContentLookupCodeValues20130401Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+        <wsdl:operation name="checkPurchaseTransaction20121001">
+
+            <wsdlsoap:operation soapAction=""/>
+
+            <wsdl:input name="checkPurchaseTransaction20121001Request">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:input>
+
+            <wsdl:output name="checkPurchaseTransaction20121001Response">
+
+                <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://webservices"
+                               use="encoded"/>
+
+            </wsdl:output>
+
+            <wsdl:fault name="CFCInvocationException">
+
+                <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="CFCInvocationException"
+                                namespace="http://webservices" use="encoded"/>
+
+            </wsdl:fault>
+
+        </wsdl:operation>
+
+    </wsdl:binding>
+
+    <wsdl:service name="Ws_usersService">
+
+        <wsdl:documentation>
+            Manage Users via Webservices
+        </wsdl:documentation>
+
+        <wsdl:port binding="impl:ws_users.cfcSoapBinding" name="ws_users.cfc">
+
+            <wsdlsoap:address location="https://secure.test.com/webservices/ws_users.cfc"/>
+
+        </wsdl:port>
+
+    </wsdl:service>
+
+</wsdl:definitions>

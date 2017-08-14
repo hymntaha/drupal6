@@ -1,0 +1,70 @@
+name = 'Tune Up Fitness'
+description = Uses the Bootstrap Framework Less source files and must be compiled (not for beginners).
+core = 7.x
+base theme = bootstrap
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Regions
+;;;;;;;;;;;;;;;;;;;;;
+
+regions[header_top]     = 'Header Top'
+regions[header_middle]  = 'Header Middle'
+regions[navigation]     = 'Header Bottom'
+regions[help]           = 'Help'
+regions[above_content]  = 'Above Content'
+regions[content]        = 'Content'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[above_footer]   = 'Above Footer'
+regions[footer]         = 'Footer'
+regions[footer_rights]  = 'Footer Bottom'
+regions[page_top]       = 'Page top'
+regions[page_bottom]    = 'Page bottom'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Stylesheets
+;;;;;;;;;;;;;;;;;;;;;
+
+stylesheets[all][] = css/font-awesome.min.css
+stylesheets[all][] = css/style.css
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Scripts
+;;;;;;;;;;;;;;;;;;;;;
+
+scripts[] = 'js/jquery-migrate-1.4.1.min.js'
+scripts[] = 'bootstrap/js/affix.js'
+scripts[] = 'bootstrap/js/alert.js'
+scripts[] = 'bootstrap/js/button.js'
+scripts[] = 'bootstrap/js/carousel.js'
+scripts[] = 'bootstrap/js/collapse.js'
+scripts[] = 'bootstrap/js/dropdown.js'
+scripts[] = 'bootstrap/js/modal.js'
+scripts[] = 'bootstrap/js/tooltip.js'
+scripts[] = 'bootstrap/js/popover.js'
+scripts[] = 'bootstrap/js/scrollspy.js'
+scripts[] = 'bootstrap/js/tab.js'
+scripts[] = 'bootstrap/js/transition.js'
+scripts[] = 'js/jquery.mobile.custom.min.js'
+scripts[] = 'js/library.js'
+scripts[] = 'js/URI.min.js'
+scripts[] = 'js/affilate_cookie_redirect.js'
+scripts[] = 'js/ckeditor.styles.js'
+scripts[] = 'js/date_range_handling.js'
+scripts[] = 'js/jquery.blockUI.js'
+scripts[] = 'js/modernizr.custom.04128.js'
+scripts[] = 'js/jquery.dotdotdot.min.js'
+scripts[] = 'js/js.cookie.js'
+scripts[] = 'js/script.js'
+
+; Disable the CDN provider so compiled source files can be used.
+settings[bootstrap_cdn] = ''
+
+fonts[typekit_api][] = "skolar-sans-latin#n7"
+fonts[typekit_api][] = "skolar-sans-latin#n3"
+fonts[typekit_api][] = "skolar-sans-latin#n5"
+fonts[typekit_api][] = "skolar-sans-latin#n4"
+fonts[typekit_api][] = "skolar-sans-latin#n6"

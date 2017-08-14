@@ -1,0 +1,12 @@
+name = "Yoga Tune Up Data Migration"
+description = "Data migration for Yoga Tune Up."
+package = "Yoga Tune Up"
+core = 7.x
+
+dependencies[] = migrate
+
+files[] = ytu_migrate.migrate.inc
+files[] = ytu_user.inc
+files[] = ytu_teacher.inc
+files[] = ytu_class.inc
+files[] = ytu_group.inc

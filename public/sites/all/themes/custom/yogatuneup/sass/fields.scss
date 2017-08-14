@@ -1,0 +1,242 @@
+/**
+ * @file
+ * Field Styling
+ *
+ * The Fences module allows site builders to pick the semeantic HTML5 element
+ * for each field while editing the field's settings. There's no way a theme
+ * can ever know which element to use for the fields on your site, so Zen
+ * just uses lets Drupal core or Fences decide. Since you DO NOT want 3 wrapping
+ * divs around every field (do you?), we highly recommend Fences.
+ *
+ * http://drupal.org/project/fences
+ */
+
+@import "base";
+
+/*
+  Reset spacing on field collections
+*/
+.field-collection-container{
+  @include spacing-reset;
+
+  .field-items{
+
+    .field-item{
+      @include spacing-reset;
+
+      .field-collection-view{
+        @include spacing-reset;
+      }
+    }
+  }
+}
+
+.feature-image-wrapper{
+	margin-top:-27px;
+  .node-type-product-landing &{
+    margin-bottom:15px;
+  }
+}
+
+.field-name-field-feature-block{
+  & > .field-items > .field-item{
+    @include inline-block;
+    width:220px;
+    margin:0 10px;
+    vertical-align:top;
+  }
+
+  .field-name-field-title{
+    line-height:42px;
+    margin-top:-3px;
+    text-align:center;
+    height:42px;
+    overflow:hidden;
+    a{
+      text-decoration:none;
+      font-size:18px;
+      color:#333;
+
+      &:hover{
+        color:#fff;
+        text-decoration:underline;
+      }
+    }
+  }
+
+  .learn-more{
+    font-size:11px;
+    color:#6CF;
+
+    &:hover{
+      text-decoration:underline;
+    }
+  }
+}
+
+.field-name-body{
+  .node-homepage > &{
+    background-color:#fff;
+    background-repeat:no-repeat;
+    background-position:483px 50px;
+
+    h1{
+      font-weight:normal;
+      margin-top:6px;
+      margin-bottom:15px;
+    }
+  }
+}
+
+.field-name-field-photos{
+  .field-item{
+    line-height:0;
+    img{
+      border:3px solid #ebecf0;
+    }
+  }
+  .view-mode-photo_gallery &{
+    .field-item{
+      @include inline-block;
+      vertical-align:top;
+      width:104px;
+      text-align:center;
+      margin:10px 15px;
+    }
+  }
+}
+
+.field-name-field-bottom-text{
+  font-size:18px;
+  line-height:30px;
+  margin-top:28px;
+}
+
+.btn-back{
+  @include link-image-background;
+  width:43px;
+  height:18px;
+  background-image:url('../images/back-btn.gif');
+}
+
+.field-name-field-teaser-image,
+.field-name-uc-product-image,
+.node-quickfix-video .field-name-field-image{
+  img{
+    border:3px solid #EBECF0;
+  }
+}
+
+.field-name-field-price-ranges{
+  font-size:11px;
+}
+
+.field-name-field-question{
+  @include blue-title;
+  margin-bottom:0;
+  font-size:11px;
+}
+
+.user-dashboard-row{
+  padding:10px 0;
+  border-top:1px solid #e8e8e8;
+
+  .my-videos{
+    @include user-dashboard-icon;
+    background-image:url('../images/ico-my-videos.png');
+  }
+
+  .my-groups{
+    @include user-dashboard-icon;
+    background-image:url('../images/ico-my-groups.png');
+  }
+
+  .coaching-call-archive{
+    @include user-dashboard-icon;
+    background-image:url('../images/ico-coaching-call-archive.png');
+  }
+
+  .video{
+    @include inline-block;
+    width:275px;
+    margin-right:20px;
+    margin-bottom:10px;
+
+    img,.video-title{
+      @include inline-block;
+      vertical-align:middle;
+    }
+    img{
+      margin-right:5px;
+    }
+    .video-title{
+      width:215px;
+      text-decoration:underline;
+    }
+  }
+}
+
+.field-name-taxonomy-catalog{
+  font-size:13px;
+  font-weight:bold;
+  color:#000;
+}
+
+.field-name-field-subscriptions{
+  & > .field-items > .field-item{
+    padding-bottom:15px;
+    border-bottom:1px solid #E8E8E8;
+    margin-bottom:15px;
+
+    &.first{
+      margin-top:15px;
+      border-top:1px solid #E8E8E8;
+      padding-top:15px;
+    }
+  }
+}
+
+.link-button{
+  @include spacing-reset;
+  background-color:transparent;
+  color:#3776c0;
+  text-decoration:underline;
+  font-weight:bold;
+}
+
+.cart-upsell-pane{
+  /*padding-top:10px;
+  width: 243px;
+  border: 9px solid #ebecf0 !important;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  margin-left: 3px;
+  padding: 10px 15px;*/
+  .upsell-product{
+    width:188px;
+    text-align:center;
+    margin:0 4px;
+    @include inline-block;
+    vertical-align:bottom;
+  }
+}
+
+.field-name-field-products{
+  margin-top:10px;
+  & > .field-items > .field-item{
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+  }
+}
+
+#affiliate-iframe{
+  border:0;
+  position:absolute;
+  left:-9999px;
+}
+
+.backordered{
+  color:red;
+  font-weight:bold;
+}

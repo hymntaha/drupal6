@@ -1,0 +1,19 @@
+name = UC Products Recommender
+description = Makeing Ubercart products recommendations based on users purchasing history.
+package = Recommendation
+
+dependencies[] = recommender
+dependencies[] = views
+dependencies[] = uc_order
+
+files[] = uc_rec.module
+files[] = uc_rec.views_default.inc
+
+core = 7.x
+
+; Information added by drupal.org packaging script on 2011-07-12
+version = "7.x-1.0-alpha1"
+core = "7.x"
+project = "uc_rec"
+datestamp = "1310512622"
+

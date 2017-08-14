@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * Implements hook_node_view().
+ */
+function section_landing_node_view($node, $view_mode, $langcode) {
+  if($node->type == 'section_landing'){
+  	if($view_mode == 'full'){
+  		$num_teasers = count($node->content['field_product_landing_pages']['#items']);
+  		if($num_teasers % 2 != 0){
+  			if(isset($node->content['field_ad_space'][0]['#markup'])){
+  				$node->content['field_product_landing_pages'][$num_teasers-1]['#suffix'] = '<div class="ad-space">'.$node->content['field_ad_space'][0]['#markup'].'</div>';
+  			}
+  		}
+  	}
+  }
+}

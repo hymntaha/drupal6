@@ -1,0 +1,7 @@
+name = YTU Email 
+description = YTU Email System
+package = "Yoga Tune Up"
+core = 7.x
+version = 7.x-1.0
+
+files[] = SimpleHTMLMailSystem.inc

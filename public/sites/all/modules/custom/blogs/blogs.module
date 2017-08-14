@@ -1,0 +1,123 @@
+<?php
+
+
+function blogs_menu(){
+    $items['blogs/chrome'] = array(
+        'page callback'=>"blogs_chrome_retrieval",
+        'access arguments'=>array('access content'),
+    );
+    $items['request/blog-update-email'] = array(
+        'title' => t('Blog Updates Email'),
+        'page callback' => 'blogs_update_email_cron_callback',
+        'access arguments' => array('access content'),
+    );
+
+    return $items;
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function blogs_page_alter(&$page) {
+	if(current_path() == 'blogs/chrome'){
+		$page['content']['metatags'] = array();
+	}
+}
+
+/**
+ * Implements hook_theme().
+ */
+function blogs_theme($existing, $type, $theme, $path) {
+  return array(
+    'blog_email' => array(
+      'template' => 'blog-email',
+      'variables' => array('title' => '','body' => ''),
+    ),
+  );
+}
+
+function blogs_chrome_retrieval(){
+
+    return '{{WP_CONTENTS_REPLACE}}';
+}
+
+function blogs_user_login(){
+    setcookie("ytu_refresh_chrome", 1, time()+60*60*24*1, "/", $_SERVER['HTTP_HOST']);
+}
+function blogs_user_logout(){
+    setcookie("ytu_refresh_chrome", 1, time()+60*60*24*1, "/", $_SERVER['HTTP_HOST']);
+}
+
+function blogs_update_email_cron_callback(){
+    $tag_id = _mm('blog_infusionsoft_tag_id','',TRUE);
+    if($tag_id){
+        $email_info['contact_list'] = infusionsoft_get_contacts_by_tag_id($tag_id);
+        if(!empty($email_info['contact_list'])){
+            $blog_posts = blogs_get_latest_links();
+            $blog_posts = implode('<br/><br/>',$blog_posts);
+            $email_info['from'] = _mm('blog_email_from','info@yogatuneup.com',true);
+            $email_info['subject'] = _mm('blog_email_subject','YTU Blog Updates',true);
+            $email_body = array(
+              '#theme' => 'blog_email',
+              '#title' => $email_info['subject'],
+              '#body' => str_replace('%posts',$blog_posts,_mm('blog_email_body','',true)),
+            );
+            $email_info['body'] = render($email_body);
+
+            $result = infusionsoft_email_blast($email_info);
+
+            if(!$result){
+              watchdog('blog', 'Infusionsoft Blog Email Blast Failed: :error', array(':error' => print_r($result,true)), WATCHDOG_ERROR);
+            }
+        }
+    }
+}
+
+function blogs_messages_info(){
+    return array(
+        'blog_email_from'=>array(
+          'title'=>"Blog Updates From Address",
+          'description'=>"From address for the Blog Updates e-mail",
+          'type'=>"textfield",
+          'group'=>"emails",
+          'fieldset'=>'blog_updates',
+          ),
+        'blog_email_subject'=>array(
+          'title'=>"Blog Updates Email Subject",
+          'description'=>"Subject for the Blog Updates e-mail",
+          'type'=>"textfield",
+          'group'=>"emails",
+          'fieldset'=>'blog_updates',
+          ),
+        'blog_email_body'=>array(
+          'title'=>"Blog Updates Email Body",
+          'description'=>"Body text for the Blog Updates e-mail. %posts = Latest two blog posts.",
+          'type'=>"richtext",
+          'group'=>"emails",
+          'fieldset'=>'blog_updates',
+          ),
+        'blog_infusionsoft_tag_id'=>array(
+            'title'=>'Blog Updates Infusionsoft Tag ID',
+            'type'=>'textfield',
+            'group'=>'blog',
+            'fieldset'=>'infusionsoft',
+        ),
+    );
+}
+
+function blogs_get_latest_links($num = 2){
+    $result = db_select('wp_posts','p')
+            ->fields('p',array('post_title','guid'))
+            ->condition('post_status','publish')
+            ->condition('post_type','post')
+            ->orderBy('post_date','DESC')
+            ->range(0,$num)
+            ->execute();
+
+    $links = array();
+    foreach($result as $row){
+        $links[] = l($row->post_title,$row->guid,array('attributes' => array('target' => '_blank')));
+    }
+
+    return $links;
+}

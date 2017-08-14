@@ -1,0 +1,154 @@
+<?php
+
+function ytu_migrate_free_video_map(){
+	return array(
+		'1' => array(
+			'small' => '43',
+			'big' => '45',
+		),
+		'2' => array(
+			'small' => '151',
+			'big' => '150',
+		),
+		'3' => array(
+			'small' => '146',
+			'big' => '149',
+		),
+		'4' => array(
+			'small' => '155',
+			'big' => '152',
+		),
+		'5' => array(
+			'small' => '153',
+			'big' => '154',
+		),
+		'6' => array(
+			'small' => '156',
+			'big' => '145',
+		),
+		'10' => array(
+			'small' => '142',
+			'big' => '141',
+		),
+		'11' => array(
+			'small' => '144',
+			'big' => '143',
+		),
+	);
+}
+
+function ytu_migrate_video_map(){
+	return array(
+		'3' => array(
+			'small' => '43',
+			'big' => '45',
+		),
+		'4' => array(
+			'small' => '151',
+			'big' => '150',
+		),
+		'5' => array(
+			'small' => '146',
+			'big' => '149',
+		),
+		'6' => array(
+			'small' => '155',
+			'big' => '152',
+		),
+		'7' => array(
+			'small' => '153',
+			'big' => '154',
+		),
+		'8' => array(
+			'small' => '156',
+			'big' => '145',
+		),
+		'12' => array(
+			'small' => '142',
+			'big' => '141',
+		),
+		'13' => array(
+			'small' => '144',
+			'big' => '143',
+		),
+	);
+}
+
+function ytu_migrate_cert_level_map(){
+	return array(
+		'1' => 'Level 1 Certification Program',
+		'2' => 'Hips Immersion',
+		'3' => 'Shoulders Immersion',
+		'5' => 'Core Integration Immersion',
+		'8' => 'YTU Integrated Embodied Anatomy',
+		'9' => 'Therapy Ball Practitioner',
+		'Trainer' => 'Trainer',
+	);
+}
+
+function ytu_migrate_get_uid_from_email($email){
+	return db_select('users','u')->fields('u',array('uid'))->condition('u.mail',$email)->execute()->fetchField();
+}
+
+function ytu_migrate_get_uid_from_old_user_id($user_id){
+	return db_select('migrate_map_ytuuserbase','mu')->fields('mu',array('destid1'))->condition('sourceid1',$user_id)->execute()->fetchField();
+}
+
+function ytu_migrate_get_teacher_nid_from_old_user_id($user_id){
+	return db_select('migrate_map_ytuteacherbase','mt')->fields('mt',array('destid1'))->condition('sourceid1',$user_id)->execute()->fetchField();
+}
+
+function ytu_migrate_get_class_nid_from_old_class_id($class_id){
+	return db_select('migrate_map_ytuclassbase','mc')->fields('mc',array('destid1'))->condition('sourceid1',$class_id)->execute()->fetchField();
+}
+
+function ytu_migrate_get_country_id_from_old_country_iso($iso){
+	return db_select('uc_countries','c')->fields('c',array('country_id'))->condition('country_iso_code_3',$iso)->execute()->fetchField();
+}
+
+function ytu_migrate_get_country_iso_2_from_old_country_iso($iso){
+	return db_select('uc_countries','c')->fields('c',array('country_iso_code_2'))->condition('country_iso_code_3',$iso)->execute()->fetchField();
+}
+
+function ytu_migrate_get_state_code_from_old_state_name($state_name, $country_id){
+	return db_select('uc_zones','z')->fields('z',array('zone_code'))->condition('zone_name',$state_name)->condition('zone_country_id',$country_id)->execute()->fetchField();
+}
+
+function ytu_migrate_get_zone_from_old_state_name($state_name, $country_id){
+	return db_select('uc_zones','z')->fields('z',array('zone_id'))->condition('zone_name',$state_name)->condition('zone_country_id',$country_id)->execute()->fetchField();
+}
+
+function ytu_migrate_strip_word_html($text, $allowed_tags = '<a><em><strong><cite><blockquote><code><ul><ol><li><dl><dt><dd><p><div>'){
+    mb_regex_encoding('UTF-8');
+    //replace MS special characters first
+    $search = array('/&lsquo;/u', '/&rsquo;/u', '/&ldquo;/u', '/&rdquo;/u', '/&mdash;/u');
+    $replace = array('\'', '\'', '"', '"', '-');
+    $text = preg_replace($search, $replace, $text);
+    //make sure _all_ html entities are converted to the plain ascii equivalents - it appears
+    //in some MS headers, some html entities are encoded and some aren't
+    $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+    //try to strip out any C style comments first, since these, embedded in html comments, seem to
+    //prevent strip_tags from removing html comments (MS Word introduced combination)
+    if(mb_stripos($text, '/*') !== FALSE){
+        $text = mb_eregi_replace('#/\*.*?\*/#s', '', $text, 'm');
+    }
+    //introduce a space into any arithmetic expressions that could be caught by strip_tags so that they won't be
+    //'<1' becomes '< 1'(note: somewhat application specific)
+    $text = preg_replace(array('/<([0-9]+)/'), array('< $1'), $text);
+    $text = strip_tags($text, $allowed_tags);
+    //eliminate extraneous whitespace from start and end of line, or anywhere there are two or more spaces, convert it to one
+    $text = preg_replace(array('/^\s\s+/', '/\s\s+$/', '/\s\s+/u'), array('', '', ' '), $text);
+    //strip out inline css and simplify style tags
+    $search = array('#<(strong|b)[^>]*>(.*?)</(strong|b)>#isu', '#<(em|i)[^>]*>(.*?)</(em|i)>#isu', '#<u[^>]*>(.*?)</u>#isu');
+    $replace = array('<b>$2</b>', '<i>$2</i>', '<u>$1</u>');
+    $text = preg_replace($search, $replace, $text);
+    //on some of the ?newer MS Word exports, where you get conditionals of the form 'if gte mso 9', etc., it appears
+    //that whatever is in one of the html comments prevents strip_tags from eradicating the html comment that contains
+    //some MS Style Definitions - this last bit gets rid of any leftover comments */
+    $num_matches = preg_match_all("/\<!--/u", $text, $matches);
+    if($num_matches){
+          $text = preg_replace('/\<!--(.)*--\>/isu', '', $text);
+    }
+    $text = str_replace('<p> </p>','',$text);
+    return $text;
+}
